@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 @def_output("result", PTable)
 class Max(Module):
     def __init__(self, columns: Optional[List[str]] = None, **kwds: Any) -> None:
-        super(Max, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._columns = columns
         self.default_step_size = 10000
         self.cxx_module = CxxMax(self)

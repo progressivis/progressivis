@@ -52,7 +52,7 @@ class Binop(Module):
         combine: Union[None, str, Binoperator] = None,
         **kwds: Any,
     ) -> None:
-        super(Binop, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.default_step_size = 1000
         self.op: Optional[Binoperator] = binop
         if callable(binop):

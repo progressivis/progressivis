@@ -18,7 +18,7 @@ from typing import Any
 @def_output("out", required=False)
 class Wait(Module):
     def __init__(self, **kwds: Any) -> None:
-        super(Wait, self).__init__(**kwds)
+        super().__init__(**kwds)
         if np.isnan(self.params.delay) and self.params.reads == -1:
             raise ProgressiveError(
                 "Module %s needs either a delay or " "a number of reads, not both",
@@ -26,7 +26,7 @@ class Wait(Module):
             )
 
     def is_ready(self) -> bool:
-        if not super(Wait, self).is_ready():
+        if not super().is_ready():
             return False
         if self.is_zombie():
             return True  # give it a chance to run before it dies

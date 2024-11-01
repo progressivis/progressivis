@@ -55,7 +55,7 @@ class VECLoader(Module):
     def __init__(
         self, filename: str, dtype: Type[Any] = np.float64, **kwds: Any
     ) -> None:
-        super(VECLoader, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._dtype = dtype
         self.default_step_size = kwds.get("chunksize", 10)  # initial guess
         openf: Callable[[str], IOBase] = open
@@ -88,7 +88,7 @@ class VECLoader(Module):
 
     def cleanup_run(self, run_number: int) -> int:
         self._csr_matrix = None
-        return super(VECLoader, self).cleanup_run(run_number)
+        return super().cleanup_run(run_number)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float

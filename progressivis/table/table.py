@@ -119,7 +119,7 @@ class PTable(IndexPTable):
 
         """
         # pylint: disable=too-many-arguments, too-many-branches
-        super(PTable, self).__init__()
+        super().__init__()
         if not (fillvalues is None or isinstance(fillvalues, Mapping)):
             raise ValueError(
                 "Invalid fillvalues (%s) should be None or a dictionary" % fillvalues
@@ -468,7 +468,7 @@ class PTable(IndexPTable):
         other: BasePTable,
         **kwargs: Any,
     ) -> Union[Dict[str, np.ndarray[Any, Any]], BasePTable]:
-        res = super(PTable, self).binary(op, other, **kwargs)
+        res = super().binary(op, other, **kwargs)
         if isinstance(res, BasePTable):
             return res
         return PTable(None, data=res, create=True)

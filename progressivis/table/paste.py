@@ -26,7 +26,7 @@ class Paste(Module):
     """
 
     def __init__(self, **kwds: Any) -> None:
-        super(Paste, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.join_kwds = filter_kwds(kwds, join)
 
     def run_step(

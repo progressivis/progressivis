@@ -28,7 +28,7 @@ class PTableChangeManager(BaseChangeManager):
         buffer_exposed: bool = False,
         buffer_masked: bool = False,
     ) -> None:
-        super(PTableChangeManager, self).__init__(
+        super().__init__(
             slot,
             buffer_created,
             buffer_updated,
@@ -44,7 +44,7 @@ class PTableChangeManager(BaseChangeManager):
             data.changes = PTableChanges()
 
     def reset(self, mid: str) -> None:
-        super(PTableChangeManager, self).reset(mid)
+        super().reset(mid)
         data = self._slot.data()
         data.reset_updates(mid)
 

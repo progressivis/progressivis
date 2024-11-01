@@ -118,7 +118,7 @@ class CSVLoader(Module):
             save_step_size: defines de number of rows to read between two context snapshots,
             kwds: extra keyword args to be passed to :func:`pandas.read_csv` and :class:`Module <progressivis.core.Module>` superclass
         """
-        super(CSVLoader, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
         self.default_step_size = kwds.get("chunksize", 1000)  # initial guess
         kwds.setdefault("chunksize", self.default_step_size)
@@ -210,7 +210,7 @@ class CSVLoader(Module):
             fn = self.get_input_slot("filenames")
             if fn.created is None or fn.created.any():
                 return True
-        return super(CSVLoader, self).is_ready()
+        return super().is_ready()
 
     def is_data_input(self) -> bool:
         # pylint: disable=no-self-use

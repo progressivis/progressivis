@@ -34,7 +34,7 @@ class Select(Module):
     """ """
 
     def __init__(self, **kwds: Any) -> None:
-        super(Select, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.default_step_size = 1000
         # dependant modules
         self.input_module: Optional[Module] = None

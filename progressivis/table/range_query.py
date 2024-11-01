@@ -204,7 +204,7 @@ class RangeQuery(Module):
         approximate: bool = False,
         **kwds: Any,
     ) -> None:
-        super(RangeQuery, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._impl: RangeQueryImpl = RangeQueryImpl(approximate)
         self._approximate = approximate
         self.default_step_size = 1000

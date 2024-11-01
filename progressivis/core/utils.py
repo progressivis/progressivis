@@ -991,9 +991,8 @@ def filter_cols(
         if indices is None:
             return df
         return cast(BasePTable, df.loc[indices])
-    cols = columns
-    if cols is None:
-        return None
+    if columns is None:
+        return df
     if indices is None:
         indices = slice(0, None)
-    return df.loc[indices, cols]  # type: ignore
+    return df.loc[indices, columns]  # type: ignore

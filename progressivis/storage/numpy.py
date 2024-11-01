@@ -79,7 +79,7 @@ class NumpyDataset(Dataset):
 
     @property
     def size(self) -> int:
-        return cast(int, self.view.shape[0])
+        return int(self.view.shape[0])
 
     def resize(self, size: Union[int, ArrayLike], axis: Optional[int] = None) -> None:
         if isinstance(size, integer_types):
@@ -117,7 +117,7 @@ class NumpyDataset(Dataset):
         self.view[args] = val
 
     def __len__(self) -> int:
-        return cast(int, self.view.shape[0])
+        return int(self.view.shape[0])
 
     @property
     def attrs(self) -> Attribute:
@@ -133,7 +133,7 @@ class NumpyDataset(Dataset):
 
 class NumpyGroup(GroupImpl):
     def __init__(self, name: str = "numpy", parent: Optional[GroupImpl] = None) -> None:
-        super(NumpyGroup, self).__init__(name, parent=parent)
+        super().__init__(name, parent=parent)
 
     def create_dataset(
         self,

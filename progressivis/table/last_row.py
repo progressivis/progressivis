@@ -10,7 +10,7 @@ from typing import Optional, Any
 @def_output("result", PTable)
 class LastRow(Module):
     def __init__(self, reset_index: Optional[bool] = True, **kwds: Any) -> None:
-        super(LastRow, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._reset_index = reset_index
 
     def predict_step_size(self, duration: float) -> int:

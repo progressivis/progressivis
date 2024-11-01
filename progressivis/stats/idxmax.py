@@ -55,7 +55,7 @@ class IdxMax(Module):
     def is_ready(self) -> bool:
         if self.get_input_slot("table").created.any():
             return True
-        return super(IdxMax, self).is_ready()
+        return super().is_ready()
 
     def reset(self) -> None:
         if self.result is not None:

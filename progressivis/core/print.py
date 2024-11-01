@@ -23,14 +23,14 @@ class Every(Module):
         constant_time: bool = True,
         **kwds: Any,
     ) -> None:
-        super(Every, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._proc = proc
         self._constant_time = constant_time
 
     def predict_step_size(self, duration: float) -> int:
         if self._constant_time:
             return 1
-        return super(Every, self).predict_step_size(duration)
+        return super().predict_step_size(duration)
 
     def run_step(
         self, run_number: int, step_size: float, howlong: float
@@ -52,4 +52,4 @@ class Print(Every):
     def __init__(self, **kwds: Any) -> None:
         if "proc" not in kwds:
             kwds["proc"] = _prt
-        super(Print, self).__init__(quantum=0.1, constant_time=True, **kwds)
+        super().__init__(quantum=0.1, constant_time=True, **kwds)

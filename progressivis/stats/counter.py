@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 @def_output("result", PTable)
 class Counter(Module):
     def __init__(self, **kwds: Any):
-        super(Counter, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.default_step_size = 10000
 
     def is_ready(self) -> bool:
         if self.get_input_slot("table").created.any():
             return True
-        return super(Counter, self).is_ready()
+        return super().is_ready()
 
     def reset(self) -> None:
         if self.result is not None:

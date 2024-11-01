@@ -25,7 +25,7 @@ class BinJoin(Module):
     """
 
     def __init__(self, **kwds: Any) -> None:
-        super(BinJoin, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.join_kwds = filter_kwds(kwds, join)
         self._dialog = Dialog(self)
 

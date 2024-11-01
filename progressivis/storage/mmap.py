@@ -264,7 +264,7 @@ class MMapDataset(Dataset):
 
     @property
     def size(self) -> int:
-        return cast(int, self.view.shape[0])
+        return int(self.view.shape[0])
 
     def resize(self, size: Union[int, ArrayLike], axis: Optional[int] = None) -> None:
         assert self._buffer is not None
@@ -354,7 +354,7 @@ class MMapDataset(Dataset):
             self.view[k] = self._strings.set_at(self.view[k], val[i])
 
     def __len__(self) -> int:
-        return cast(int, self.view.shape[0])
+        return int(self.view.shape[0])
 
     @property
     def attrs(self) -> Attribute:
@@ -377,7 +377,7 @@ class MMapGroup(GroupImpl):
     def __init__(self, name: Optional[str] = None, parent: Optional[GroupImpl] = None):
         if name is None:
             name = get_random_name("mmapstorage_")
-        super(MMapGroup, self).__init__(name, parent=parent)
+        super().__init__(name, parent=parent)
         if parent is not None:
             if name in parent.dict:
                 raise ValueError("Cannot create group {}, already exists".format(name))

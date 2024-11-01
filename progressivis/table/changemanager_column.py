@@ -22,7 +22,7 @@ class PColumnChangeManager(BaseChangeManager):
         buffer_exposed: bool = False,
         buffer_masked: bool = False,
     ) -> None:
-        super(PColumnChangeManager, self).__init__(
+        super().__init__(
             slot,
             buffer_created,
             buffer_updated,

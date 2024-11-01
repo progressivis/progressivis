@@ -15,7 +15,7 @@ class Sink(Module):
     """
 
     def __init__(self, slot_name: str = "inp", **kwds: Any) -> None:
-        super(Sink, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.slot_name = slot_name
 
     def predict_step_size(self, duration: float) -> int:
@@ -24,7 +24,7 @@ class Sink(Module):
     def get_input_slot_multiple(self, name: Optional[str] = None) -> List[str]:
         if name is None:
             name = self.slot_name
-        return super(Sink, self).get_input_slot_multiple(name)
+        return super().get_input_slot_multiple(name)
 
     def prepare_run(self, run_number: int) -> None:
         "Switch from zombie to terminated, or update slots."

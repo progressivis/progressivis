@@ -134,7 +134,7 @@ class Histogram2D(Module):
         # If we have created data but no valid min/max, we can only wait
         if self._bounds and self.get_input_slot("table").created.any():
             return True
-        return super(Histogram2D, self).is_ready()
+        return super().is_ready()
 
     def get_bounds(self, min_slot: Slot, max_slot: Slot) -> Optional[Bounds2D]:
         min_slot.created.next()
@@ -325,7 +325,7 @@ class Histogram2D(Module):
         return "heatmap"
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
-        json = super(Histogram2D, self).to_json(short, with_speed)
+        json = super().to_json(short, with_speed)
         if short:
             return json
         return self.heatmap_to_json(json, short)

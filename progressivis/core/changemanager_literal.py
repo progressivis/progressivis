@@ -30,7 +30,7 @@ class LiteralChangeManager(BaseChangeManager):
         buffer_exposed: bool = False,
         buffer_masked: bool = False,
     ) -> None:
-        super(LiteralChangeManager, self).__init__(
+        super().__init__(
             slot,
             buffer_created,
             buffer_updated,
@@ -41,7 +41,7 @@ class LiteralChangeManager(BaseChangeManager):
         self._last_value: Any = None
 
     def reset(self, mid: str) -> None:
-        super(LiteralChangeManager, self).reset(mid)
+        super().reset(mid)
         self._last_value = None
 
     def compute_updates(self, data: Any) -> IndexUpdate:

@@ -51,7 +51,7 @@ class Max(Module):
         slot = self.get_input_slot("table")
         if slot is not None and slot.created.any():
             return True
-        return super(Max, self).is_ready()
+        return super().is_ready()
 
     def reset(self) -> None:
         if self.result is not None:

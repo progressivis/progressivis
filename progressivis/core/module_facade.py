@@ -75,7 +75,6 @@ class ProxiesImpl:
             name = proxy.output_name
         return proxy
 
-
     def __dir__(self) -> Iterable[str]:
         return self.facade.output_slot_names()
 
@@ -91,6 +90,7 @@ class OutputProxies(ProxiesImpl):
 
     def __getitem__(self, name: str) -> Slot:
         return self.__getattr__(name)
+
 
 class ChildProxies(ProxiesImpl):
     def __init__(self, facade: ModuleFacade):

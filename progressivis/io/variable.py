@@ -61,23 +61,23 @@ class Variable(Module):
     def predict_step_size(self, duration: float) -> int:
         return 1
 
-    async def from_input(self, input_: JSon, stop_iter: bool = False) -> str:
+    async def from_input(self, msg: JSon, stop_iter: bool = False) -> str:
         """
         stop_iter deactivates the module after the first event has been processed.
         After that, the module behaves as a ConstDict.
         It is particularly useful for writing tests.
         """
-        if not isinstance(input_, dict):
+        if not isinstance(msg, dict):
             raise ProgressiveError("Expecting a dictionary")
         last = PDict(self.result)  # shallow copy
-        values = input_
+        values = msg
         if self._translation is not None:
             res = {}
             for k, v in values.items():
                 for syn in self._translation[k]:
                     res[syn] = v
             values = res
-        for (k, v) in input_.items():
+        for (k, v) in msg.items():
             last[k] = v
         await self.scheduler().for_input(self)
         if self.result is None:

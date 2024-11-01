@@ -47,7 +47,7 @@ __all__ = [
     "Dataflow",
     "PIntSetChangeManager",
     "DictChangeManager",
-    "short_version",
+#    "short_version",
     "Slot",
     "SlotDescriptor",
     "Module",

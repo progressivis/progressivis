@@ -15,7 +15,7 @@ class Input(Module):
     schema = "{input: string}"
 
     def __init__(self, **kwds: Any) -> None:
-        super(Input, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
         table = PTable(name=None, dshape=Input.schema, create=True)
         self.result = table

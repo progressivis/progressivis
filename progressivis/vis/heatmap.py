@@ -56,7 +56,7 @@ class Heatmap(Module):
     schema = "{filename: string, time: int64}"
 
     def __init__(self, colormap: None = None, **kwds: Any) -> None:
-        super(Heatmap, self).__init__(output_required=False, **kwds)
+        super().__init__(output_required=False, **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.colormap = colormap
         self.default_step_size = 1
@@ -149,7 +149,7 @@ class Heatmap(Module):
         return "heatmap"
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
-        json = super(Heatmap, self).to_json(short, with_speed)
+        json = super().to_json(short, with_speed)
         if short:
             return json
         return self.heatmap_to_json(json, short)

@@ -15,7 +15,7 @@ class PColumnProxy(BasePColumn):
     "Proxy class for a column"
 
     def __init__(self, base: BasePColumn, index: IndexPTable) -> None:
-        super(PColumnProxy, self).__init__(name=base.name, base=base, index=index)
+        super().__init__(name=base.name, base=base, index=index)
 
     @property
     def chunks(self) -> Tuple[int, ...]:

@@ -101,7 +101,7 @@ class Histogram1D(Module):
     def is_ready(self) -> bool:
         if self._bounds and self.get_input_slot("table").created.any():
             return True
-        return super(Histogram1D, self).is_ready()
+        return super().is_ready()
 
     @process_slot("table", reset_cb="reset")
     @process_slot("min", "max", reset_if=False)
@@ -233,7 +233,7 @@ class Histogram1D(Module):
         return "histogram1d"
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
-        json = super(Histogram1D, self).to_json(short, with_speed)
+        json = super().to_json(short, with_speed)
         if short:
             return json
         return self._hist_to_json(json)

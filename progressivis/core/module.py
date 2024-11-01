@@ -52,18 +52,18 @@ if TYPE_CHECKING:
 
     Parameters = List[Tuple[str, np.dtype[Any], Any]]
 
-PColumns = Union[None, List[str], dict[str, List[str]]]
+PColumns = Union[None, List[str], Dict[str, List[str]]]
 PCols = Union[None, List[str]]
 PColsList = PCols
-PColsDict = Union[None, dict[str, List[str]]]
+PColsDict = Union[None, Dict[str, List[str]]]
 ModuleCb = Callable[["Module", int], None]
 ModuleCoro = Callable[["Module", int], Coroutine[Any, Any, Any]]
 ModuleProc = Union[ModuleCb, ModuleCoro]
 
 
-JSon = dict[str, Any]
+JSon = Dict[str, Any]
 # ReturnRunStep = Tuple[int, ModuleState]
-ReturnRunStep = dict[str, int]
+ReturnRunStep = Dict[str, int]
 
 
 logger = logging.getLogger(__name__)
@@ -344,11 +344,11 @@ class Module(metaclass=ABCMeta):
             sp = n * " "
             sp2 = (n + 4) * " "
             doclist.append(sp)
-            sd_type_name = (
-                sd.type.__name__
-                if sd.type is not None and hasattr(sd.type, "__name__")
-                else "None"
-            )
+            if sd.type is not None and hasattr(sd.type, "__name__"):
+                assert type(sd.type) is type
+                sd_type_name = sd.type.__name__
+            else:
+                sd_type_name = "None"
             doclist.append(f"{sd.name}: {sd_type_name}\n")
             no_defaults = []
             for k, v in sd_defs.items():
@@ -1654,10 +1654,10 @@ class ModuleFactory(dict[str, Module]):
     def scheduler(self) -> Scheduler:
         return self.data_module.scheduler()
 
-    def register(cls, name: str, mod_class: Type[Module]) -> None:
-        if name in cls.registry:
+    def register(self, name: str, mod_class: Type[Module]) -> None:
+        if name in self.registry:
             raise KeyError(f"Class name {name} already registered")
-        cls.registry[name] = mod_class
+        self.registry[name] = mod_class
 
     def get_class(self, name: str) -> Type[Module]:
         return self.registry[name]

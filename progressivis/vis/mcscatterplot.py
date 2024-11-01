@@ -128,7 +128,7 @@ class MCScatterPlot(Module):
         **kwds: Any,
     ) -> None:
         """Multiclass ..."""
-        super(MCScatterPlot, self).__init__(output_required=False, **kwds)
+        super().__init__(output_required=False, **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self._classes = classes  # TODO: check it ...
         self._x_label = x_label
@@ -356,7 +356,7 @@ class MCScatterPlot(Module):
         return self._return_run_step(self.state_blocked, steps_run=0)
 
     def run(self, run_number: int) -> None:
-        super(MCScatterPlot, self).run(run_number)
+        super().run(run_number)
         if self._ipydata:
             return
         if self._json_cache is not None:
@@ -371,7 +371,7 @@ class MCScatterPlot(Module):
 
     def _to_json_impl(self, short: bool = False, with_speed: bool = True) -> JSon:
         self.image = None
-        json = super(MCScatterPlot, self).to_json(short, with_speed=with_speed)
+        json = super().to_json(short, with_speed=with_speed)
         if short:
             return json
         return self.make_json(json)

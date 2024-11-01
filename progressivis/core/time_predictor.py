@@ -32,7 +32,7 @@ class TimePredictor:
 
 class ConstantTimePredictor(TimePredictor):
     def __init__(self, t: int) -> None:
-        super(ConstantTimePredictor, self).__init__()
+        super().__init__()
         self.t = t
 
     def predict(self, duration: float, default_step: int) -> int:
@@ -41,7 +41,7 @@ class ConstantTimePredictor(TimePredictor):
 
 class LinearTimePredictor(TimePredictor):
     def __init__(self) -> None:
-        super(LinearTimePredictor, self).__init__()
+        super().__init__()
         self.a: float = 0
         self.calls: int = 0
 
@@ -81,9 +81,9 @@ class LinearTimePredictor(TimePredictor):
                 self.name,
             )
 
-    def predict(self, duration: float, default: int) -> int:
+    def predict(self, duration: float, default_step: int) -> int:
         if self.a == 0:
-            return default
+            return default_step
         # TODO account for the confidence interval and take min of the 95% CI
         steps = int(np.max([0, np.ceil(duration * self.a)]))
         logger.debug(

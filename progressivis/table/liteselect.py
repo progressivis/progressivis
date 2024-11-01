@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 @def_output("result", PTableSelectedView)
 class LiteSelect(Module):
     def __init__(self, **kwds: Any) -> None:
-        super(LiteSelect, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.default_step_size = 1000
 
     def run_step(

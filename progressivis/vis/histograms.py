@@ -28,7 +28,7 @@ class Histograms(Module):
     "Visualize a table with multiple histograms"
 
     def __init__(self, columns: Optional[List[str]] = None, **kwds: Any) -> None:
-        super(Histograms, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.default_step_size = 1
         self._columns = columns
@@ -43,7 +43,7 @@ class Histograms(Module):
             return self.get_input_slot("min").data()
         if name == "max":
             return self.get_input_slot("max").data()
-        return super(Histograms, self).get_data(name, hint)
+        return super().get_data(name, hint)
 
     def predict_step_size(self, duration: float) -> int:
         return 1
@@ -97,7 +97,7 @@ class Histograms(Module):
         return "histograms"
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
-        json = super(Histograms, self).to_json(short, with_speed)
+        json = super().to_json(short, with_speed)
         if short:
             return json
         return self._histograms_to_json(json)

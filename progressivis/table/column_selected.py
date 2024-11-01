@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class PColumnSelectedView(PColumnProxy):
     def __init__(self, base: BasePColumn, index: IndexPTable):
-        super(PColumnSelectedView, self).__init__(base, index=index)
+        super().__init__(base, index=index)
 
     @property
     def shape(self) -> Tuple[int, ...]:

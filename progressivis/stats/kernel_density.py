@@ -26,7 +26,7 @@ class KernelDensity(Module):
         self._json_cache: JSon = {}
         self._inserted: int = 0
         self._lately_inserted: int = 0
-        super(KernelDensity, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.tags.add(self.TAG_VISUALIZATION)
 
     def run_step(
@@ -72,7 +72,7 @@ class KernelDensity(Module):
         return "knnkde"
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
-        json = super(KernelDensity, self).to_json(short, with_speed)
+        json = super().to_json(short, with_speed)
         if short:
             return json
         return self.knnkde_to_json(json)

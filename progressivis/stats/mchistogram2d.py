@@ -44,7 +44,7 @@ class MCHistogram2D(Module):
     def __init__(
         self, x_column: str, y_column: str, with_output: bool = True, **kwds: Any
     ) -> None:
-        super(MCHistogram2D, self).__init__(dataframe_slot="data", **kwds)
+        super().__init__(dataframe_slot="data", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column
         self.y_column = y_column
@@ -75,7 +75,7 @@ class MCHistogram2D(Module):
         # If we have created data but no valid min/max, we can only wait
         if self._bounds and self.get_input_slot("data").created.any():
             return True
-        return super(MCHistogram2D, self).is_ready()
+        return super().is_ready()
 
     def get_delta(
         self, xmin: float, xmax: float, ymin: float, ymax: float
@@ -339,7 +339,7 @@ class MCHistogram2D(Module):
         return "heatmap"
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
-        json = super(MCHistogram2D, self).to_json(short, with_speed=with_speed)
+        json = super().to_json(short, with_speed=with_speed)
         if short:
             return json
         return self.heatmap_to_json(json, short)

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 class GroupImpl(Group):
     def __init__(self, name: str, parent: Optional[GroupImpl] = None):
-        super(GroupImpl, self).__init__()
+        super().__init__()
         self._name = name
         self.parent = parent
         self.dict: Dict[str, Union[Dataset, Group]] = {}

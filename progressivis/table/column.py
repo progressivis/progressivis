@@ -54,7 +54,7 @@ class PColumn(BasePColumn):
                 if indices and length != len(indices):
                     raise ValueError("Bad index length (%d/%d)", len(indices), length)
             index = IndexPTable()
-        super(PColumn, self).__init__(name, index, base=base)
+        super().__init__(name, index, base=base)
         if storagegroup is None:
             if index is not None and hasattr(index, "storagegroup"):
                 # i.e. isinstance(index, PTable)
@@ -311,7 +311,7 @@ class PColumn(BasePColumn):
             #                source_sel = fancy_to_mask(source_sel, self.shape)
             self.dataset.read_direct(array, source_sel, dest_sel)
         else:
-            super(PColumn, self).read_direct(array, source_sel, dest_sel)
+            super().read_direct(array, source_sel, dest_sel)
 
     def __setitem__(self, index: Index, val: Any) -> None:
         assert self.dataset is not None

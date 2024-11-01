@@ -77,7 +77,7 @@ class Merge(Module):
         sort=False,suffixes=('_x', '_y'), copy=True,
         indicator=False)
         """
-        super(Merge, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.merge_kwds = filter_kwds(kwds, merge)
         self._context: Dict[str, Any] = {}
 

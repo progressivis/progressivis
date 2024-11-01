@@ -44,7 +44,7 @@ class ProgressivisBlueprint(web.Application):
     "Blueprint for ProgressiVis"
 
     def __init__(self, *args, **kwargs):
-        super(ProgressivisBlueprint, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._sids_for_path = {}
         self._run_number_for_sid = {}
         self.scheduler = None

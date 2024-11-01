@@ -200,26 +200,26 @@ class Slot:
         return not (self == other)
 
     @staticmethod
-    def compare(self: Slot, other: Slot) -> int:
-        if self == other:
+    def compare(this: Slot, other: Slot) -> int:
+        if this == other:
             return 0
         if (
-            self.output_name < other.output_name
-            or self.output_module.name < other.output_module.name
+            this.output_name < other.output_name
+            or this.output_module.name < other.output_module.name
             or (
-                self.input_name is not None
+                this.input_name is not None
                 and other.input_name is not None
-                and self.input_name < other.input_name
+                and this.input_name < other.input_name
             )
             or (
-                self.input_module is not None
+                this.input_module is not None
                 and other.input_module is not None
-                and self.input_module.name < other.input_module.name
+                and this.input_module.name < other.input_module.name
             )
             or (
-                self.original_name is not None
+                this.original_name is not None
                 and other.original_name is not None
-                and self.original_name < other.original_name
+                and this.original_name < other.original_name
             )
         ):
             return -1

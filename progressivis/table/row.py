@@ -47,10 +47,10 @@ class Row(MutableMapping[str, Any]):
     """
 
     def __init__(self, table: BasePTable, index: Optional[int] = None) -> None:
-        super(Row, self).__setattr__("table", table)
+        super().__setattr__("table", table)
         if index is not None and not isinstance(index, integer_types):
             raise ValueError('index should be an integer, not "%s"' % str(index))
-        super(Row, self).__setattr__("index", index)
+        super().__setattr__("index", index)
         self.index: Optional[int]
         self.table: BasePTable
 

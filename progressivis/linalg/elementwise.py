@@ -88,7 +88,7 @@ def info() -> None:
             )
 class Unary(Module):
     def __init__(self, ufunc: UFunc, **kwds: Any) -> None:
-        super(Unary, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._ufunc: UFunc = ufunc
         self._kwds = {}
 
@@ -201,7 +201,7 @@ class ColsBinary(Module):
         cols_out: Optional[List[str]] = None,
         **kwds: Any,
     ) -> None:
-        super(ColsBinary, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._ufunc = ufunc
         self._first: List[str] = []
         self._second: List[str] = []
@@ -428,7 +428,7 @@ class Reduce(Module):
         self, ufunc: np.ufunc, **kwds: Any
     ) -> None:
         assert ufunc.nin == 2
-        super(Reduce, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._ufunc = getattr(ufunc, "reduce")
         self._kwds = kwds
 
@@ -548,7 +548,7 @@ def generate_stubs(out: Any = sys.stdout) -> None:
         print(
             f"""class {name}({super}):
     def __init__(self, *args: Any, **kwds: Any):
-        super({name}, self).__init__(np.{k}, **kwds)
+        super().__init__(np.{k}, **kwds)
 
 """,
             file=out,
@@ -560,7 +560,7 @@ def generate_stubs(out: Any = sys.stdout) -> None:
         print(
             f"""class {name}({super}):
     def __init__(self, *args: Any, **kwds: Any):
-        super({name}, self).__init__(np.{k}, **kwds)
+        super().__init__(np.{k}, **kwds)
 
 """,
             file=out,
@@ -572,7 +572,7 @@ def generate_stubs(out: Any = sys.stdout) -> None:
         print(
             f"""class {name}({super}):
     def __init__(self, *args: Any, **kwds: Any):
-        super({name}, self).__init__(np.{k}, **kwds)
+        super().__init__(np.{k}, **kwds)
 
 """,
             file=out,
@@ -584,7 +584,7 @@ def generate_stubs(out: Any = sys.stdout) -> None:
         print(
             f"""class {name}({super}):
     def __init__(self, *args: Any, **kwds: Any):
-        super({name}, self).__init__(np.{k}, **kwds)
+        super().__init__(np.{k}, **kwds)
 
 """,
             file=out,

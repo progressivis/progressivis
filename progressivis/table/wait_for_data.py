@@ -21,7 +21,7 @@ class WaitForData(Module):
     def __init__(
         self, proc: Callable[[Scheduler, BasePTable], None], **kwds: Any
     ) -> None:
-        super(WaitForData, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._proc = proc
 
     def run_step(

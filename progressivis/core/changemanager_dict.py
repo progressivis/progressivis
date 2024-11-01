@@ -25,7 +25,7 @@ class DictChangeManager(BaseChangeManager):
         buffer_exposed: bool = False,
         buffer_masked: bool = False,
     ) -> None:
-        super(DictChangeManager, self).__init__(
+        super().__init__(
             slot,
             buffer_created,
             buffer_updated,
@@ -39,7 +39,7 @@ class DictChangeManager(BaseChangeManager):
         #     data.changes = PTableChanges()
 
     def reset(self, mid: str) -> None:
-        super(DictChangeManager, self).reset(mid)
+        super().reset(mid)
         self._last_dict = None
 
     def update(self, run_number: int, data: Any, mid: str) -> None:
