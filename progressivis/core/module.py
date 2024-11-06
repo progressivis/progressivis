@@ -345,7 +345,6 @@ class Module(metaclass=ABCMeta):
             sp2 = (n + 4) * " "
             doclist.append(sp)
             if sd.type is not None and hasattr(sd.type, "__name__"):
-                assert type(sd.type) is type
                 sd_type_name = sd.type.__name__
             else:
                 sd_type_name = "None"
