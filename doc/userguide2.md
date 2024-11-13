@@ -1,3 +1,4 @@
+(basic-variant)=
 ## Dealing with Noisy Data
 
 Big data is almost always noisy. The techniques that work on small data
@@ -41,6 +42,7 @@ This is due to taxis driving to Florida (bottom right, sometimes invisible on hi
 The `Quantiles` module allows getting rid of outliers that always exist in real data, that is always noisy.
 
 Alternatively, you may know the boundaries of NYC and specify them:
+(filtering-variant)=
 ```python
 from progressivis import CSVLoader, Histogram2D, ConstDict, Heatmap, PDict
 from dataclasses import dataclass

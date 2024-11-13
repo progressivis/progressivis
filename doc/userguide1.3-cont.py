@@ -40,7 +40,7 @@ def observer(_):
         long_min, long_max = long_slider.value
         lat_min, lat_max = lat_slider.value
         await var_min.from_input({col_x: long_min, col_y: lat_min})
-        await var_up.from_input({col_x: long_max, col_y: lat_max})
+        await var_max.from_input({col_x: long_max, col_y: lat_max})
     aio.create_task(_coro())
 long_slider.observe(observer, "value")
 lat_slider.observe(observer, "value")

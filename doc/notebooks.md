@@ -40,6 +40,40 @@ In addition, the graph also shows you when a widget needs attention or is finish
 
 All the sections of this documentation use the DAG Widget to provide a high-level overview of progressive pipelines. The detailed graph visualization used in the [user guide](userguide) could be used as well, but it would give too much details on the topology of the progressive dataflow for a high-level overview.
 
+## Working with chaining widgets (user guide)
+
+Let's return to the scenario developed in the userguide, starting with the [basic variant](basic-variant).
+
+By combining two _CWs_: `CSVLoader` and `Heatmap`, we'll reproduce the same behaviour (i.e. which doesn't deal with the bounds issue).
+
+---
+**NOTE:**
+The CSVLoader features advanced configuration mechanisms (column selection, retyping, filtering etc.) via the CSV sniffer, which is described with more details [here](sniffer).
+
+---
+
+![](viz_images/csv_heatmap.png)
+
+To go further and take into account the (assumed known) bounds like [the second snippet in the user guide](filtering-variant), we can use the filtering capabilities available to the CSV sniffer this way:
+
+![](viz_images/filtered_csv_heatmap.png)
+
+then renew the operation for `pickup_latitude`, click **Start loading csv** button, chain with a `Heatmap` widget, configure it with the appropriate columns and you get the expected result:
+
+![](viz_images/single_heatmap.png)
+
+But if you don't know the bounds a priori, or if you want to control them dynamically, you can simply implement the third approach in the guide ([see the Python code here](range-query-2d)) by assembling predefined widgets.
+
+In concrete terms, instead of connecting Heatmap to the CSVLoader output, you need to insert a RangeQuery2D widget between the two widgets already mentioned, this way:
+
+![](viz_images/csv_range_query_heatmap.png)
+
+---
+**NOTE:**
+The role of the _Freeze_ button is related to the replay capabilities of the progressive notebooks and it is described [here](freeze-role).
+
+---
+
 ## Chaining widgets list
 
 We give a summary of the chaining widgets available here.
@@ -75,6 +109,7 @@ Where:
 
 ![](viz_images/sniffer.png)
 
+(sniffer)=
 ##### The Sniffer
 
 The **sniffer**, among other things, allows you to customize parsing options, select the desired subset of columns and type them.
@@ -542,6 +577,7 @@ After that, the scenario is built as explained [above](create-scenario), with an
 
 ![](viz_images/recording_csv_freeze.png)
 
+(freeze-role)=
 When the freeze checkbox has been checked in a widget (here CSV Loader) during registration, all settings made in this widget will be integrated into the record.
 Thus, when the record is replayed, these settings will be applied directly, without redisplaying the "frozen" widget.
 

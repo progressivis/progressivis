@@ -148,6 +148,7 @@ heatmap.on_after_run(_after_run)  # Install the callback
 
 On the other direction, an external function can trigger changes in a ProgressiVis program in a few ways. There is a low-level mechanisms based on the method `Module.from_input(msg)` that allows communicating with modules. The module `Variable` is the simplest module designed to handle external events through `from_input`. It implementation of `from_input` expects a dictionary that is then propagated as data in its output slot in the progressive program. Most of the interactions proposed in ProgressiVis are done though `Variable` modules. Reusing the same declarations as in the examples above, we can add dynamic filtering to the data being progressively loaded with the following code:
 
+(range-query-2d)=
 ```{code-block}
 :linenos:
 from progressivis import (
