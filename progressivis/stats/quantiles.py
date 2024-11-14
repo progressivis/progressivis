@@ -2,13 +2,21 @@ from __future__ import annotations
 
 import logging
 
-from ..core.utils import indices_len, fix_loc
-from ..core.module import ReturnRunStep, def_input, def_output, document
-from ..core.module import Module
-from ..table.table import PTable
-from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
-
+from ..table.api import (
+    PTableSelectedView, PTable
+)
+from progressivis.utils.api import PDict
+from progressivis.core.api import (
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    document,
+    PIntSet,
+    indices_len,
+    fix_loc,
+)
 from typing import Dict, Any, List, Set
 
 from datasketches import kll_floats_sketch
@@ -26,6 +34,7 @@ DEBUG = False
     PDict,
     doc=("Return the size processed. Use parametrized slots to access quantiles."),
 )
+@def_output("table", PTableSelectedView, required=False, doc="Return a view on the input table")
 class Quantiles(Module):
     """
     Maintain a sketch data structure to get quantile values for every column
@@ -47,6 +56,7 @@ class Quantiles(Module):
         self._klls : List[kll_floats_sketch] = []
         self._cache: Dict[float, PDict] = {}
         self._valid: Set[float] = set()
+        self._maintain_table_out = False
 
     def is_ready(self) -> bool:
         if self.get_input_slot("table").created.any():
@@ -54,14 +64,26 @@ class Quantiles(Module):
         return super().is_ready()
 
     def reset(self) -> None:
-        self.result = None
+        if self.result is not None:
+            self.result.clear()
+        if self.table is not None:
+            self.table.selection = PIntSet([])
         self._klls = []
         self._cache = {}
         self._valid.clear()
 
+    def starting(self) -> None:
+        super().starting()
+        opt_slot = self.get_output_slot("table")
+        if opt_slot:
+            logger.debug("Maintaining output table")
+            self._maintain_table_out = True
+
     def get_data(self, name: str, hint: Any = None) -> Any:
         """Return the data of the named output slot.
         """
+        if name == "table":
+            return self.table
         if self.result is None:
             return None
         if hint is not None and name == "result":
@@ -102,7 +124,9 @@ class Quantiles(Module):
     ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
-            indices = ctx.table.created.next(length=step_size)  # returns a slice
+            if self._maintain_table_out and self.table is None:
+                self.table = PTableSelectedView(ctx.table.data(), PIntSet([]))
+            indices = ctx.table.created.next(length=step_size, as_slice=False)
             fixed_indices = fix_loc(indices)
             steps = indices_len(indices)
             df = self.filter_slot_columns(ctx.table, fix_loc(indices))
@@ -116,4 +140,7 @@ class Quantiles(Module):
                 self._klls[i].update(column)  # type: ignore
                 self.result[k] = self._klls[i].n
             self._valid.clear()
+            if self._maintain_table_out:
+                assert self.table is not None
+                self.table.selection |= indices
             return self._return_run_step(self.next_state(ctx.table), steps)
