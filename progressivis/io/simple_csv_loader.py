@@ -4,6 +4,9 @@ import logging
 import pandas as pd
 import numpy as np
 from collections import defaultdict
+import os
+import io
+import fsspec  # type: ignore
 from .. import ProgressiveError
 from ..core.docstrings import FILENAMES_DOC, RESULT_DOC
 from ..utils.errors import ProgressiveStopIteration
@@ -23,7 +26,6 @@ from ..core.utils import (
 )
 from ..utils.psdict import PDict
 from ..core.pintset import PIntSet
-
 from typing import (Dict, Any, Type, Callable, Optional,
                     Tuple, Union, Sequence, TYPE_CHECKING, cast)
 
@@ -31,11 +33,10 @@ from pandas._typing import ReadCsvBuffer
 if TYPE_CHECKING:
     from ..core.module import ModuleState
     from ..stats.utils import SimpleImputer
-    import io
-
 
 logger = logging.getLogger(__name__)
 
+FSSPEC_HTTPS = fsspec.filesystem('https')
 
 @document
 @def_input("filenames", PTable, required=False, doc=FILENAMES_DOC)
@@ -115,6 +116,10 @@ class SimpleCSVLoader(Module):
         self._input_encoding: Optional[str] = None
         self._input_compression: Optional[str] = None
         self._input_size = 0  # length of the file or input stream when available
+        self._total_size = 0
+        self._n_files = 0
+        self._needs_refresh = True
+        self._row_len = 0
         self._file_mode = False
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
         self._imputer = imputer
@@ -179,6 +184,8 @@ class SimpleCSVLoader(Module):
         self._input_encoding = encoding
         self._input_compression = compression
         self._input_size = size
+        if not self._total_size:
+            self._total_size = size
         self.csv_kwds["encoding"] = encoding
         self.csv_kwds["compression"] = compression
         self._last_opened = filepath
@@ -198,12 +205,10 @@ class SimpleCSVLoader(Module):
         self._input_size = 0
 
     def get_progress(self) -> Tuple[int, int]:
-        if self._input_size == 0:
+        if self._total_size == 0 or self._row_len == 0 or self.result is None:
             return (0, 0)
-        if self._input_stream is None:
-            return (0, 0)
-        pos = self._input_stream.tell()
-        return (pos, self._input_size)
+        total_rows = self._total_size // self._row_len
+        return (len(self.result), total_rows)
 
     def validate_parser(self, run_number: int) -> ModuleState:
         if self.parser is None:
@@ -249,6 +254,35 @@ class SimpleCSVLoader(Module):
                         self.parser = None
                         # fall through
         return self.state_ready
+
+    def refresh_total_size(self) -> None:
+        if not self.has_input_slot("filenames"):
+            self._needs_refresh = False
+            return
+        fn_slot = self.get_input_slot("filenames")
+        df = fn_slot.data()
+        if df is None or len(df) == self._n_files:
+            return
+        total_size = 0
+        for fname in df["filename"].loc[:]:
+            if fname.startswith("https://"):
+                total_size += FSSPEC_HTTPS.size(fname)
+            elif fname.startswith("buffer://"):
+                continue  # TODO: decide if buffer:// is still useful
+            else:
+                file_stats = os.stat(fname)
+                total_size += file_stats.st_size
+        self._total_size = total_size
+
+    def compute_row_len(self, df: pd.DataFrame) -> None:
+        if len(df) > 1000:  # we suppose that a 1000 rows sample it's enough
+            df = df.loc[:1000, :]
+        inp = io.StringIO() if self._input_compression is None else io.BytesIO()
+        df.to_csv(inp, index=False, compression=self._input_compression)  # type: ignore
+        buff = inp.getvalue()
+        # if is_str(buff):  # more precise but suppose a full copy, we prefer to avoid it
+        #     buff = buff.encode()
+        self._row_len = len(buff) // len(df)
 
     def recovering(self, step_size: int) -> pd.DataFrame:
         def _reopen_last() -> Any:
@@ -356,6 +390,8 @@ class SimpleCSVLoader(Module):
             df: pd.DataFrame = self.parser.read(
                 step_size
             )  # raises StopIteration at EOF
+            if not self._row_len:
+                self.compute_row_len(df)
         except StopIteration:
             self.close()
             if self.has_input_slot("filenames"):
@@ -398,6 +434,8 @@ class SimpleCSVLoader(Module):
                     self._imputer.init(df.dtypes)
             else:
                 self.result.append(df)
+            if self._needs_refresh:
+                self.refresh_total_size()
             if self._imputer is not None:
                 self._imputer.add_df(df)
         return self._return_run_step(self.state_ready, steps_run=creates)
