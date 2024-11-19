@@ -67,8 +67,8 @@ logger = logging.getLogger(__name__)
 @def_output(
     "result",
     PTable,
-    datashape={"array": np.ndarray, "cmin": float, "cmax": float,"xmin": float,
-               "xmax": float,"ymin": float, "ymax": float, "time": int},
+    datashape={"array": np.ndarray, "cmin": float, "cmax": float, "xmin": float,
+               "xmax": float, "ymin": float, "ymax": float, "time": int},
     doc="the output table")
 class Histogram2D(Module):
     """
@@ -169,10 +169,14 @@ class Histogram2D(Module):
         if xdelta < 0:
             dx = xmax - xmin
             xdelta = dx * xdelta / -100.0
+            if np.isnan(xdelta):
+                xdelta = 0.
             logger.info("xdelta is %f", xdelta)
         if ydelta < 0:
             dy = ymax - ymin
             ydelta = dy * ydelta / -100.0
+            if np.isnan(ydelta):
+                ydelta = 0.
             logger.info("ydelta is %f", ydelta)
         return (xdelta, ydelta)
 
