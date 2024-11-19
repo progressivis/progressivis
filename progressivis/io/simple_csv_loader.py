@@ -7,6 +7,9 @@ from collections import defaultdict
 import os
 import io
 import fsspec  # type: ignore
+import bz2
+import lzma
+import zlib
 from .. import ProgressiveError
 from ..core.docstrings import FILENAMES_DOC, RESULT_DOC
 from ..utils.errors import ProgressiveStopIteration
@@ -38,6 +41,61 @@ logger = logging.getLogger(__name__)
 
 FSSPEC_HTTPS = fsspec.filesystem('https')
 
+class SpyIO:
+    def __init__(self, stream: Any, compression: str | None, spy: bool = True) -> None:
+        self._stream = stream
+        self._compression = compression
+        self._spy = spy
+        self._buffer: io.BytesIO | io.StringIO | None = None
+
+    def read(self, n: int = -1) -> Any:
+        content = self._stream.read(n)
+        if self._spy:
+            if self._buffer is None:
+                self._buffer = io.StringIO() if is_str(content) else io.BytesIO()
+            self._buffer.write(content)
+        return content
+
+    def seek(self, n: int, whence: int = os.SEEK_SET) -> None:
+        self._stream.seek(n, whence)
+
+    def tell(self) -> Any:
+        return self._stream.tell()
+
+    def close(self) -> None:
+        self._stream.close()
+
+    @property
+    def seekable(self) -> Any:
+        return self._stream.seekable
+
+    def compute_row_len(self) -> int:
+        self._spy = False
+        assert self._buffer is not None
+        content: str | bytes = self._buffer.getvalue()
+        self._buffer = None
+        if isinstance(content, str):  # TODO: check if this case is possible
+            assert self._compression is None
+            n_rows = content.count("\n")
+            return int(len(content) // n_rows)
+        assert isinstance(content, bytes)
+        if self._compression is None:
+            decompressed = content
+        elif self._compression == "bz2":
+            bz2_ = bz2.BZ2Decompressor()
+            decompressed = bz2_.decompress(content)
+        elif self._compression == "xz":
+            xz_ = lzma.LZMADecompressor()
+            decompressed = xz_.decompress(content)
+        elif self._compression == "gzip":
+            gz_ = zlib.decompressobj(wbits = zlib.MAX_WBITS | 16)
+            decompressed = gz_.decompress(content)
+        else:  # TODO: implement "zip" case if possible
+            raise ValueError(f"Unknown compression {self._compression}")
+        n_rows = decompressed.count(b"\n")
+        return int(len(content) // n_rows)
+
+
 @document
 @def_input("filenames", PTable, required=False, doc=FILENAMES_DOC)
 @def_output("result", PTable, doc=RESULT_DOC)
@@ -46,6 +104,7 @@ FSSPEC_HTTPS = fsspec.filesystem('https')
                                                      " = <invalid-value>``"))
 @def_output("missing", PDict, required=False, doc=("provides missing values as:"
                                                    " ``missing[column] = <set-of-ids>``"))
+
 class SimpleCSVLoader(Module):
     """
     This module reads comma-separated values (csv) files progressively into a {{PTable}}.
@@ -110,9 +169,7 @@ class SimpleCSVLoader(Module):
         if nn(filter_) and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
         self._filter: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = filter_
-        self._input_stream: Optional[
-            io.IOBase
-        ] = None  # stream that returns a position through the 'tell()' method
+        self._input_stream: SpyIO | None = None
         self._input_encoding: Optional[str] = None
         self._input_compression: Optional[str] = None
         self._input_size = 0  # length of the file or input stream when available
@@ -170,7 +227,7 @@ class SimpleCSVLoader(Module):
         "Return True if this module brings new data"
         return True
 
-    def open(self, filepath: Any) -> io.IOBase:
+    def open(self, filepath: Any) -> SpyIO:
         if nn(self._input_stream):
             self.close()
         compression: Optional[str] = _infer_compression(filepath, self._compression)
@@ -180,7 +237,7 @@ class SimpleCSVLoader(Module):
         (istream, encoding, compression, size) = filepath_to_buffer(
             filepath, encoding=self._encoding, compression=compression
         )
-        self._input_stream = istream
+        self._input_stream = SpyIO(istream, compression)
         self._input_encoding = encoding
         self._input_compression = compression
         self._input_size = size
@@ -189,7 +246,7 @@ class SimpleCSVLoader(Module):
         self.csv_kwds["encoding"] = encoding
         self.csv_kwds["compression"] = compression
         self._last_opened = filepath
-        return istream
+        return self._input_stream #istream
 
     def close(self) -> None:
         if self._input_stream is None:
@@ -273,16 +330,6 @@ class SimpleCSVLoader(Module):
                 file_stats = os.stat(fname)
                 total_size += file_stats.st_size
         self._total_size = total_size
-
-    def compute_row_len(self, df: pd.DataFrame) -> None:
-        if len(df) > 1000:  # we suppose that a 1000 rows sample it's enough
-            df = df.loc[:1000, :]
-        inp = io.StringIO() if self._input_compression is None else io.BytesIO()
-        df.to_csv(inp, index=False, compression=self._input_compression)  # type: ignore
-        buff = inp.getvalue()
-        # if is_str(buff):  # more precise but suppose a full copy, we prefer to avoid it
-        #     buff = buff.encode()
-        self._row_len = len(buff) // len(df)
 
     def recovering(self, step_size: int) -> pd.DataFrame:
         def _reopen_last() -> Any:
@@ -391,7 +438,9 @@ class SimpleCSVLoader(Module):
                 step_size
             )  # raises StopIteration at EOF
             if not self._row_len:
-                self.compute_row_len(df)
+                assert self._input_stream is not None
+                self._row_len = self._input_stream.compute_row_len()
+
         except StopIteration:
             self.close()
             if self.has_input_slot("filenames"):
