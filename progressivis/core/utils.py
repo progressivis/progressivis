@@ -3,6 +3,9 @@ from __future__ import annotations
 import os
 import os.path
 import io
+import bz2
+import zlib
+import lzma
 import tempfile
 import json as js
 import re
@@ -784,6 +787,28 @@ def _infer_compression(
     valid = ["infer", "None"] + sorted(_compression_to_extension)
     msg += "\nValid compression types are {}".format(valid)
     raise ValueError(msg)
+
+
+def estimate_row_size(filepath: str, length: int = 1_000_000) -> tuple[int, int]:
+    compression: str | None = _infer_compression(filepath, "infer")
+    stream, encoding, compression, size = filepath_to_buffer(
+        filepath, encoding=None, compression=compression
+    )
+    buff = stream.read(length)
+    if compression is None:
+        decoded = buff
+    elif compression == "bz2":
+        decoded = bz2.BZ2Decompressor().decompress(buff)
+    elif compression == "xz":
+        decoded = lzma.LZMADecompressor().decompress(buff)
+    elif compression == "gzip":
+        decoded = zlib.decompressobj(wbits=zlib.MAX_WBITS | 16).decompress(buff)
+    else:
+        raise ValueError(f"Unknown compression {compression}")
+    n_buff_rows = decoded.count(b"\n")
+    row_len = len(buff) // n_buff_rows
+    n_rows = size // row_len
+    return n_rows, row_len
 
 
 def get_physical_base(t: Any) -> Any:
