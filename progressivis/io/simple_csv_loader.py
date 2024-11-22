@@ -26,27 +26,47 @@ from ..core.utils import (
 )
 from ..utils.psdict import PDict
 from ..core.pintset import PIntSet
-from typing import (Dict, Any, Type, Callable, Optional,
-                    Tuple, Union, Sequence, TYPE_CHECKING, cast)
+from typing import (
+    Dict,
+    Any,
+    Type,
+    Callable,
+    Optional,
+    Tuple,
+    Union,
+    Sequence,
+    TYPE_CHECKING,
+    cast,
+)
 
 from pandas._typing import ReadCsvBuffer
+
 if TYPE_CHECKING:
     from ..core.module import ModuleState
     from ..stats.utils import SimpleImputer
 
 logger = logging.getLogger(__name__)
 
-FSSPEC_HTTPS = fsspec.filesystem('https')
+FSSPEC_HTTPS = fsspec.filesystem("https")
 
 
 @document
 @def_input("filenames", PTable, required=False, doc=FILENAMES_DOC)
 @def_output("result", PTable, doc=RESULT_DOC)
-@def_output("anomalies", PDict, required=False, doc=("provides invalid values"
-                                                     " as: ``anomalies[id][column]"
-                                                     " = <invalid-value>``"))
-@def_output("missing", PDict, required=False, doc=("provides missing values as:"
-                                                   " ``missing[column] = <set-of-ids>``"))
+@def_output(
+    "anomalies",
+    PDict,
+    required=False,
+    doc=(
+        "provides invalid values" " as: ``anomalies[id][column]" " = <invalid-value>``"
+    ),
+)
+@def_output(
+    "missing",
+    PDict,
+    required=False,
+    doc=("provides missing values as:" " ``missing[column] = <set-of-ids>``"),
+)
 class SimpleCSVLoader(Module):
     """
     This module reads comma-separated values (csv) files progressively into a {{PTable}}.
@@ -54,6 +74,7 @@ class SimpleCSVLoader(Module):
     `anomalies` and `missing` output slots.
     Internally it uses :func:`pandas.read_csv`.
     """
+
     def __init__(
         self,
         filepath_or_buffer: Optional[Any] = None,
@@ -205,22 +226,34 @@ class SimpleCSVLoader(Module):
         self._input_size = 0
 
     def get_progress(self) -> Tuple[int, int]:
-        if self._total_size == 0 or self._total_input_size == 0 or self._input_stream is None:
+        if (
+            self._total_size == 0
+            or self._total_input_size == 0
+            or self.result is None
+            or self._input_stream is None
+        ):
             return self._last_progress
         pos = self._input_stream.tell()
-        self._last_progress = self._total_input_size + pos, self._total_size
+        length = len(self.result)
+        if length <= 0:
+            return self._last_progress
+        estimated_row_size = (self._total_input_size + pos) / length
+        estimated_size = int(self._total_size / estimated_row_size)
+        self._last_progress = length, estimated_size
         return self._last_progress
 
     def validate_parser(self, run_number: int) -> ModuleState:
         if self.parser is None:
             if nn(self.filepath_or_buffer) and self.has_input_slot("filenames"):
-                raise ProgressiveError("'filepath_or_buffer' parameter and"
-                                       " 'filenames' slot cannot both be defined ")
+                raise ProgressiveError(
+                    "'filepath_or_buffer' parameter and"
+                    " 'filenames' slot cannot both be defined "
+                )
             if nn(self.filepath_or_buffer):
                 try:
                     self.parser = pd.read_csv(
                         cast(ReadCsvBuffer[str], self.open(self.filepath_or_buffer)),
-                        **self.csv_kwds
+                        **self.csv_kwds,
                     )
                 except IOError as e:
                     logger.error("Cannot open file %s: %s", self.filepath_or_buffer, e)
@@ -247,9 +280,10 @@ class SimpleCSVLoader(Module):
                     assert "chunksize" in self.csv_kwds
                     assert isinstance(self.csv_kwds["chunksize"], int)
                     try:
-                        self.parser = pd.read_csv(cast(ReadCsvBuffer[str],
-                                                       self.open(filename)),
-                                                  **self.csv_kwds)
+                        self.parser = pd.read_csv(
+                            cast(ReadCsvBuffer[str], self.open(filename)),
+                            **self.csv_kwds,
+                        )
                     except IOError as e:
                         logger.error("Cannot open file %s: %s", filename, e)
                         self.parser = None
