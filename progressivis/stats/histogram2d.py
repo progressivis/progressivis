@@ -20,9 +20,16 @@ import numpy as np
 
 import logging
 
-from typing import Optional, Tuple, cast, Any
+from typing import Optional, Tuple, cast, Any, NamedTuple
 
-Bounds2D = Tuple[float, float, float, float]
+
+# Bounds2D = Tuple[float, float, float, float]
+class Bounds2D(NamedTuple):
+    xmin: float
+    xmax: float
+    ymin: float
+    ymax: float
+
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +74,14 @@ logger = logging.getLogger(__name__)
 @def_output(
     "result",
     PTable,
-    datashape={"array": np.ndarray, "cmin": float, "cmax": float, "xmin": float,
-               "xmax": float, "ymin": float, "ymax": float, "time": int},
+    datashape={"array": np.ndarray,
+               "cmin": float,
+               "cmax": float,
+               "xmin": float,
+               "xmax": float,
+               "ymin": float,
+               "ymax": float,
+               "time": int},
     doc="the output table")
 class Histogram2D(Module):
     """
@@ -159,21 +172,21 @@ class Histogram2D(Module):
         if ymax < ymin:
             ymax, ymin = ymin, ymax
             # logger.warning("ymax < ymin, swapped")
-        return (xmin, xmax, ymin, ymax)
+        return Bounds2D(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
 
     def get_delta(
-        self, xmin: float, xmax: float, ymin: float, ymax: float
+        self, bounds: Bounds2D  # xmin: float, xmax: float, ymin: float, ymax: float
     ) -> Tuple[float, float]:
         p = self.params
         xdelta, ydelta = p["xdelta"], p["ydelta"]
         if xdelta < 0:
-            dx = xmax - xmin
+            dx = bounds.xmax - bounds.xmin
             xdelta = dx * xdelta / -100.0
             if np.isnan(xdelta):
                 xdelta = 0.
             logger.info("xdelta is %f", xdelta)
         if ydelta < 0:
-            dy = ymax - ymin
+            dy = bounds.ymax - bounds.ymin
             ydelta = dy * ydelta / -100.0
             if np.isnan(ydelta):
                 ydelta = 0.
@@ -211,32 +224,33 @@ class Histogram2D(Module):
             if bounds is None:
                 logger.debug("No bounds yet at run %d", run_number)
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            xmin, xmax, ymin, ymax = bounds
+            b = bounds
             if self._bounds is None:
-                (xdelta, ydelta) = self.get_delta(*bounds)
-                self._bounds = (
-                    xmin - xdelta,
-                    xmax + xdelta,
-                    ymin - ydelta,
-                    ymax + ydelta,
+                (xdelta, ydelta) = self.get_delta(bounds)
+                self._bounds = Bounds2D(
+                    xmin=b.xmin - xdelta,
+                    xmax=b.xmax + xdelta,
+                    ymin=b.ymin - ydelta,
+                    ymax=b.ymax + ydelta,
                 )
                 logger.info("New bounds at run %d: %s", run_number, self._bounds)
             else:
-                (dxmin, dxmax, dymin, dymax) = self._bounds
-                (xdelta, ydelta) = self.get_delta(*bounds)
+                d = self._bounds
+                (xdelta, ydelta) = self.get_delta(bounds)
                 assert xdelta >= 0 and ydelta >= 0
                 # Either the min/max has extended or shrunk beyond the deltas
-                if (xmin < dxmin or xmax > dxmax or ymin < dymin or ymax > dymax) or (
-                    xmin > (dxmin + xdelta)
-                    or xmax < (dxmax - xdelta)
-                    or ymin > (dymin + ydelta)
-                    or ymax < (dymax - ydelta)
+                if (b.xmin < d.xmin or b.xmax > d.xmax
+                    or b.ymin < d.ymin or b.ymax > d.ymax) or (
+                    b.xmin > (d.xmin + xdelta)
+                    or b.xmax < (d.xmax - xdelta)
+                    or b.ymin > (d.ymin + ydelta)
+                    or b.ymax < (d.ymax - ydelta)
                 ):
-                    self._bounds = (
-                        xmin - xdelta,
-                        xmax + xdelta,
-                        ymin - ydelta,
-                        ymax + ydelta,
+                    self._bounds = Bounds2D(
+                        xmin=b.xmin - xdelta,
+                        xmax=b.xmax + xdelta,
+                        ymin=b.ymin - ydelta,
+                        ymax=b.ymax + ydelta,
                     )
                     logger.info(
                         "Updated bounds at run %s: %s", run_number, self._bounds
@@ -244,8 +258,8 @@ class Histogram2D(Module):
                     self.reset()
                     dfslot.update(run_number)
 
-            xmin, xmax, ymin, ymax = self._bounds
-            if xmin >= xmax or ymin >= ymax:
+            b = self._bounds
+            if b.xmin >= b.xmax or b.ymin >= b.ymax:
                 logger.error("Invalid bounds: %s", self._bounds)
                 return self._return_run_step(self.state_blocked, steps_run=0)
 
@@ -274,7 +288,7 @@ class Histogram2D(Module):
                 bins = [p.ybins, p.xbins]
                 if len(x) > 0:
                     histo = histogram2d(
-                        y, x, bins=bins, range=[[ymin, ymax], [xmin, xmax]]
+                        y, x, bins=bins, range=[[b.ymin, b.ymax], [b.xmin, b.xmax]]
                     )
                     self._histo -= histo
             # if there are new creations, build a partial histogram with them
@@ -294,7 +308,7 @@ class Histogram2D(Module):
             else:
                 bins = [p.ybins, p.xbins]
             if len(x) > 0:
-                histo = histogram2d(y, x, bins=bins, range=[[ymin, ymax], [xmin, xmax]])
+                histo = histogram2d(y, x, bins=bins, range=[[b.ymin, b.ymax], [b.xmin, b.xmax]])
             else:
                 return self._return_run_step(self.state_blocked, steps_run=0)
 
@@ -308,10 +322,10 @@ class Histogram2D(Module):
                 "array": np.flip(self._histo, axis=0),  # type: ignore
                 "cmin": 0,
                 "cmax": cmax,
-                "xmin": xmin,
-                "xmax": xmax,
-                "ymin": ymin,
-                "ymax": ymax,
+                "xmin": b.xmin,
+                "xmax": b.xmax,
+                "ymin": b.ymin,
+                "ymax": b.ymax,
                 "time": run_number,
             }
             if self._with_output:
@@ -343,8 +357,11 @@ class Histogram2D(Module):
             or np.isnan(row["ymin"])
             or np.isnan(row["ymax"])
         ):
-            bounds = cast(
-                Bounds2D, (row["xmin"], row["ymin"], row["xmax"], row["ymax"])
+            bounds = Bounds2D(
+                xmin=row["xmin"],
+                ymin=row["ymin"],
+                xmax=row["xmax"],
+                ymax=row["ymax"]
             )
             data = row["array"]
             json_["binnedPixels"] = data
