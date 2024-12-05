@@ -297,6 +297,7 @@ class SimpleCSVLoader(Module):
         df = fn_slot.data()
         if df is None or len(df) == self._n_files:
             return
+        self._n_files = len(df)
         total_size = 0
         for fname in df["filename"].loc[:]:
             if fname.startswith("https://"):
@@ -457,8 +458,8 @@ class SimpleCSVLoader(Module):
                     self._imputer.init(df.dtypes)
             else:
                 self.result.append(df)
-            if not self._file_mode:
-                self.refresh_total_size()
+            # if not self._file_mode:
+            #    self.refresh_total_size()
             if self._imputer is not None:
                 self._imputer.add_df(df)
         return self._return_run_step(self.state_ready, steps_run=creates)

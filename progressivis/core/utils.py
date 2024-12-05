@@ -789,7 +789,7 @@ def _infer_compression(
     raise ValueError(msg)
 
 
-def estimate_row_size(filepath: str, length: int = 1_000_000) -> tuple[int, int]:
+def estimate_row_size(filepath: str, length: int = 200_000) -> tuple[int, int]:
     compression: str | None = _infer_compression(filepath, "infer")
     stream, encoding, compression, size = filepath_to_buffer(
         filepath, encoding=None, compression=compression
@@ -809,6 +809,28 @@ def estimate_row_size(filepath: str, length: int = 1_000_000) -> tuple[int, int]
     row_len = len(buff) // n_buff_rows
     n_rows = size // row_len
     return n_rows, row_len
+
+
+def fetch_csv_header(filepath: str, length: int = 100_000) -> str:
+    compression: str | None = _infer_compression(filepath, "infer")
+    stream, encoding, compression, size = filepath_to_buffer(
+        filepath, encoding=None, compression=compression
+    )
+    buff = stream.read(length)
+    if compression is None:
+        decoded = buff
+    elif compression == "bz2":
+        decoded = bz2.BZ2Decompressor().decompress(buff)
+    elif compression == "xz":
+        decoded = lzma.LZMADecompressor().decompress(buff)
+    elif compression == "gzip":
+        decoded = zlib.decompressobj(wbits=zlib.MAX_WBITS | 16).decompress(buff)
+    else:
+        raise ValueError(f"Unknown compression {compression}")
+    header, data = decoded.split(b'\n', 1)
+    if not data:
+        raise ValueError("Header corrupted")
+    return cast(str, header)
 
 
 def get_physical_base(t: Any) -> Any:

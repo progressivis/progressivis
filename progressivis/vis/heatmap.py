@@ -11,6 +11,7 @@ from enum import IntEnum
 
 import numpy as np
 import scipy as sp  # type: ignore
+from scipy.ndimage import gaussian_filter  # type: ignore
 from PIL import Image
 
 from progressivis.core.module import (
@@ -36,6 +37,7 @@ class HeatmapTransform(IntEnum):
     SQRT = 2
     CBRT = 3
     LOG = 4
+    GAUSS = 5
 
 
 @def_parameter("high", np.dtype(int), 65535)
@@ -43,6 +45,7 @@ class HeatmapTransform(IntEnum):
 @def_parameter("filename", np.dtype(object), None)
 @def_parameter("history", np.dtype(int), 3)
 @def_parameter("transform", np.dtype(int), HeatmapTransform.LOG)
+@def_parameter("gaussian_blur", np.dtype(int), 0)
 @def_input("array", PTable)
 @def_output("result", PTable)
 class Heatmap(Module):
@@ -96,9 +99,12 @@ class Heatmap(Module):
                 data = sp.special.cbrt(histo)
             elif params.transform == HeatmapTransform.LOG:
                 data = np.log1p(histo)
+            #elif params.transform == HeatmapTransform.GAUSS:
+            #    data = gaussian_filter(histo, sigma=5)
             else:
                 data = histo
-
+            if params.gaussian_blur:
+                data = gaussian_filter(data, sigma=params.gaussian_blur)
             cmin = data.min()
             cmax = data.max()
             # cscale = cmax - cmin

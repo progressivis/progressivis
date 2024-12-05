@@ -19,10 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 def _min_func(x: Any, y: Any) -> Any:
-    try:  # fixing funny behaviour when min() is called with np.float64
-        return np.minimum(x, y)
+    """try:  # fixing funny behaviour when min() is called with np.float64
+        return np.fmin(x, y)
     except Exception:
-        return min(x, y)
+        return min(x, y)"""
+    return np.fmin(x, y)
 
 
 @document

@@ -1489,10 +1489,10 @@ class BasePTable(metaclass=ABCMeta):
         return self.unary(np.all, **kwargs)
 
     def min(self, **kwargs: Any) -> UnaryRet:
-        return self.unary(np.min, **kwargs)
+        return self.unary(np.nanmin, **kwargs)
 
     def max(self, **kwargs: Any) -> UnaryRet:
-        return self.unary(np.max, **kwargs)
+        return self.unary(np.nanmax, **kwargs)
 
     def var(self, **kwargs: Any) -> UnaryRet:
         return self.raw_unary(np.var, **kwargs)
