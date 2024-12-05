@@ -238,7 +238,7 @@ class Heatmap(Module):
                 value = prog[0]
                 max = prog[1]
                 progress.value = value
-                progress.max = max  # type: ignore
+                progress.max = max
                 if max != 0:
                     percent = value * 100 / max
                     progress.description = f"{int(percent)}%"

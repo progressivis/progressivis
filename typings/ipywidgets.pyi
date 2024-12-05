@@ -16,10 +16,15 @@ class DOMWidget:
 
 class IntSlider(DOMWidget):
     value: int
+    min: int
+    max: int
+    step: int
     def __init__(self, **kw: Any) -> None: ...
 
 class IntProgress(DOMWidget):
     value: int
+    min: int
+    max: int
     def __init__(self, **kw: Any) -> None: ...
 
 class FloatProgress(DOMWidget):
