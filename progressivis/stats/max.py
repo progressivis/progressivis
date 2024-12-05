@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 
 
 def _max_func(x: Any, y: Any) -> Any:
-    """try:  # fixing funny behaviour when max() is called with np.float64
-        return np.fmax(x, y)
+    try:  # fixing funny behaviour when max() is called with np.float64
+        return np.fmax(x, y)  # np.fmax avoids propagation of Nan
     except Exception:
-        return max(x, y)"""
-    return np.fmax(x, y)
+        return max(x, y)
+
 
 
 @document
