@@ -228,7 +228,6 @@ class SimpleCSVLoader(Module):
     def get_progress(self) -> Tuple[int, int]:
         if (
             self._total_size == 0
-            or self._total_input_size == 0
             or self.result is None
             or self._input_stream is None
         ):
@@ -299,14 +298,17 @@ class SimpleCSVLoader(Module):
             return
         self._n_files = len(df)
         total_size = 0
+        urls = []
         for fname in df["filename"].loc[:]:
             if fname.startswith("https://"):
-                total_size += FSSPEC_HTTPS.size(fname)
+                urls.append(fname)
             elif fname.startswith("buffer://"):
                 continue  # TODO: decide if buffer:// is still useful
             else:
                 file_stats = os.stat(fname)
                 total_size += file_stats.st_size
+        if urls:
+            total_size += sum(FSSPEC_HTTPS.sizes(urls))
         self._total_size = total_size
 
     def recovering(self, step_size: int) -> pd.DataFrame:
@@ -458,8 +460,8 @@ class SimpleCSVLoader(Module):
                     self._imputer.init(df.dtypes)
             else:
                 self.result.append(df)
-            # if not self._file_mode:
-            #    self.refresh_total_size()
+            if not self._file_mode:
+                self.refresh_total_size()
             if self._imputer is not None:
                 self._imputer.add_df(df)
         return self._return_run_step(self.state_ready, steps_run=creates)
