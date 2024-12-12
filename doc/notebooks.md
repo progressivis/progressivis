@@ -13,7 +13,7 @@ Notebooks hosting a progressive scenario need to be initialized in a particular 
 
 Once created, a `Run ProgressiVis` button will appear in the first `ProgressiBook` cell.
 
-By clicking this button, the `ProgressiVis` scheduler will be launched and the start box will appear. Currently, it proposes two data loading actions (CSV files and PARQUET files), and offers the option of saving the session for later use by checking the `record this scenario` box. These actions, like all other actions in the scenario, are implemented via a set of `chaining widgets`.
+By clicking this button, the `ProgressiVis` scheduler will be launched and the start box will appear. Currently, it proposes three data loading actions (CSV files, PARQUET files, and custom), and offers the option of saving the session for later use by checking the `record this scenario` box. These actions, like all other actions in the scenario, are implemented via a set of `chaining widgets`.
 
 ![](viz_images/constructor_cw.png)
 
@@ -473,7 +473,7 @@ Possible topology:
 
 This chaining widget brings together several descriptive statistics processes.
 
-The `Setting / General` editor is designed to define operations on a single variable, with the exception of covariance calculation, which involves several variables:
+The `Settings / General` editor is designed to define operations on a single variable, with the exception of covariance calculation, which involves several variables:
 
 
 ![](viz_images/desc_stats_general.png)
@@ -493,7 +493,7 @@ Histograms (1D) are also displayed in a dedicated panel. This display is divided
 
 ![](viz_images/desc_stats_histogram1d.png)
 
-Heatmaps are used to visualize 2D histograms. Variable pairs are selected for visualisation in a dedicated editor:
+Heatmaps are used to visualize 2D histograms. Variable pairs are selected for visualization in a dedicated editor:
 
 ![](viz_images/desc_stats_heatmap.png)
 

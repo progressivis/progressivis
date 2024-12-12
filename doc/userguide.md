@@ -4,7 +4,7 @@
 **ProgressiVis** is a language and system implementing **progressive data analysis and visualization**.
 **ProgressiVis** is designed so that it never blocks while executing functions, even if their execution time lasts for an unbounded amount of time. For example, when loading a large file from the network until completion.
 
-In a traditional computation system, you cannot do much about the time taken when calling a function. Waiting while loading a large file over the network is the price to pay for having it loaded and starting computations over its contents. In a non-progressive system meant to be used interactively, when a function takes too long to complete, the user waits, get bored, and her attention drops.  **ProgressiVis** is designed to avoid this attention drop.
+In a traditional computation system, you cannot do much about the time taken when calling a function. Waiting while loading a large file over the network is the price to pay for having it loaded and starting computations over its contents. In a non-progressive system meant to be used interactively, when a function takes too long to complete, the user waits, gets bored, and her attention drops.  **ProgressiVis** is designed to avoid this attention drop.
 
 If you are familiar with asynchronous programming or real time programming, you will be familiar with the need to follow strict disciplines to make sure a system is not blocking.
 This discipline is implemented everywhere in **progressiVis** with a specific "progressive" semantics.
@@ -19,7 +19,7 @@ For January 2015, the file `yellow_tripdata_2015-01.csv.bz2` is 327Mb long in co
 
 With **ProgressiVis**, we don't need to wait for the file to be fully loaded to visualize it, we can do it on the go, as with this simple low-level ProgressiVis program.
 
-All the programs shown here are available in the the `notebook` directory of **ProgressiVis** as `userguide1.ipynb`, `userguide1.2.ipynb` and `userguide1.3.ipynb` so you don't have to copy/paste them from this documentation.  To run the examples, connect to the `progressivis` directory you downloaded from `github.com` and launch the jupyter lab notebook by typing, in a command line:
+All the programs shown here are available in the `notebook` directory of **ProgressiVis** as `userguide1.ipynb`, `userguide1.2.ipynb` and `userguide1.3.ipynb` so you don't have to copy/paste them from this documentation.  To run the examples, connect to the `progressivis` directory you downloaded from `github.com` and launch the Jupyter lab notebook by typing, in a command line:
 ```sh
 jupyter lab
 ```
@@ -72,7 +72,7 @@ On line 13, a `Histogram2D` module is created to count all the pick up locations
 
 Finaly, a `Heatmap` module is created in line 19 and connected to the output of the `Histogram2D` module. It will convert the 2D histogram into an image ready to be displayed in the notebook, line 22.
 
-The progressive program is started line 23 and the image will appear almost immediately, improving over time. The bounds may move a bit when more points are loaded. In that case, the image will be redisplayed progressively with the new bounds at the same page, about one image every 2-3 seconds.
+The progressive program is started in line 23 and the image will appear almost immediately, improving over time. The bounds may move a bit when more points are loaded. In that case, the image will be redisplayed progressively with the new bounds at the same page, about one image every 2-3 seconds.
 
 At this stage, ProgressiVis is used in a streaming mode, loading the data and visualizing the results as it goes. We will introduce interaction later, after introducing the concepts first.
 
@@ -146,7 +146,7 @@ async def _after_run(m: Module, run_number: int) -> None:
 heatmap.on_after_run(_after_run)  # Install the callback
 ```
 
-On the other direction, an external function can trigger changes in a ProgressiVis program in a few ways. There is a low-level mechanisms based on the method `Module.from_input(msg)` that allows communicating with modules. The module `Variable` is the simplest module designed to handle external events through `from_input`. It implementation of `from_input` expects a dictionary that is then propagated as data in its output slot in the progressive program. Most of the interactions proposed in ProgressiVis are done though `Variable` modules. Reusing the same declarations as in the examples above, we can add dynamic filtering to the data being progressively loaded with the following code:
+On the other direction, an external function can trigger changes in a ProgressiVis program in a few ways. There is a low-level mechanisms based on the method `Module.from_input(msg)` that allows communicating with modules. The module `Variable` is the simplest module designed to handle external events through `from_input`. Its implementation of `from_input` expects a dictionary that is then propagated as data in its output slot in the progressive program. Most of the interactions proposed in ProgressiVis are done through `Variable` modules. Reusing the same declarations as in the examples above, we can add dynamic filtering to the data being progressively loaded with the following code:
 
 (range-query-2d)=
 ```{code-block}
