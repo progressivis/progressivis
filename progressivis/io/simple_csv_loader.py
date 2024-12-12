@@ -366,9 +366,9 @@ class SimpleCSVLoader(Module):
             arr = np.empty(len(df), dtype=dtt)
             for i, elt in df[col].items():
                 try:
-                    arr[i] = conv_(elt)
+                    arr[i] = conv_(elt)  # type: ignore
                 except Exception:
-                    arr[i] = na_
+                    arr[i] = na_  # type: ignore
                     if na_ == np.nan and na_filter and elt == "":  # in this case
                         continue  # do not report empty strings as anomalies
                     if TYPE_CHECKING:

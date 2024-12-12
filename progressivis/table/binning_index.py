@@ -483,7 +483,7 @@ class _BinningIndexImpl:
             acc_vect[i] = acc
             if acc > max_k:
                 break  # just avoids unnecessary computes
-        acc_vect = acc_vect[: i + 1]
+        acc_vect = acc_vect[: i + 1]  # type: ignore
         for k in k_points:
             i = (acc_vect >= k).nonzero()[0][0]
             reminder = int(acc_vect[i] - k)

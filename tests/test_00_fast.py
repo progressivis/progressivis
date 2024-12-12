@@ -44,7 +44,7 @@ class TestFast(ProgressiveTest):
 
         np.random.seed(42)
         np.random.shuffle(a3)
-        a3 = a3[:50]
+        a3 = a3[:50]  # type: ignore
         a3.sort()
         c = check_contiguity(a3.astype("uint32"))
         self.assertEqual(c, PROP_MONOTONIC_INC)

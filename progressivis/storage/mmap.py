@@ -334,7 +334,7 @@ class MMapDataset(Dataset):
         for k, i in enumerate(args):
             offset = self.view[i]
             if offset == -1:
-                res[k] = None
+                res[k] = None  # type: ignore
                 continue
             res[k] = self._strings.get(offset)
         return np.array(res, dtype=OBJECT)

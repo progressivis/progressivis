@@ -26,8 +26,7 @@ class TestCmpQuery(ProgressiveTest):
         tbl = cmp_.get_input_slot("table").data()
         df = pd.DataFrame(tbl.to_dict(), index=tbl.index.to_array())
         dfe = df.eval("_1<0.5")
-        self.assertEqual(cmp_.select, PIntSet(df.index[dfe]))
-        # s.join()
+        self.assertEqual(cmp_.select, PIntSet(df.index[dfe]))  # type: ignore
 
     def t_cmp_query_impl(self, **kw: Any) -> None:
         s = self.scheduler()
@@ -45,7 +44,7 @@ class TestCmpQuery(ProgressiveTest):
         tbl = cmp_.get_input_slot("table").data()
         df = pd.DataFrame(tbl.to_dict(), index=tbl.index.to_array())
         dfe = df.eval("_1<0.5")
-        self.assertEqual(cmp_.select, PIntSet(df.index[dfe]))
+        self.assertEqual(cmp_.select, PIntSet(df.index[dfe]))  # type: ignore
 
     def test_cmp_query2(self) -> None:
         return self.t_cmp_query_impl(delete_rows=5)

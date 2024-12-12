@@ -248,7 +248,7 @@ class PACSVLoader(BaseLoader):
                 try:
                     arr[i] = elt.cast(ctype).as_py()
                 except pa.ArrowInvalid:
-                    arr[i] = None
+                    arr[i] = None  # type: ignore
                     if nn(self.anomalies):
                         self.anomalies["invalid_values"][cn].add(elt.as_py())  # type: ignore
                         self.anomalies["invalid_cnt"] += 1   # type: ignore

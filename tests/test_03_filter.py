@@ -58,7 +58,7 @@ class TestFilter(ProgressiveTest):
         self.assertEqual(filter_.result.index, PIntSet(idx))
         df = pd.DataFrame(tbl.to_dict(), index=tbl.index.to_array())
         dfe = df.eval("_1>0.5")
-        self.assertEqual(filter_.result.index, PIntSet(df.index[dfe]))
+        self.assertEqual(filter_.result.index, PIntSet(df.index[dfe]))  # type: ignore
 
     def test_filter3(self) -> None:
         s = Scheduler()
@@ -78,7 +78,7 @@ class TestFilter(ProgressiveTest):
         self.assertEqual(filter_.result.index, PIntSet(idx))
         df = pd.DataFrame(tbl.to_dict(), index=tbl.index.to_array())
         dfe = df.eval("_1>0.5")
-        self.assertEqual(filter_.result.index, PIntSet(df.index[dfe]))
+        self.assertEqual(filter_.result.index, PIntSet(df.index[dfe]))  # type: ignore
 
 
 if __name__ == "__main__":

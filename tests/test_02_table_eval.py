@@ -35,7 +35,7 @@ class TestPTableEval(ProgressiveTest):
         def small_fun_ne(expr: str) -> None:
             r = "raw_numexpr"
             te = t.eval(expr, result_object=r)
-            dfe: pd.DataFrame = df.eval(expr)
+            dfe: pd.DataFrame = df.eval(expr)  # type: ignore
             self.assertTrue(np.array_equal(te, dfe.values))
 
         small_fun_ne("(a>10) & (a <80)")
@@ -65,7 +65,7 @@ class TestPTableEval(ProgressiveTest):
         def small_fun_index(expr: str) -> None:
             ix = t.eval(expr)
             dfe = df.eval(expr)
-            self.assertSetEqual(set(ix), set(df.index[dfe]))
+            self.assertSetEqual(set(ix), set(df.index[dfe]))  # type: ignore
 
         small_fun_index("(a>10) & (a <80)")
 
