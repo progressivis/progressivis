@@ -3,7 +3,6 @@ import pandas as pd
 from numbers import Number
 from typing import (
     Iterable,
-    Dict,
     Optional,
     Union,
     Any,
@@ -43,7 +42,7 @@ class OnlineFunctor:
         raise NotImplementedError("add not defined")
 
 
-aggr_registry: Dict[str, Type[OnlineFunctor]] = {}
+aggr_registry: dict[str, Type[OnlineFunctor]] = {}
 
 
 class OnlineSum(OnlineFunctor):
@@ -249,16 +248,16 @@ class OnlineCovariance:  # not an OnlineFuctor
 
 
 if TYPE_CHECKING:
-    DTypes = Union[pd.Series[Any], Dict[str, Union[str, np.dtype[Any]]]]
+    DTypes = Union[pd.Series[Any], dict[str, Union[str, np.dtype[Any]]]]
 
 
 class SimpleImputer:
     def __init__(
         self,
-        strategy: Optional[Union[str, Dict[Key, str]]] = None,
+        strategy: Optional[Union[str, dict[Key, str]]] = None,
         default_strategy: Optional[str] = None,
         fill_values: Optional[
-            Union[str, int, Number, Dict[Key, Union[str, Number]]]
+            Union[str, int, Number, dict[Key, Union[str, Number]]]
         ] = None,
     ) -> None:
         if nn(default_strategy):
@@ -267,7 +266,7 @@ class SimpleImputer:
                 raise ValueError(
                     "'default_strategy' is allowed" " only when strategy is a dict"
                 )
-        _strategy: Union[str, Dict[Key, str]] = (
+        _strategy: Union[str, dict[Key, str]] = (
             {} if (strategy is None or is_str(strategy)) else strategy
         )
         assert isinstance(_strategy, dict)
@@ -275,7 +274,7 @@ class SimpleImputer:
         self._impute_all: bool = False
         if isinstance(strategy, str):
             _default_strategy = strategy
-        self._strategy: Dict[Key, Any] = defaultdict(
+        self._strategy: dict[Key, Any] = defaultdict(  # type: ignore
             lambda: _default_strategy, **_strategy
         )
         if is_str(strategy) or strategy is None:
@@ -287,9 +286,9 @@ class SimpleImputer:
                 if is_dict(fill_values)
                 else defaultdict(lambda: fill_values)
             )
-        self._means: Dict[Key, OnlineMean] = {}
-        self._medians: Dict[Key, Union[kll_ints_sketch, kll_floats_sketch]] = {}
-        self._frequent: Dict[Key, frequent_strings_sketch] = {}
+        self._means: dict[Key, OnlineMean] = {}
+        self._medians: dict[Key, Union[kll_ints_sketch, kll_floats_sketch]] = {}
+        self._frequent: dict[Key, frequent_strings_sketch] = {}
         self._dtypes: DTypes = {}
         self._k = 200  # for sketching
 

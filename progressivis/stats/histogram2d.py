@@ -319,7 +319,7 @@ class Histogram2D(Module):
             if self._histo is not None:
                 cmax = self._histo.max()
             values = {
-                "array": np.flip(self._histo, axis=0),  # type: ignore
+                "array": np.flip(self._histo, axis=0),
                 "cmin": 0,
                 "cmax": cmax,
                 "xmin": b.xmin,
