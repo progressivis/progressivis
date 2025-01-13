@@ -11,6 +11,7 @@ from enum import IntEnum
 import pdb
 
 import numpy as np
+import inspect as ins
 from typeguard import check_type
 from .scheduler import Scheduler
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
@@ -115,11 +116,9 @@ class ModuleCallbackList(List[ModuleProc]):
         ret = False
         for proc in self:
             try:
-                if aio.iscoroutinefunction(proc):
-                    coro = cast(ModuleCoro, proc)
-                    await coro(module, run_number)
-                else:
-                    proc(module, run_number)
+                res = proc(module, run_number)
+                if ins.iscoroutine(res):
+                    await res
                 ret = True
             except Exception as exc:
                 logger.warning(f"Exception in callback {proc.__name__} on {module.name}")
