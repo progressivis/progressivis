@@ -11,7 +11,7 @@ from enum import IntEnum
 import pdb
 
 import numpy as np
-import inspect as ins
+import inspect as ins # https://github.com/python/cpython/issues/122858
 from typeguard import check_type
 from .scheduler import Scheduler
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
@@ -117,7 +117,7 @@ class ModuleCallbackList(List[ModuleProc]):
         for proc in self:
             try:
                 res = proc(module, run_number)
-                if ins.iscoroutine(res):
+                if aio.iscoroutine(res):
                     await res
                 ret = True
             except Exception as exc:
@@ -1100,7 +1100,8 @@ class Module(metaclass=ABCMeta):
         remove: bool (optional)
             Set to true to remove the callback from the list of callbacks.
         """
-        assert callable(proc) and not aio.iscoroutinefunction(proc)
+        # NB: asyncio.iscoroutinefunction deprecated in python 3.14
+        assert callable(proc) and not ins.iscoroutinefunction(proc)
         if remove:
             self._ending.remove(proc)
         else:

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import functools
+import inspect as ins  # https://github.com/python/cpython/issues/122858
 from timeit import default_timer
 import traceback
 from io import StringIO, SEEK_END
@@ -24,7 +25,6 @@ from typing import (
     Coroutine,
     Union,
     AsyncGenerator,
-    cast,
     TYPE_CHECKING,
 )
 
@@ -62,11 +62,9 @@ class CallbackList(Dict[TickProc, int]):
                     continue
                 if count == 0:
                     del self[proc]
-                if aio.iscoroutinefunction(proc):
-                    coro = cast(TickCoro, proc)
-                    await coro(scheduler, run_number)
-                else:
-                    proc(scheduler, run_number)
+                res = proc(scheduler, run_number)
+                if ins.iscoroutine(res):
+                    await res
                 ret = True
             except Exception as exc:
                 logger.warning(exc)
@@ -591,11 +589,9 @@ class Scheduler:
             # pylint: disable=broad-except
             try:
                 logger.debug("Running idle proc")
-                if aio.iscoroutinefunction(proc):
-                    coro = cast(TickCoro, proc)
-                    await coro(self, self._run_number)
-                else:
-                    proc(self, self._run_number)
+                res = proc(self, self._run_number)
+                if ins.iscoroutine(res):
+                    await res
                 has_run = True
             except Exception as exc:
                 logger.error(exc)

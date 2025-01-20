@@ -12,7 +12,7 @@ from asyncio import (
     run,
     Future,
     Task,
-    iscoroutinefunction,
+    iscoroutine,  # NB: asyncio.iscoroutinefunction deprecated in python 3.14
     FIRST_COMPLETED,
     ALL_COMPLETED,
 )
@@ -59,7 +59,7 @@ __all__ = [
     "wait",
     "Future",
     "Task",
-    "iscoroutinefunction",
+    "iscoroutine",
     "set_event_loop",
     "new_event_loop",
     "get_running_loop",
