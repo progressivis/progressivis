@@ -46,10 +46,11 @@ Let's return to the scenario developed in the userguide, starting with the [basi
 
 By combining two _CWs_: `CSVLoader` and `Heatmap`, we'll reproduce the same behaviour (i.e. which doesn't deal with the bounds issue).
 
----
-**NOTE:**
-The CSVLoader features advanced configuration mechanisms (column selection, retyping, filtering etc.) via the CSV sniffer, which is described with more details [here](sniffer).
----
+
+```{eval-rst}
+.. note::
+   The CSVLoader features advanced configuration mechanisms (column selection, retyping, filtering etc.) via the CSV sniffer, which is described with more details [here](sniffer).
+```
 
 The notebook below is available and ready to be replayed [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.0.ipynb):
 
