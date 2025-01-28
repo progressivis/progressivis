@@ -25,6 +25,7 @@ jupyter lab
 ```
 Then, open the `notebooks` directory and load the notebook `userguide1.ipynb`. The code you see next should appear, with a few additional comments. You can run the notebook cells with the "play" icon on top.
 
+(quantiles-variant)=
 
 ```{code-block}
 :linenos:

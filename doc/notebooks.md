@@ -13,7 +13,7 @@ Notebooks hosting a progressive scenario need to be initialized in a particular 
 
 Once created, a `Run ProgressiVis` button will appear in the first `ProgressiBook` cell.
 
-By clicking this button, the `ProgressiVis` scheduler will be launched and the start box will appear. Currently, it proposes three data loading actions (CSV files, PARQUET files, and custom), and offers the option of saving the session for later use by checking the `record this scenario` box. These actions, like all other actions in the scenario, are implemented via a set of `chaining widgets`.
+By clicking this button, `ProgressiVis` is launched and the starting box will appear. A new scenario always begins by defining a data source. Currently, it proposes three data loading options. Two of them are predefined (`CSV loader` and `PARQUET loader`) and the third is the possibility to define (i.e. to code in Python) a customized loader. The starting box also offers the option of saving the session for later use by checking the `record this scenario` box. These actions, like all other actions in the scenario, are implemented via a set of `chaining widgets`.
 
 ![](viz_images/constructor_cw.png)
 
@@ -49,10 +49,17 @@ By combining two _CWs_: `CSVLoader` and `Heatmap`, we'll reproduce the same beha
 ---
 **NOTE:**
 The CSVLoader features advanced configuration mechanisms (column selection, retyping, filtering etc.) via the CSV sniffer, which is described with more details [here](sniffer).
-
 ---
 
-![](viz_images/csv_heatmap.png)
+The notebook below is available and ready to be replayed [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.0.ipynb):
+
+
+
+```{eval-rst}
+.. raw:: html
+   :file: notebooks_html/userguide-widgets1.0.html
+
+```
 
 To go further and take into account the (assumed known) bounds like [the second snippet in the user guide](filtering-variant), we can use the filtering capabilities available to the CSV sniffer this way:
 
@@ -62,17 +69,21 @@ then renew the operation for `pickup_latitude`, click **Start loading csv** butt
 
 ![](viz_images/single_heatmap.png)
 
-But if you don't know the bounds a priori, or if you want to control them dynamically, you can simply implement the third approach in the guide ([see the Python code here](range-query-2d)) by assembling predefined widgets.
+But if you don't know the bounds a priori, you can eliminate the noise using quantiles like [this python code](quantiles-variant) do because a `Quantile` chaining widget is available. The notebook below show this approach. It is available and ready to be replayed [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.1.ipynb):
+:
+
+```{eval-rst}
+.. raw:: html
+   :file: notebooks_html/userguide-widgets1.1.html
+
+```
+
+Finaly if you want to control the bounds dynamically, you can simply implement the third approach in the guide ([see the Python code here](range-query-2d)) by assembling predefined widgets.
 
 In concrete terms, instead of connecting Heatmap to the CSVLoader output, you need to insert a RangeQuery2D widget between the two widgets already mentioned, this way:
 
 ![](viz_images/csv_range_query_heatmap.png)
 
----
-**NOTE:**
-The role of the _Freeze_ button is related to the replay capabilities of the progressive notebooks and it is described [here](freeze-role).
-
----
 
 ## Chaining widgets list
 
@@ -118,7 +129,6 @@ Once the configuration is complete, you can save it for later use, so you don't 
 
 ![](viz_images/start_save_csv.png)
 
-**NB:** The `Freeze` checkbox is useful only when the scenario is being recorded  to be replayed later (see [Recording a scenario](recording-scenario) for more details).
 
 Once loading has begun, the `Next stage` list and the `Chain it` button will be used to attach a new `CW` to the treatments.
 
