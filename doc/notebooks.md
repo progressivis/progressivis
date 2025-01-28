@@ -54,13 +54,13 @@ The CSVLoader features advanced configuration mechanisms (column selection, rety
 The notebook below is available and ready to be replayed [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.0.ipynb):
 
 
-
+<!--
 ```{eval-rst}
 .. raw:: html
    :file: notebooks_html/userguide-widgets1.0.html
 
 ```
-
+-->
 To go further and take into account the (assumed known) bounds like [the second snippet in the user guide](filtering-variant), we can use the filtering capabilities available to the CSV sniffer this way:
 
 ![](viz_images/filtered_csv_heatmap.png)
@@ -72,11 +72,13 @@ then renew the operation for `pickup_latitude`, click **Start loading csv** butt
 But if you don't know the bounds a priori, you can eliminate the noise using quantiles like [this python code](quantiles-variant) do because a `Quantile` chaining widget is available. The notebook below show this approach. It is available and ready to be replayed [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.1.ipynb):
 :
 
+<!--
 ```{eval-rst}
 .. raw:: html
    :file: notebooks_html/userguide-widgets1.1.html
 
 ```
+-->
 
 Finaly if you want to control the bounds dynamically, you can simply implement the third approach in the guide ([see the Python code here](range-query-2d)) by assembling predefined widgets.
 
