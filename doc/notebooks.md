@@ -584,20 +584,64 @@ The rendering is similar to previous ones:
 
 A `ProgressiBook` lets you save a scenario for later replay. The record is persistent and it is contained in the `ProgressiBook` itself, so it's a good idea to save it at the end of the recording (even if Jupyter does automatic backups periodically).
 
-The scenario is saved only if the corresponding box in the start widget is checked:
+The scenario is saved only if the corresponding checkbox (named "Save this scenario") in the start widget is checked and it is done by default. The choice must be made before starting.
 
 ![](viz_images/recording_start.png)
 
-After that, the scenario is built as explained [above](create-scenario), with an extra detail: the `Freeze` checkbox, present in certain widgets:
+After that, the scenario is built as explained [above](create-scenario).
 
-![](viz_images/recording_csv_freeze.png)
-
-(freeze-role)=
-When the freeze checkbox has been checked in a widget (here CSV Loader) during registration, all settings made in this widget will be integrated into the record.
-Thus, when the record is replayed, these settings will be applied directly, without redisplaying the "frozen" widget.
 
 **NB:** Scenario registration should not be confused with the [persistent settings](#persistent-settings) of certain widgets, which are saved in dedicated files and can also be used in unregistered scenarios.
+```{eval-rst}
+.. note::
+   Scenario registration should not be confused with the  :ref:`persistent settings<persistent-settings>` of certain widgets, which are saved in dedicated files and can also be used in unregistered scenarios.
+```
 
+(replay-scenario)=
+## Replay a scenario
+
+After opening a `ProgressiBook` containing a backup and clicking the `Run PeogressiVis` button, the dialog box below appears:
+
+![](viz_images/replay.png)
+
+Once a scenario has been recorded, there are two wais to reuse it:
+
+* read-only mode
+* read/write mode
+
+Both read-only and read/write modes support two alternatives:
+
+* replay all
+* step-by-step
+
+In the `replay all` variant, all nodes in the backup are executed without any further interaction with the user (apart from those required by the scenario widgets themselves).
+
+In the `step-by-step` variant, a dialog is initiated with the user and the nodes are activated one after the other when the operator presses the corresponding `Next` button.
+
+### Replay in read-only mode
+
+This is the default mode. To keep it, leave the `Allow overwriting record` box unchecked. In this mode, the scenario will be replayed identically, and the backup remains unchanged. When the scenario is replayed `step-by-step`
+only the `Next` button is active since `Edit` and `Delete` buttons are gray.
+
+![](viz_images/step_by_step_ro.png)
+
+When `replay all` is chosen, chaining bars are absent on nodes, so no modification of the graph is possible.
+
+In this mode, widgets are replaced by snapshots taken at the moment of widget creation and they may not reflect the exact state of the configuration. `step-by-step` is mainly useful for observing and understanding graph generation in a decomposed way.
+
+### Replay in read/write mode
+
+This mode is active when the `Allow overwriting record` box is **checked**.
+
+In this mode, the `replay all` variant takes place in much the same way as in the previous mode, but each node has a bar that allows you to enrich the scenario with new nodes, as you did in the creation stage.
+
+The `step-by-step` variant lets you intervene on existing nodes to modify certain parameters:
+
+* By clicking the `Edit` button, the configuration widget associated with this node will appear, allowing complete reconfiguration of the node. The user must ensure that the new configuration is consistent with further processing because the action is irreversible.
+* By clicking on `Delete`, the node in question and all its descendants will be deleted. Once again, the user must be certain of the validity of the operation, as it is irreversible.
+* If the current node is to remain unchanged, click `Next` to continue.
+
+![](viz_images/step_by_step_rw.png)
 
 (persistent-settings)=
 ## Chaining widgets persistent settings
@@ -618,7 +662,7 @@ Thus, when the record is replayed, these settings will be applied directly, with
     ...
 ```
 
-**NB:** Only the `.progressivis` directory needs to be created per user. All other directories and files will be created by widgets as required.
+**NB:** Only the `.progressivis` directory needs to be created by the user. All other directories and files will be created by widgets as required.
 
 
 ## How to create a chaining widget ?
