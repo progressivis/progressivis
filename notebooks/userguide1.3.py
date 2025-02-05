@@ -83,11 +83,16 @@ heatmap = Heatmap()
 heatmap.input.array = histogram2d.output.result
 
 # %%
-# Show the dataflow
-import graphviz
-src = csv.scheduler().to_graphviz()
-gvz=graphviz.Source(src)
-display(gvz)
+# Show the dataflow, you need to install graphviz to run this cell
+# pip install graphviz
+#
+try:
+    import graphviz
+    src = csv.scheduler().to_graphviz()
+    gvz=graphviz.Source(src)
+    display(gvz)
+except ImportError:
+    pass
 
 # %%
 heatmap.display_notebook()
