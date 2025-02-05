@@ -1,7 +1,9 @@
 # Introduction
 
-ProgressiVis is a system and language implementing *progressive data
-analysis and visualization*.
+ProgressiVis is a system and language implementing
+*Progressive Data Analysis and
+Visualization*. A book describes the paradigm in details, see
+[www.aviz.fr/Progressive/PDABook](https://www.aviz.fr/Progressive/PDABook).
 
 In the `ProgressiVis` language, all the executions are progressive by
 design; the system is never blocked performing lengthy operations, it
