@@ -973,6 +973,8 @@ class JSONEncoderNp(js.JSONEncoder):
             return o.tolist()
         if isinstance(o, PIntSet):
             return list(o)
+        if isinstance(o, bytes):
+            return o.decode()
         return js.JSONEncoder.default(self, o)
 
     @staticmethod

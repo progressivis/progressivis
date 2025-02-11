@@ -108,5 +108,8 @@ class PColumnComputedView(PColumnSelectedView):
                 self.func, len(values.shape) - 1, np.array(values)
             )
         if isinstance(raw_index, integer_types):
-            return ret[0]
+            if ret.shape:
+                return ret[0]
+            else:
+                return ret[()]
         return ret

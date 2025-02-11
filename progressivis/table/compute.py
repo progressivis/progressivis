@@ -31,6 +31,43 @@ def is_weekend(vec: Tuple[int, ...]) -> bool:
     return week_day_int(vec) >= 5
 
 
+def year(vec: Tuple[int, ...]) -> int:
+    return vec[0]
+
+
+def month(vec: Tuple[int, ...]) -> int:
+    return vec[1]
+
+
+def day(vec: Tuple[int, ...]) -> int:
+    return vec[2]
+
+
+def hour(vec: Tuple[int, ...]) -> int:
+    return vec[3]
+
+"""
+import numpy as np
+@Constructor.custom_function
+@np.vectorize
+def rain_level(val: float) -> str:
+    if np.isnan(val) or val < 0.07:
+        return "No"
+    if val < 0.19:
+        return "Light"
+    return "Rain"
+
+@np.vectorize
+def rain_level_in(val: float) -> str:
+    if np.isnan(val) or val < 0.07:
+        return "No"
+    if val < 0.19:
+        return "Light"
+    if val < 1.18:
+        return "Medium"
+    return "Heavy"
+"""
+
 class _Unchanged:
     pass
 

@@ -67,6 +67,8 @@ class MMapObject(object):
         return int(self.sizes[0])
 
     def encode(self, obj: Any) -> bytes:
+        if isinstance(obj, np.str_):
+            obj = str(obj)
         return marshal.dumps(obj)
 
     def decode(self, buf: bytes) -> Any:
