@@ -1,11 +1,12 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.6
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -85,10 +86,13 @@ heatmap.input.array = histogram2d.output.result
 # Show the dataflow, you need to install graphviz to run this cell
 # pip install graphviz
 #
-# import graphviz
-# src = csv.scheduler().to_graphviz()
-# gvz=graphviz.Source(src)
-# display(gvz)
+try:
+    import graphviz
+    src = csv.scheduler().to_graphviz()
+    gvz=graphviz.Source(src)
+    display(gvz)
+except ImportError:
+    pass
 
 # %%
 heatmap.display_notebook()
@@ -129,7 +133,7 @@ def observer(_):
         long_min, long_max = long_slider.value
         lat_min, lat_max = lat_slider.value
         await var_min.from_input({col_x: long_min, col_y: lat_min})
-        await var_up.from_input({col_x: long_max, col_y: lat_max})
+        await var_max.from_input({col_x: long_max, col_y: lat_max})
     aio.create_task(_coro())
 long_slider.observe(observer, "value")
 lat_slider.observe(observer, "value")
@@ -140,4 +144,4 @@ widgets.VBox([long_slider, lat_slider])
 csv.scheduler()
 
 # %%
-csv.scheduler().task_stop()
+# csv.scheduler().task_stop()
