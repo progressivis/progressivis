@@ -68,6 +68,7 @@ from progressivis.io.api import (
     VECLoader,
     ParquetLoader,
     SimpleCSVLoader,
+    ThreadedCSVLoader,
     Variable,
 )
 
@@ -161,6 +162,7 @@ __all__ = [
     "PACSVLoader",
     "VECLoader",
     "SimpleCSVLoader",
+    "ThreadedCSVLoader",
     "ParquetLoader",
     "Variable",
     "Stats",
