@@ -1123,10 +1123,11 @@ class Module(metaclass=ABCMeta):
         for islot in self._input_slots.values():
             if islot is not None:
                 islot.reset()
-        for oslots in self._output_slots.values():
-            for oslot in oslots or []:
-                if oslot is not None:
-                    oslot.reset()
+        # jdf: don't reset output slots, they may contain unprocessed information
+        # for oslots in self._output_slots.values():
+        #     for oslot in oslots or []:
+        #         if oslot is not None:
+        #             oslot.reset()
 
     def last_update(self) -> int:
         "Return the last time when the module was updated"

@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from threading import Thread
-from queue import Queue, ShutDown
+try:
+    from queue import Queue, ShutDown
+except ImportError:
+    pass
 from time import sleep
 from timeit import default_timer
 
