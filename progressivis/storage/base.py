@@ -216,9 +216,9 @@ class StorageEngine(Group):
             StorageEngine._default = self.name
         self._create_dataset_kwds: Dict[str, Any] = dict(create_dataset_kwds or {})
 
-    @staticmethod  # type: ignore
+    @staticmethod
     @contextmanager
-    def default_engine(engine: str) -> None:  # type: ignore
+    def default_engine(engine: str, ignore: Any) -> Any:
         if engine not in StorageEngine._engines:
             raise ValueError("Unknown storage engine %s", engine)
         saved = StorageEngine._default

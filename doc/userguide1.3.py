@@ -24,18 +24,17 @@ import progressivis.core.aio as aio
 
 col_x = "pickup_longitude"
 col_y = "pickup_latitude"
-lo_bnds = PDict({col_x: bounds.left, col_y: bounds.bottom})
-up_bnds = PDict({col_x: bounds.right, col_y: bounds.top})
-# Create a csv loader filtering out data outside NYC
+bnds_min = PDict({col_x: bounds.left, col_y: bounds.bottom})
+bnds_max = PDict({col_x: bounds.right, col_y: bounds.top})
+# Create a csv loader for the taxi data file
 csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=[col_x, col_y])
-# Create an indexing module on csv loader output columns
+# Create an indexing module on the csv loader output columns
 index = BinningIndexND()
-# actually one index per column
+# Creates one index per numeric column
 index.input.table = csv.output.result[col_x, col_y]
 # Create a querying module
 query = RangeQuery2d(column_x=col_x,
-                     column_y=col_y
-                    )
+                     column_y=col_y)
 # Variable modules allow to dynamically modify queries ranges
 var_min = Variable(name="var_min")
 var_max = Variable(name="var_max")

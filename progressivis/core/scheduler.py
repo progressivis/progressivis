@@ -573,6 +573,10 @@ class Scheduler:
         # Reset interaction mode
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
+        terminated_list = [m for m in self._run_list if m.is_terminated()]
+        for mod in terminated_list:
+            await mod.ending()
+
         self._run_list = new_list
         await self._loop_procs.fire(self, self._run_number)
         if first_run == self._run_number:  # no module ready

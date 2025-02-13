@@ -269,7 +269,11 @@ class ThreadedCSVLoader(Module):
                         self.thread_read_csv.terminate()
                         self.thread_read_csv = None
                     return self.state_terminated
-                self.thread_read_csv = ThreadedReadCSV(self.parser, self._input_stream)
+                self.thread_read_csv = ThreadedReadCSV(
+                    self.parser,
+                    self._input_stream,
+                    self.params.quantum
+                )
                 self.thread_read_csv.start()
                 self.filepath_or_buffer = None
                 self._file_mode = True
@@ -412,8 +416,10 @@ class ThreadedCSVLoader(Module):
                 else:
                     self.missing[k] = v
         return df
+
     def df_total_len(self) -> int:
         return sum([len(df) for df in self._df_todo_list])
+
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
@@ -475,6 +481,13 @@ class ThreadedCSVLoader(Module):
                 if not self._file_mode:
                     self.refresh_total_size()
         return self._return_run_step(self.state_ready, steps_run=creates)
+
+    async def ending(self) -> None:
+        # print(f"Module {self.name} is ending")
+        if self.thread_read_csv is not None:
+            self.thread_read_csv.terminate()
+            self.thread_read_csv = None
+        await super().ending()
 
 
 csv_docstring = (

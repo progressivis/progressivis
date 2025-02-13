@@ -123,7 +123,7 @@ class RunIfAnyAndAny(FooABC):
 
 class InvalidProcessAfterRun(FooABC):
     @run_if_any("a", "c")  # type: ignore
-    @process_slot("a", "b", "c", "d", reset_if=False)
+    @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
     @and_any("b", "d")  # type: ignore
     def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
         assert self.context is not None
