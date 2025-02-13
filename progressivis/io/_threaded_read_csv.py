@@ -35,10 +35,11 @@ def test(filename, chunksize=100000):
 
 
 class ThreadedReadCSV(Thread):
-    def __init__(self, reader: pd.io.parsers.readers.TextFileReader, quantum=0.5):
+    def __init__(self, reader: pd.io.parsers.readers.TextFileReader, input_stream, quantum=0.5):
         super().__init__(daemon=True)
         self.reader = reader
         self.queue = Queue()
+        self._input_stream = input_stream
         self.quantum = quantum
         self.times = np.zeros(5, dtype=np.float32)
         self.counts = np.zeros(5, dtype=np.int32)
@@ -64,7 +65,7 @@ class ThreadedReadCSV(Thread):
             if self.terminated:
                 break  # Behave as if the stream was closed
             # print(f"loaded {id(df)}")
-            self.queue.put(df)
+            self.queue.put((self._input_stream.tell(), df))
             self.reader.chunksize = self._compute_steps(last, len(df))
             last = default_timer()
 

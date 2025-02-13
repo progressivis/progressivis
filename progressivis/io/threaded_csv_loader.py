@@ -148,6 +148,7 @@ class ThreadedCSVLoader(Module):
         self._imputer = imputer
         self._last_opened: Any = None
         self._df_todo_list: list[pd.DataFrame] = []
+        self._file_offset: int = 0
 
     def rows_read(self) -> int:
         return self._rows_read
@@ -236,7 +237,8 @@ class ThreadedCSVLoader(Module):
             or self._input_stream is None
         ):
             return self._last_progress
-        pos = self._input_stream.tell()
+        # pos = self._input_stream.tell()
+        pos = self._file_offset
         length = len(self.result)
         if length <= 0:
             return self._last_progress
@@ -265,7 +267,7 @@ class ThreadedCSVLoader(Module):
                         self.thread_read_csv.terminate()
                         self.thread_read_csv = None
                     return self.state_terminated
-                self.thread_read_csv = ThreadedReadCSV(self.parser)
+                self.thread_read_csv = ThreadedReadCSV(self.parser, self._input_stream)
                 self.thread_read_csv.start()
                 self.filepath_or_buffer = None
                 self._file_mode = True
@@ -432,6 +434,7 @@ class ThreadedCSVLoader(Module):
             new_dfs = self.thread_read_csv.next()
             if new_dfs is not None:
                 self._df_todo_list.extend(new_dfs)
+                print("new_dfs:", len(new_dfs))
             if not self._df_todo_list:
                 raise ProgressiveStopIteration("no more data")
         todo_cnt = step_size
@@ -439,7 +442,8 @@ class ThreadedCSVLoader(Module):
         while todo_cnt > 0:
             if not self._df_todo_list:
                 break
-            df = self._df_todo_list.pop(0)
+            offset, df = self._df_todo_list.pop(0)
+            self._file_offset = offset
             #print("df:", df )
             len_df = len(df)
             todo_cnt -= len_df
