@@ -434,7 +434,6 @@ class ThreadedCSVLoader(Module):
             new_dfs = self.thread_read_csv.next()
             if new_dfs is not None:
                 self._df_todo_list.extend(new_dfs)
-                print("new_dfs:", len(new_dfs))
             if not self._df_todo_list:
                 raise ProgressiveStopIteration("no more data")
         todo_cnt = step_size
