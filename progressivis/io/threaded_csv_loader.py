@@ -214,6 +214,7 @@ class ThreadedCSVLoader(Module):
         self.csv_kwds["encoding"] = encoding
         self.csv_kwds["compression"] = compression
         self._last_opened = filepath
+        self._file_offset = 0
         return self._input_stream
 
     def close(self) -> None:
@@ -229,6 +230,7 @@ class ThreadedCSVLoader(Module):
         self._input_compression = None
         self._total_input_size += self._input_size
         self._input_size = 0
+        self._file_offset = 0
 
     def get_progress(self) -> Tuple[int, int]:
         if (
