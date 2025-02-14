@@ -4,10 +4,13 @@ from . import ProgressiveTest, skipIf
 from progressivis import Sink, ThreadedCSVLoader, get_dataset
 from progressivis.core import aio
 import os
+import sys
 
 TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
 
-@skipIf(os.getenv("CI"), "for now it works only with python 3.13")
+
+@skipIf(os.getenv("CI") or sys.version_info < (3, 13),
+        "for now, works only with python >= 3.13")
 class TestProgressiveLoadCSV(ProgressiveTest):
     def runit(self, module: ThreadedCSVLoader) -> int:
         module.run(1)

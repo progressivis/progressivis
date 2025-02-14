@@ -1112,7 +1112,7 @@ class Module(metaclass=ABCMeta):
             try:
                 proc(self, run_number)
             except Exception as exc:
-                logger.warning("Exception in ending proc: ", exc)
+                logger.warning("Exception in ending proc: %s", exc)
 
     async def ending(self) -> None:
         """Ends a module.

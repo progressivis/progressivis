@@ -6,35 +6,12 @@ try:
     from queue import Queue, ShutDown
 except ImportError:
     pass
-from time import sleep
 from timeit import default_timer
 
 import pandas as pd
 import numpy as np
 
 TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
-
-def ignore(x):
-    return x
-
-def threaded_read_csv(
-        reader: pd.io.parsers.readers.TextFileReader,
-        queue: Queue):
-    print("Starting thread")
-    for df in reader:
-        queue.put(df)
-    queue.shutdown()
-
-def test(filename, chunksize=100000):
-    reader = pd.read_csv(filename, index_col=False, chunksize=chunksize)
-    q = Queue()
-    thread = Thread(target=threaded_read_csv, args=(reader, q))
-    thread.start()
-    while True:
-        print("Waiting for next df")
-        df = q.get()
-        ignore(df)
-        q.task_done()
 
 
 class ThreadedReadCSV(Thread):
@@ -90,50 +67,3 @@ class ThreadedReadCSV(Thread):
             if q.empty():
                 break
         return ret
-
-def test2(filename, initialchunksize=1000):
-    start = default_timer()
-    total = 0
-    reader = pd.read_csv(filename, index_col=False, chunksize=initialchunksize)
-    t = ThreadedReadCSV(reader)
-    print(f"Initialization took {default_timer()-start}s")
-    start = default_timer()
-    t.start()
-    while True:
-        sleep(1)
-        dfs = t.next()
-        if dfs is None:
-            break
-        sum = 0
-        for df in dfs:
-            sum += len(df)
-            total += sum
-        print(f"Read {len(dfs)} chunks of {sum}/{total} items")
-    print(f"Done reading {total} lines in {default_timer()-start}s")
-
-def test3(filename, initialchunksize=1000):
-    start = default_timer()
-    total = 0
-    reader = pd.read_csv(filename, index_col=False, chunksize=initialchunksize)
-    t = ThreadedReadCSV(reader)
-    print(f"Initialization took {default_timer()-start}s")
-    start = default_timer()
-    t.start()
-    while True:
-        sleep(1)
-        dfs = t.next()
-        if dfs is None:
-            break
-        sum = 0
-        for df in dfs:
-            sum += len(df)
-            total += sum
-        print(f"Read {len(dfs)} chunks of {sum}/{total} items")
-        if total > 1_000_000:
-            print("Terminating")
-            t.terminate()
-    print(f"Done reading {total} lines in {default_timer()-start}s")
-
-
-if __name__ == "__main__":
-    test2(TAXI_FILE)
