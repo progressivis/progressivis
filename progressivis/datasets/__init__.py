@@ -67,6 +67,11 @@ def get_dataset(name: str, **kwds: Any) -> str:
         return generate_random_parquet(
             f"{DATA_DIR}/smallfile.parquet", csv_file, n_cols=n_cols
         )
+    if name == "smallfile_multiscale":
+        kw = _check_kwds(kwds, rows=30_000)
+        return generate_multiscale_random_csv(
+            f"{DATA_DIR}/smallfile_multiscale.csv", **kw
+        )
 
     if name == "warlogs":
         return wget_file(

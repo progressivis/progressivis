@@ -39,7 +39,7 @@ jobs:
         git submodule init
         git submodule update
         python -m pip install .
-        coverage run -m pytest tests -vv
+        coverage run -m pytest --durations=50 tests -vv
 
     - name: Coverage
       run: |

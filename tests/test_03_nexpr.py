@@ -62,8 +62,8 @@ class TestNumExpr(ProgressiveTest):
         self.assertTrue(np.allclose(res[:, 1], ne_2, equal_nan=True))
         return first_2, first_3, second_2, second_3
 
-    def test_num_expr(self) -> Tuple[Any, ...]:
-        return self.t_num_expr_impl(NumExprSample)
+    def test_num_expr(self) -> None:
+        self.t_num_expr_impl(NumExprSample)
 
-    def test_num_expr2(self) -> Tuple[Any, ...]:
-        return self.t_num_expr_impl(NumExprSample2)
+    def test_num_expr2(self) -> None:
+        self.t_num_expr_impl(NumExprSample2)

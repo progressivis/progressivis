@@ -60,7 +60,7 @@ class TestHistogram1D(ProgressiveTest):
     def t_histogram1d_impl(self, **kw: Any) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
         )
         stirrer = Stirrer(update_column="_2", fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input[0] = csv.output.result
