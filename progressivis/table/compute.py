@@ -18,6 +18,10 @@ def week_day_int(vec: Tuple[int, ...]) -> int:
     return datetime.datetime(*vec).weekday()  # type: ignore
 
 
+def year_day_int(vec: Tuple[int, ...]) -> int:
+    return datetime.datetime(*vec).timetuple().tm_yday  # type: ignore
+
+
 def week_day(vec: Tuple[int, ...]) -> str:
     return calendar.day_name[week_day_int(vec)]
 
@@ -48,7 +52,7 @@ def hour(vec: Tuple[int, ...]) -> int:
 
 """
 import numpy as np
-@Constructor.custom_function
+@custom_function
 @np.vectorize
 def rain_level(val: float) -> str:
     if np.isnan(val) or val < 0.07:
