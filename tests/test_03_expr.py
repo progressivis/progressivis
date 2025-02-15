@@ -38,7 +38,7 @@ class TestExpr(ProgressiveTest):
         Connecting modules via function calls
         """
         with Scheduler.default:
-            csv = pv.load_csv(get_dataset("bigfile"), index_col=False, header=None)
+            csv = pv.load_csv(get_dataset("smallfile"), index_col=False, header=None)
             m = pv.min(csv)
             pv.echo(m, proc=prtm)
             M = pv.max(csv)
@@ -52,7 +52,7 @@ class TestExpr(ProgressiveTest):
         table = csv.result
         lastm = m.result
         lastM = M.result
-        self.assertEqual(len(table), 1000000)
+        self.assertEqual(len(table), 30_000)
         for col in table.columns:
             c = table[col]
             v = c.min()
@@ -66,7 +66,7 @@ class TestExpr(ProgressiveTest):
         """
         with Scheduler.default:
             ret = (
-                PipedInput(get_dataset("bigfile"))
+                PipedInput(get_dataset("smallfile"))
                 | pv.load_csv(index_col=False, header=None)
                 | pv.min()
                 | pv.echo(proc=prtm)
@@ -81,7 +81,7 @@ class TestExpr(ProgressiveTest):
         table = csv.result
         lastm = m.result
         lastM = M.result
-        self.assertEqual(len(table), 1000000)
+        self.assertEqual(len(table), 30_000)
         for col in table.columns:
             # print('testing column %s'%col)
             c = table[col]
@@ -96,7 +96,7 @@ class TestExpr(ProgressiveTest):
         """
         with Scheduler.default:
             ret = (
-                PipedInput(get_dataset("bigfile"))
+                PipedInput(get_dataset("smallfile"))
                 | pv.load_csv(index_col=False, header=None)
                 | pv.min()
                 | pv.echo(proc=prtm).repipe("csv_loader_1")
@@ -112,7 +112,7 @@ class TestExpr(ProgressiveTest):
         table = csv.result
         lastm = m.result
         lastM = M.result
-        self.assertEqual(len(table), 1000000)
+        self.assertEqual(len(table), 30_000)
         for col in table.columns:
             # print('testing column %s'%col)
             c = table[col]

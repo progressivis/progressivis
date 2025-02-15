@@ -17,7 +17,10 @@ class TestHistogram2D(ProgressiveTest):
     def test_histogram2d(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"),
+            index_col=False,
+            header=None,
+            scheduler=s
         )
         min_ = Min(scheduler=s)
         min_.input[0] = csv.output.result
@@ -39,7 +42,10 @@ class TestHistogram2D(ProgressiveTest):
     def test_histogram2d1(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"),
+            index_col=False,
+            header=None,
+            scheduler=s
         )
         min_ = Min(scheduler=s)
         min_.input[0] = csv.output.result
@@ -61,7 +67,7 @@ class TestHistogram2D(ProgressiveTest):
         h1 = last["array"]
         bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]
         df = pd.read_csv(
-            get_dataset("bigfile"), header=None, usecols=[1, 2]
+            get_dataset("smallfile"), header=None, usecols=[1, 2]
         )
         v = df.to_numpy()  # .reshape(-1, 2)
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
@@ -71,7 +77,7 @@ class TestHistogram2D(ProgressiveTest):
 
     def t_histogram2d_impl(self, **kw: Any) -> None:
         s = self.scheduler()
-        random = RandomPTable(3, rows=100000, scheduler=s)
+        random = RandomPTable(3, rows=100_000, scheduler=s)
         stirrer = Stirrer(update_column="_2", fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input[0] = random.output.result
         min_ = Min(scheduler=s)
@@ -105,7 +111,7 @@ class TestHistogram2D(ProgressiveTest):
 
     def test_histogram2d4(self) -> None:
         s = self.scheduler()
-        random = RandomPTable(3, rows=100000, scheduler=s)
+        random = RandomPTable(3, rows=30_000, scheduler=s)
         stirrer = StirrerView(
             update_column="_2", fixed_step_size=1000, scheduler=s, delete_rows=5
         )

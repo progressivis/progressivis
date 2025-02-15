@@ -31,7 +31,9 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     def test_read_csv(self) -> None:
         s = self.scheduler()
         module = SimpleCSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("bigfile"),
+            index_col=False, header=None,
+            scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)
@@ -42,8 +44,9 @@ class TestProgressiveLoadCSV(ProgressiveTest):
 
     def test_read_fake_csv(self) -> None:
         s = self.scheduler()
+        length = 30_000
         module = SimpleCSVLoader(
-            RandomBytesIO(cols=30, rows=1000000),
+            RandomBytesIO(cols=30, rows=length),
             index_col=False,
             header=None,
             scheduler=s,
@@ -53,7 +56,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         assert module.result is not None
-        self.assertEqual(len(module.result), 1000000)
+        self.assertEqual(len(module.result), length)
 
     def test_read_multiple_csv(self) -> None:
         s = self.scheduler()

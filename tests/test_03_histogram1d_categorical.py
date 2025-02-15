@@ -10,7 +10,7 @@ class TestHistogram1DCategorical(ProgressiveTest):
     def test_h1d_cat(self) -> None:
         s = self.scheduler()
         random = SimpleCSVLoader(
-            get_dataset("bigfile_multiscale"), nrows=10_000, scheduler=s
+            get_dataset("smallfile_multiscale"), nrows=10_000, scheduler=s
         )
         h1d_cat = Histogram1DCategorical(column="S", scheduler=s)
         h1d_cat.input[0] = random.output.result

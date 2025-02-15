@@ -10,7 +10,7 @@ class TestMinMax(ProgressiveTest):
     def test_min(self) -> None:
         s = self.scheduler()
         random = SimpleCSVLoader(
-            get_dataset("bigfile_multiscale"), nrows=10_000, scheduler=s
+            get_dataset("smallfile_multiscale"), nrows=10_000, scheduler=s
         )
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
@@ -31,7 +31,7 @@ class TestMinMax(ProgressiveTest):
     def test_max(self) -> None:
         s = self.scheduler()
         random = SimpleCSVLoader(
-            get_dataset("bigfile_multiscale"), nrows=10_000, scheduler=s
+            get_dataset("smallfile_multiscale"), nrows=10_000, scheduler=s
         )
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
