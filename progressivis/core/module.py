@@ -378,22 +378,24 @@ class Module(metaclass=ABCMeta):
                 doclist.append(f"{sd.doc}\n")
             else:
                 doclist.append("\n")
+        shift_ = 0
+        shift2 = 4
         if cls.parameters:
-            _section(4, "Module parameters")
+            _section(shift_, "Module parameters")
             for n, t, v in cls.parameters:
-                _param(8, n, str(t), v)
+                _param(shift2, n, str(t), v)
         if cls.inputs:
-            _section(4, "Input slots")
+            _section(shift_, "Input slots")
             for sd in cls.inputs:
                 if sd.name == "_params":
                     continue
-                _slot(8, sd, cls)
+                _slot(shift2, sd, cls)
         if cls.outputs:
-            _section(4, "Output slots")
+            _section(shift_, "Output slots")
             for sd in cls.outputs:
                 if sd.name == "_trace":
                     continue
-                _slot(8, sd, cls, "out")
+                _slot(shift2, sd, cls, "out")
         raw_doc = "".join(doclist)
         from jinja2 import Template
         tmpl = Template(raw_doc)
