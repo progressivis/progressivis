@@ -1,5 +1,5 @@
 (basic-variant)=
-## Dealing with Noisy Data
+# Dealing with Noisy Data
 
 Big data is almost always noisy. The techniques that work on small data
 should be adapted to overcome this noise. As an illustration, the
