@@ -30,6 +30,7 @@ computation is being done.
    userguide
    userguide2
    notebooks
+   gallery
    reference
    module_library
    unit_tests

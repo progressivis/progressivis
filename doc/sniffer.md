@@ -1,3 +1,7 @@
+```{eval-rst}
+:orphan:
+```
+
 # The Sniffer
 ![](viz_images/sniffer.png)
 
