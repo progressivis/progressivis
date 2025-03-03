@@ -2,6 +2,7 @@
 
 This page shows different scenarios implemented with `ipyprogressivis`
 
+(taxis-precipitations-scatterplot)=
 ## NYC Taxis / Precipitations  scatterplot
 
 ```{eval-rst}
@@ -11,7 +12,7 @@ This page shows different scenarios implemented with `ipyprogressivis`
 
 ```
 
-
+(taxis-precipitations-line-chart)=
 ## NYC Taxis / Precipitations  line chart
 
 ```{eval-rst}
@@ -21,6 +22,7 @@ This page shows different scenarios implemented with `ipyprogressivis`
 
 ```
 
+(scenario-with_snippets)=
 ## A scenario using `progressivis` snippets
 
 

@@ -40,7 +40,7 @@ In addition, the graph also shows you when a widget needs attention or is finish
 
 All the sections of this documentation use the DAG Widget to provide a high-level overview of progressive pipelines. The detailed graph visualization used in the [user guide](userguide) could be used as well, but it would give too much details on the topology of the progressive dataflow for a high-level overview.
 
-## Working with chaining widgets (user guide)
+## A `ProgressiBook` user guide
 
 Let's return to the scenario developed in the userguide, starting with the [basic variant](basic-variant).
 
@@ -163,57 +163,42 @@ You have to activate the sniffer and select the desired columns before loading:
 
 Possible topology:
 
-![](viz_images/rand_loader_topology.png)
+![](viz_images/blobs_loader_topology.png)
 
 ##### Function:
 
-Allows users to code their own loader in _Python_, respecting a few conventions to ensure connectivity.
+Allows users to code their own loader in _Python_.
 
-After starting, a pre-filled magic cell is displayed:
 
-```python
-%%pv_run_cell -p Rand,0
-scheduler = proxy.scheduler
-# Warning: keep the code above unchanged
-# Put your own imports here
-...
-...
-with scheduler:
-    # Put your own code here
-    ...
-    ...
-    # fill in the following proxy attributes:
-    proxy.output_module = ...  # Module | TableFacade
-    proxy.output_slot = 'result'  # str
-    proxy.freeze = True  # bool
-    # Warning: keep the code below unchanged
-    display(proxy.resume())
-```
+This widget is an alias for the [Snippet widget](snippet-widget), which lets you integrate portions of user-supplied code into a `ProgressiBook` scenario.
+The only difference from the general case is that the module corresponding to the `input_module` parameter does not supply data, and is
+useful exclusively to get the scheduler. Consequently, the widget created will always be attached to the root of the `DAG`.
 
-To illustrate, a simple example is given below. It simulates data loading via a random float data generator in the form of a 4-column `PTable`:
+An example is provided [here](scenario-with_snippets). You can see that the following snippet (representing a progressive data generator) uses the `input_module` parameter only to obtain the scheduler:
+
 
 ```python
-%%pv_run_cell -p Rand,0
-scheduler = proxy.scheduler
-# Warning: keep the code above unchanged
-# Put your own imports here
-from progressivis.stats.api import RandomPTable
+# progressivis-snippet
+from progressivis.stats.blobs_table import BlobsPTable
 from progressivis.core.api import Sink
-with scheduler:
-    # Put your own code here
-    random = RandomPTable(4, rows=100_000_000, scheduler=scheduler)
-    sink = Sink(scheduler=scheduler)
-    sink.input.inp = random.output.result
-    # fill in the following proxy attributes:
-    proxy.output_module = random
-    proxy.output_slot = 'result'
-    proxy.freeze = True
-    # Warning: keep the code below unchanged
-    display(proxy.resume())
-```
 
-The generated code preceding the user code provides access to the `scheduler`, which is essential for loader operation. It is not recommended to modify this code.
-The user code must fill the proxy attributes required for connection: `proxy.output_module` and `proxy.output_slot`. The `proxy.freeze` attribute plays the same role as the checkbox of the same name found in some widgets. It determines behavior in replay mode, see [here](recording-scenario).
+# NB: register_snippet and SnippetResult used below
+# were already imported from ipyprogressivis.widgets.chaining.custom
+
+@register_snippet
+def blobs_table(input_module, input_slot, columns):
+    n_samples = 100_000_000
+    n_components = 2
+    rtol = 0.01
+    centers = [(0.1, 0.3, 0.5), (0.7, 0.5, 3.3), (-0.4, -0.3, -11.1)]
+    scheduler = input_module.scheduler()
+    with scheduler:
+        data = BlobsPTable(columns=['_0', '_1', '_2'],  centers=centers,
+                           cluster_std=0.2, rows=n_samples, scheduler=scheduler)
+        sink = Sink(scheduler=scheduler)
+        sink.input.inp = data.output.result
+    return SnippetResult(output_module=data, output_slot="result")
+```
 
 ### Table operators category
 
@@ -372,93 +357,77 @@ Obviously, the widest range of operations is proposed for numerical types:
 
 ### Free coding category
 
-#### Python
+(snippet-widget)=
+#### Snippet
 
 Possible topology:
 
-![](viz_images/python_topology.png)
+![](viz_images/snippet_topology.png)
 
 
 ##### Function:
 
-It's a pseudo-widget that lets you insert custom code into a `CW` topology via various forms of _magic cells_. Custom code can be chained after any widget by selecting "Python" in the widget's `Next stage` list and pushing `Chain it` button.
+This is a widget that lets you insert custom code into a `CW` topology.
 
-After starting, a pre-filled magic cell is displayed:
+The user code must first be imported or defined in one or more cells. To be usable by the system, it must respect a few simple conventions:
+
+* the first line of each cell must begin with the comment `# progressivis-snippet`
+
+* The user code must be made accessible through a function that respects the following signature:
+```python
+def name_to_be changed(input_module: Module, input_slot: str, columns: list[str]) -> SnippetReturn | None:
+    ... # the typing is optional but recommended
+```
+* this function must be decorated with the `@register_snippet` decorator already imported into the runtime context from `ipyprogressivis.widgets.chaining.custom`:
 
 ```python
-%%pv_run_cell -p Python,0
-# The 'proxy' name is present in this context and you can reference it.
-# it provides the following attributes:
-#  - proxy.input_module: Module | TableFacade
-#  - proxy.input_slot: str
-#  - proxy.input_dtypes: dict[str, str] | None
-#  - proxy.scheduler: Scheduler
-# Put your own imports here
-...
-...
-with scheduler:
-    # Put your own code here
+@register_snippet
+def my_fonction(input_module: Module, input_slot: str, columns: list[str]) -> SnippetResult | None:
     ...
-    ...
-    # fill in the following proxy attributes:
-    proxy.output_module = ...  # Module | TableFacade
-    proxy.output_slot = 'result'  # str
-    proxy.freeze = True  # bool
-    # Warning: keep the code below unchanged
-    display(proxy.resume())
+
+# or
+
+from my_module import my_function
+register_snippet(my_function)
 ```
 
-To illustrate, a simple example is given below. It implements a 'range querying' 2D stage:
+* the function must return a `SnippetResult` object (the underlying class is already imported into the runtime context from `ipyprogressivis.widgets.chaining.custom`) or None if it implements a "leaf" component.
 
-```python
-%%pv_run_cell -p Python,0
-# proxy object provides the following attributes:
-#  input_module: Module | TableFacade
-#  input_slot: str
-#  input_dtypes: dict[str, str] | None
-#  scheduler: Scheduler
-# Put your own imports here
-from progressivis.table.range_query_2d import RangeQuery2d
-from progressivis.table.constant import ConstDict
-from progressivis.utils.psdict import PDict
-from progressivis.core.api import Sink
-import progressivis.core.aio as aio
-scheduler = proxy.scheduler
-with scheduler:
-    # Put your own code here
-    low = PDict({"_1_arcsin": 0.2, "_2_arccos": 0.2})
-    low = ConstDict(pdict=low, scheduler=scheduler)
-    high = PDict({"_1_arcsin": 1.2, "_2_arccos": 1.2})
-    high = ConstDict(pdict=high, scheduler=scheduler)
-    range_qry = RangeQuery2d(column_x="_1_arcsin", column_y="_2_arccos", scheduler=scheduler)
-    range_qry.create_dependent_modules(
-        proxy.input_module, proxy.input_slot, min_value=low, max_value=high
-    )
-    sink = Sink(scheduler=scheduler)
-    sink.input.inp = range_qry.output.result
-    # fill in the following attributes:
-    proxy.output_module = range_qry
-    proxy.output_slot = 'result'
-    proxy.freeze = True
-    # Warning: keep the code below unchanged
-    display(proxy.resume())
-```
-
-The pre-filled code preceding the user code provides access to a proxy object giving access via three attributes (`input_module`, `input_slot` and `scheduler`) to connection data with the input widget. It is not recommended to modify this code.
-
-The user code must fill the proxy attributes required by the next stage for connection: `proxy.output_module` and `proxy.output_slot`. The `proxy.freeze` attribute plays the same role as the checkbox of the same name found in some widgets. It determines behavior in replay mode, see [here](recording-scenario).
-
-
-**NB:** In addition to the `%%pv_run_cell` command for entering code online, users can save their scripts (let's say `foo.py`) in the usual `CW` settings location (`$HOME/.progressivis/widget_settings/Python/foo.py) and execute them with the following command:
-
-```python
-%pv_run_cell -f foo.py
-```
+Two complete examples are provided [here](scenario-with_snippets). The first one is a loader (there are no input data) and the second implements an interactive range query 2D widget featuring several progressivis artifacts.
 
 #### CUSTOM Loader
 
-This is a particular case of the previous pseudo-widget, useful when code is not chained from another `CW`. This is the case for custom data loaders explained [here](custom-loader)
+This is an alias of the [Snippet](snippet-widget), useful when code is not chained from another `CW`. This is the case for custom data loaders explained [here](custom-loader)
 
+
+#### Other custom functions
+
+Some widgets can use user-defined functions (e.g. `View`, `GroupBy` and `Aggregate`).
+
+To be visible in the interface of the underlying widgets, these functions must respect a few conventions:
+
+* like snippets, they must be defined or imported in cells beginning with the comment `# progressivis-snippet`
+* they must be decorated with the `@register_function` decorator
+* their signature must comply with the requirements of the addressed progressivis module.
+
+A complete example is provided [here](taxis-precipitations-line-chart).
+
+In the underlying function  definition:
+
+```python
+# progressivis-snippets
+import numpy as np
+@register_function
+@np.vectorize
+def rain_level(val: float) -> str:
+    if np.isnan(val) or val < 0.07:
+        return "No"
+    if val < 0.19:
+        return "Light"
+    return "Rain"
+```
+
+We can see that the `rain_level` function is decorated with `@register_function` to be visible for widgets. On the other hand, it's vectorization (via @numpy.vectorize) is a requirement of the underlying [progressivis feature](computed-columns).
 
 
 ### Display tools category
