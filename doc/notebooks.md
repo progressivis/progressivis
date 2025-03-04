@@ -393,6 +393,21 @@ register_snippet(my_function)
 
 * the function must return a `SnippetResult` object (the underlying class is already imported into the runtime context from `ipyprogressivis.widgets.chaining.custom`) or None if it implements a "leaf" component.
 
+The widget lets you choose how columns will be passed to the snippet function (all, a selection of columns as a list, a selection as a dictionary):
+
+![](viz_images/snippet_widget_all.png)
+
+By selecting a list, a multiple selection is proposed:
+
+![](viz_images/snippet_widget_as_list.png)
+
+If a dictionary is chosen, keys must be entered for the selected columns:
+
+![](viz_images/snippet_widget_as_dict.png)
+
+
+
+
 Two complete examples are provided [here](scenario-with_snippets). The first one is a loader (there are no input data) and the second implements an interactive range query 2D widget featuring several progressivis artifacts.
 
 #### CUSTOM Loader
