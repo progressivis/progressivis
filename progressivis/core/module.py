@@ -1122,9 +1122,10 @@ class Module(metaclass=ABCMeta):
         """
         self.do_ending(self._last_update)
         self._state = Module.state_terminated
-        for islot in self._input_slots.values():
-            if islot is not None:
-                islot.reset()
+        # jdf+cp talk 2025-03-05: don't reset input slots, they may contain unprocessed information
+        #for islot in self._input_slots.values():
+        #    if islot is not None:
+        #        islot.reset()
         # jdf: don't reset output slots, they may contain unprocessed information
         # for oslots in self._output_slots.values():
         #     for oslot in oslots or []:
