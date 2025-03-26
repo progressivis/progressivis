@@ -10,13 +10,6 @@ import os.path
 from setuptools import setup, Command
 from setuptools.extension import Extension
 
-def _is_linux():
-    return sys.platform == "linux"
-
-CONDA_PREFIX = os.getenv("CONDA_PREFIX", "")
-WITH_CXX = _is_linux()
-
-
 PACKAGES = [
     "progressivis",
     "progressivis.utils",
@@ -32,6 +25,9 @@ PACKAGES = [
     "progressivis.server",
     "progressivis.table",
 ]
+
+def _is_linux():
+    return sys.platform == "linux"
 
 
 def _cythonize(exts):
@@ -100,7 +96,7 @@ EXT_PYBIND11 = [
             "xtl/include",
             "CRoaringUnityBuild",
             os.path.join(sys.prefix, "include"),
-            os.path.join(CONDA_PREFIX, "include"),
+            # os.path.join(CONDA_PREFIX, "include"),
             os.path.join(sys.prefix, "Library", "include"),
         ],
         extra_compile_args=["-std=c++17", "-Wall", "-O0", "-g"] if _is_linux() else ["-std=c++17",],
@@ -119,7 +115,7 @@ setup(
     url="https://github.com/progressivis/progressivis",
     packages=PACKAGES,
     platforms="any",
-    ext_modules=_cythonize(EXTENSIONS) + EXT_PYBIND11 if WITH_CXX else [],
+    ext_modules=_cythonize(EXTENSIONS),
     package_data={
         # If any package contains *.md, *.txt or *.rst files, include them:
         "doc": ["*.md", "*.rst"],
