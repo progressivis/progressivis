@@ -14,8 +14,7 @@ def _is_linux():
     return sys.platform == "linux"
 
 CONDA_PREFIX = os.getenv("CONDA_PREFIX", "")
-MYBINDER = os.getenv("USER") == "jovyan"
-WITH_CXX = (not MYBINDER) and _is_linux()
+WITH_CXX = _is_linux()
 
 
 PACKAGES = [
