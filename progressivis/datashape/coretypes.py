@@ -173,8 +173,8 @@ class Mono(with_metaclass(Type, object)):
 
     def __mul__(self, other):
         if isinstance(other, _strtypes):
-            import progressivis.datashape
-            return datashape.dshape(other).__rmul__(self)
+            import progressivis.datashape as pds
+            return pds.dshape(other).__rmul__(self)
         if isinstance(other, _inttypes):
             other = Fixed(other)
         if isinstance(other, DataShape):
@@ -184,8 +184,8 @@ class Mono(with_metaclass(Type, object)):
 
     def __rmul__(self, other):
         if isinstance(other, _strtypes):
-            import progressivis.datashape
-            return self * datashape.dshape(other)
+            import progressivis.datashape as pds
+            return self * pds.dshape(other)
         if isinstance(other, _inttypes):
             other = Fixed(other)
 
