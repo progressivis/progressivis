@@ -37,3 +37,4 @@ repos:
           - 'typing_extensions'
           - 'types-setuptools'
           - 'typeguard'
+          - 'duckdb'

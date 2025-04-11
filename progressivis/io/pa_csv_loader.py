@@ -346,7 +346,7 @@ class PACSVLoader(BaseLoader):
             logger.info("Loaded %d lines", self._rows_read)
             if self.force_valid_ids:
                 if self._columns is None:
-                    self._column = normalize_columns(bat_list[0].schema.names)
+                    self._columns = normalize_columns(bat_list[0].schema.names)
                 for i, bat in enumerate(bat_list):
                     if bat.schema.names == self._columns:
                         continue

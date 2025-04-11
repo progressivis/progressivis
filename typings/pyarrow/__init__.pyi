@@ -73,3 +73,10 @@ def array(v: Any, type: Any) -> Any:
 
 class TimestampArray:
     ...
+
+class lib:
+    class RecordBatchReader:
+        def read_next_batch(self) -> RecordBatch: ...
+
+
+__all__ = ["lib"]
