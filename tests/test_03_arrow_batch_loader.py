@@ -32,13 +32,3 @@ class TestArrowBatchLoader(ProgressiveTest):
 
 if __name__ == "__main__":
     ProgressiveTest.main()
-
-"""
-con = duckdb.connect(database=":memory:")
-con.execute(f"SELECT * FROM read_parquet('{get_dataset("bigfile_parquet")}')")
-reader = con.fetch_record_batch(1000)
-while True:
-    reader.read_next_batch()
-#import pdb;pdb.set_trace()
-#print(con.show())
-"""
