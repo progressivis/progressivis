@@ -50,8 +50,48 @@ dependencies = [
     "click",
 ]
 
+[project.optional-dependencies]
 
-# Important: Remove any existing version declaration
+jupyter = ["ipyprogressivis@git+https://github.com/progressivis/ipyprogressivis.git"]
+
+docs = [
+    "sphinx<8",
+    "sphinx-gallery>=0.11.1",
+    "sphinx-autodoc-typehints>=1.20.0",
+    "sphinxcontrib-napoleon>=0.7",
+    "myst-parser>=0.18.1",
+    "pydata-sphinx-theme>=0.12.0",
+    "sphinxcontrib-mermaid",
+    "graphviz",
+    "jinja2",
+    "sphinxemoji"
+]
+
+test = [
+    "pytest",
+    "pytest_cov"
+]
+
+typing = [
+    "mypy>=1.0.1",
+    "numpy",
+    "ipython",
+    "jinja2",
+    "sqlalchemy-stubs",
+    "pandas-stubs",
+    "traits-stubs",
+    "traittypes",
+    "types-pillow",
+    "types-pytz",
+    "types-pyyaml",
+    "types-requests",
+    "types-urllib3",
+    "typing-extensions",
+    "typing_extensions",
+    "types-setuptools",
+    "typeguard",
+    "duckdb",
+]
 
 [project.urls]
 Homepage = "https://github.com/progressivis/progressivis"
@@ -94,6 +134,8 @@ include_numpy = true
 include_pyarrow = false
 compile_py = false
 
+[tool.hatch.metadata]
+allow-direct-references = true
 
 
 directives = { boundscheck = false, nonecheck = false, language_level = 3, binding = true }

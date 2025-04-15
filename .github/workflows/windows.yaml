@@ -35,8 +35,7 @@ jobs:
 
     - name: Run tests
       run: |
-        python -m pip install -r requirements_ci.txt
-        python -m pip install .
+        python -m pip install .[test]
         coverage run -m pytest tests -vv
 
     - name: Coverage
