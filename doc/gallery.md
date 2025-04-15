@@ -41,3 +41,17 @@ The notebook shown below is downloadable [here](https://github.com/progressivis/
 
 ```
 
+(taxis-borough)=
+## A scenario using `duckdb` in a snippet
+
+
+The notebook shown below is downloadable [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/taxis_borough.ipynb).
+
+
+```{eval-rst}
+.. raw:: html
+
+   <iframe src="_static/taxis_borough.html" height="2000px" width="100%"></iframe>
+
+```
+
