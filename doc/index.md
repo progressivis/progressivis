@@ -28,7 +28,6 @@ computation is being done.
    intro
    install
    userguide
-   userguide2
    notebooks
    gallery
    reference
