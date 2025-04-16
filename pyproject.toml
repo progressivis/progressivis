@@ -37,7 +37,6 @@ dependencies = [
     "tdigest>=0.4.1.0",
     "pyroaring",
     "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
-    "duckdb",
     "boto",
     "s3fs",
     "requests",
@@ -69,7 +68,8 @@ docs = [
 
 test = [
     "pytest",
-    "pytest_cov"
+    "pytest_cov",
+    "duckdb",
 ]
 
 typing = [
