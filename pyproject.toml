@@ -21,8 +21,16 @@ authors = [
 keywords = ["Progressive analytics visualization"]
 
 classifiers = [
-     "Topic :: Scientific/Engineering :: Visualization",
-     "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 
 dependencies = [
@@ -123,6 +131,42 @@ source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "progressivis/_version.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    ".coveragerc",
+    ".gitattributes",
+    ".gitlab-ci.yml",
+    ".gitmodules",
+    ".mypy.ini",
+    ".pre-commit-config.yaml",
+    ".pylintrc",
+    ".readthedocs.yaml",
+    ".travis.yml",
+    "requirements_ci.txt",
+    "requirements_typing.txt",
+    "runserver.py",
+    ".github",
+    "binder",
+    "demos",
+    "doc",
+    "stool",
+    "tests",
+    "tests_js",
+    "typings",
+    "progressivis/server",
+    "notebooks",
+    "scripts",
+    "recipe",
+    "examples",
+    "benchmarks",
+    "progressivis/utils/fast*.so",
+    "progressivis/utils/fast*.dll",
+]
+
+
+[tool.hatch.build.targets.wheel]
+exclude = ["progressivis/server"]
 
 [tool.hatch.build.targets.wheel.hooks.cython]
 dependencies = ["hatch-cython", "numpy"]
