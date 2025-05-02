@@ -38,13 +38,15 @@ NB: If you prefer, you can omit the mamba installation and use conda instead.
 
 ### With pip
 
-Installing `ProgressiVis` core:
+#### Installing `ProgressiVis` core:
 
 ```
 pip install git+https://github.com/progressivis/progressivis.git
 ```
 
-Installing `ProgressiVis` with it's `Jupyter` extension:
+(progressivis-jupyter-install)=
+
+#### Installing `ProgressiVis` with it's `Jupyter` extension:
 
 ```
 pip install progressivis[jupyter]@git+https://github.com/progressivis/progressivis.git

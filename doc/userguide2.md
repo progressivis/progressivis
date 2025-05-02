@@ -1,3 +1,7 @@
+```{eval-rst}
+:orphan:
+```
+
 (basic-variant)=
 # Dealing with Noisy Data
 

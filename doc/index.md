@@ -29,6 +29,7 @@ computation is being done.
    install
    userguide
    notebooks
+   standalone_widgets
    gallery
    reference
    module_library

@@ -1,6 +1,9 @@
 # Progressive Notebooks
 
 The best environment to use **ProgressiVis** is the [Jupyter lab notebook](https://jupyterlab.readthedocs.io/en/latest/) with extensions supported in the package called `ipyprogressivis`.
+
+The recommended way to get these extensions is to install ProgressiVis with the Jupyter option, as explained [here](progressivis-jupyter-install).
+
 This package provides **ProgressiVis** specific support for the user interface and visualizations, as well as components to explore CSV and Apache Arrow datasets.
 
 (create-scenario)=
