@@ -89,7 +89,7 @@ It is not mandatory, but it is preferable to install `ProgressiVis` in a dedicat
 2. Create a `conda` environment (named below `pvenv`):
 
 ```
-conda create -n pvenv python=3.13 -c conda-forge
+conda create -n pvenv python=3.13
 ```
 
 
@@ -121,7 +121,7 @@ git clone https://github.com/progressivis/ipyprogressivis.git
 If you are using a conda environment do:
 
 ```
-conda install yarn=1 -c conda-forge
+conda install yarn=1
 ```
 
 Otherwise use the means specific to your environment to install `yarn v1`
