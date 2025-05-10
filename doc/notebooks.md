@@ -1,7 +1,38 @@
 # Progressive Notebooks
 
 The best environment to use **ProgressiVis** is the [Jupyter lab notebook](https://jupyterlab.readthedocs.io/en/latest/) with extensions supported in the package called `ipyprogressivis`.
+
+The recommended way to get these extensions is to install ProgressiVis with the Jupyter option, as explained [here](progressivis-jupyter-install).
+
 This package provides **ProgressiVis** specific support for the user interface and visualizations, as well as components to explore CSV and Apache Arrow datasets.
+
+## Running Jupyter
+
+Firstly, to meet the display requirements of progressive notebooks, it is essential to use `Jupyter Lab` (and not _Jupyter Notebook_).
+
+
+The `ipyprogressivis` package provides a pre-save hook for:
+
+* improved rendering when a previously developed scenario is reopened
+* backup of the markdown cells beiing part of the scenario
+
+
+Its use is not mandatory, but is recommended if you wish to use the notebooks developed in a documentation (for example, to produce a gallery of examples). To use it, simply launch Jupyterlab in this way:
+
+```sh
+$ jupyter lab --FileContentsManager.pre_save_hook=ipyprogressivis.pre_save
+```
+
+Alternatively, you can add the following lines:
+
+```python
+import ipyprogressivis
+c.FileContentsManager.pre_save_hook = ipyprogressivis.pre_save
+```
+
+to your `jupyter_lab_config.py` file and run jupyterlab as usual.
+
+
 
 (create-scenario)=
 
@@ -16,6 +47,37 @@ Once created, a `Run ProgressiVis` button will appear in the first `ProgressiBoo
 By clicking this button, `ProgressiVis` is launched and the starting box will appear. A new scenario always begins by defining a data source. Currently, it proposes three data loading options. Two of them are predefined (`CSV loader` and `PARQUET loader`) and the third is the possibility to define (i.e. to code in Python) a customized loader. The starting box also offers the option of saving the session for later use by checking the `record this scenario` box. These actions, like all other actions in the scenario, are implemented via a set of `chaining widgets`.
 
 ![](viz_images/constructor_cw.png)
+
+
+## Replaying a progressive analysis
+
+To replay a previously recorded scenario, you need to open the `ProgressiBook` like an ordinary notebook, which will contain a snapshot of the previous execution.
+
+By pressing the `Run ProgressiVis` button, the snapshot will disappear and the following box will appear instead :
+
+![](viz_images/replay_progressibook_ro.png)
+
+Pressing the `Replay all` button will launch the recorded scenario, but you won't be able to change it.
+
+On the other hand, if you check the `Allow overwriting record` box, the `Step by step` button will become active:
+
+
+![](viz_images/replay_progressibook_rw.png)
+
+and you can choose between two modes:
+
+* `Replay all`: the recorded scenario will be launched as before, but you'll be able to enrich it with new widgets.
+* `Step by step`: the various nodes will be displayed in the order in which they were created in the initial scenario, and you can:
+  * run it identically by pressing `Next`
+  * modify it (at your own risk) by choosing `Edit`
+  * delete it (and its descendants) by choosing `Delete`
+
+
+```{eval-rst}
+.. note::
+   If you've chosen `Step by step` mode, you must run through all the nodes (except for deletions), otherwise you'll end up with an incoherent scenario.
+```
+
 
 
 ## Chaining widgets
