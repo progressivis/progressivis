@@ -31,11 +31,11 @@ Then, open the `notebooks` directory and load the notebook `userguide1.ipynb`. T
 :linenos:
 from progressivis import CSVLoader, Histogram2D, Quantiles, Heatmap
 
-LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
+LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
+                   "yellow_tripdata_2015-01.csv.bz2")
 RESOLUTION=512
 
-csv = CSVLoader(LARGE_TAXI_FILE,
-                index_col=False,
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False,
                 usecols=['pickup_longitude', 'pickup_latitude'])
 
 quantiles = Quantiles()
@@ -61,7 +61,7 @@ The image of all the taxi pickup positions appears immediately. All taxi pickup 
 With a standard visualization system, or using Pandas from python, you would have to wait several minutes to see the visualization due to the load time of the file.
 **ProgressiVis** shows the results in a few seconds, improving over time, irrespective to the file size and network speed.
 
-Let's explain the program. Line 6 creates a `CSV` loader module, providing the url of the taxi datasets and limiting the table to two columns: `pickup_longitude` and `pickup_latitude` that will be used in the example.
+Let's explain the program. Line 7 creates a `CSV` loader module, providing the url of the taxi datasets and limiting the table to two columns: `pickup_longitude` and `pickup_latitude` that will be used in the example.
 When created, the module does not start right away but after line 23 in that case when the whole program is started.
 
 Then, on line 10, a `Quantiles` module is created and connected to the `CSV` loader in line 11.  Modules can have input and output slots to connect them and let data flow between them. The slots are usually typed so the `CSV` output slot produces a data table and the `Quantiles` module expects a data table in its input.
@@ -98,9 +98,11 @@ When specifying a connection, input slots can be supplemented by `hints`, provid
 ```python
 from progressivis import RandomTable, Max, Print
 
-random = RandomPTable(10, rows=10000)  # produces 10 columns named _1, _2, ...
-max_ = Max(name="max_" + str(hash(random)))
-max_.input[0] = random.output.result["_1", "_2", "_3"]  # hint ("_1", "_2", "_3")
+random = RandomPTable(10, rows=10000)
+# produces 10 columns named _1, _2, ...
+max_ = Max()
+max_.input[0] = random.output.result["_1", "_2", "_3"]
+# slot hints to restrict the columns to ("_1", "_2", "_3")
 pr = Print(proc=self.terse)
 pr.input[0] = max_.output.result
 random.scheduler().task_start()
@@ -227,12 +229,11 @@ dataset is the follwing:
 ```python
 from progressivis import CSVLoader, Histogram2D, Min, Max, Heatmap
 
-LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
+LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
+                   "yellow_tripdata_2015-01.csv.bz2")
 RESOLUTION=512
 
-
-csv = CSVLoader(LARGE_TAXI_FILE,
-                index_col=False,
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False,
                 usecols=['pickup_longitude', 'pickup_latitude'])
 
 min = Min()
@@ -262,11 +263,12 @@ The `Quantiles` module allows getting rid of outliers that always exist in real 
 Alternatively, you may know the boundaries of NYC and specify them:
 (filtering-variant)=
 ```python
-from progressivis import CSVLoader, Histogram2D, ConstDict, Heatmap, PDict
+from progressivis import (CSVLoader, Histogram2D, ConstDict,
+                          Heatmap, PDict)
 from dataclasses import dataclass
 
-
-LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
+LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
+                   "yellow_tripdata_2015-01.csv.bz2")
 RESOLUTION=512
 
 @dataclass
@@ -280,9 +282,7 @@ bounds = Bounds()
 col_x = "pickup_longitude"
 col_y = "pickup_latitude"
 
-
-csv = CSVLoader(LARGE_TAXI_FILE,
-                index_col=False,
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False,
                 usecols=[col_x, col_y])
 
 min = ConstDict(PDict({col_x: bounds.left, col_y: bounds.bottom}))
