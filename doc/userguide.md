@@ -56,7 +56,7 @@ csv.scheduler().task_start()
 
 The image of all the taxi pickup positions appears immediately. All taxi pickup positions are overlaid at each pixel to produce a density map that becomes more detailed progressively, revealing the shape of Manhattan and the two New York City airports, La Guardia in the center top and JFK at the bottom right.  Yellow taxis in NYC are only authorized to pick up clients in Manhattan and in the airports, or when returning from their drop-off location; this is visible in the visualized patterns.
 
-![](images/nyc1.png) ![](images/NYC_map_osm.png)
+![](images/pv-userguide1.gif) ![](images/NYC_map_osm.png)
 
 With a standard visualization system, or using Pandas from python, you would have to wait several minutes to see the visualization due to the load time of the file.
 **ProgressiVis** shows the results in a few seconds, improving over time, irrespective to the file size and network speed.
