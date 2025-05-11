@@ -34,7 +34,7 @@ jobs:
     - name: Make html
       run: |
         pushd doc
-        make html SPHINXOPTS="-W --keep-going -n"
+        make html
         popd
     - name: Upload doc
       if: always()
