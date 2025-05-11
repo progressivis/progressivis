@@ -1,7 +1,6 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -14,8 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Progressive Loading and Visualization
-#
+# # Progressive Loading and Visualization with Interactions
 # This notebook shows the simplest code to download all the New York Yellow Taxi trips from 2015. They were all geolocated and the trip data is stored in multiple CSV files.
 # We visualize progressively the pickup locations (where people have been picked up by the taxis).
 #
@@ -83,9 +81,6 @@ heatmap = Heatmap()
 heatmap.input.array = histogram2d.output.result
 
 # %%
-# Show the dataflow, you need to install graphviz to run this cell
-# pip install graphviz
-#
 try:
     import graphviz
     src = csv.scheduler().to_graphviz()
@@ -94,13 +89,14 @@ try:
 except ImportError:
     pass
 
+
 # %%
 heatmap.display_notebook()
 # Start the scheduler
 csv.scheduler().task_start();
 await aio.sleep(1)
 await var_min.from_input(bnds_min)
-await var_max.from_input(bnds_max);
+await var_max.from_input(bnds_max)
 
 # %%
 import ipywidgets as widgets
@@ -144,4 +140,6 @@ widgets.VBox([long_slider, lat_slider])
 csv.scheduler()
 
 # %%
-# csv.scheduler().task_stop()
+csv.scheduler().task_stop()
+
+# %%

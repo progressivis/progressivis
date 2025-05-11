@@ -130,7 +130,7 @@ Alternatively, progressive programs can be run in a _headless_ environment.
 
 ProgressiVis is built on top of python asynchronous functions. The communication between ProgressiVis and the notebook is done through callbacks and function calls.
 Module callbacks are handy to update the environment outside of ProgressiVis.
-For example, visualizing the heatmap shown in the first example works like this:
+    For example, visualizing the heatmap shown in the first example works like this (see also the Jupyter Notebook widgets documentation at [ipywidgets.readthedocs.io](https://ipywidgets.readthedocs.io/)):
 ```python
 import ipywidgets as ipw
 from IPython.display import display
@@ -139,12 +139,14 @@ from IPython.display import display
 img = ipw.Image(value=b'\x00', width=width, height=height)
 display(img)
 
-# Define a callback (not that it is `async`) run after the heatmap module is updated
+# Define a callback (not that it is `async`)
+# that runs after the heatmap module is updated
 async def _after_run(m: Module, run_number: int) -> None:
     assert isinstance(m, Heatmap)
     image = m.get_image_bin()  # get the image from the heatmap
     if image is not None:
-        img.value = image  # Replace the displayed image with the new one
+        img.value = image
+        # Replace the displayed image with the new one
 
 heatmap.on_after_run(_after_run)  # Install the callback
 ```
@@ -154,24 +156,16 @@ On the other direction, an external function can trigger changes in a ProgressiV
 (range-query-2d)=
 ```{code-block}
 :linenos:
-from progressivis import (
-    CSVLoader, Histogram2D, ConstDict, Heatmap, PDict,
-    BinningIndexND, RangeQuery2d, Variable
-)
-import progressivis.core.aio as aio
+from progressivis import (CSVLoader, Histogram2D, Heatmap, PDict,
+                          BinningIndexND, RangeQuery2d, Variable)
 
 col_x = "pickup_longitude"
 col_y = "pickup_latitude"
 
-# Create a csv loader for the taxi data file
 csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=[col_x, col_y])
-# Create an indexing module on the csv loader output columns
 index = BinningIndexND()
-# Creates one index per numeric column
 index.input.table = csv.output.result[col_x, col_y]
-# Create a querying module
 query = RangeQuery2d(column_x=col_x, column_y=col_y)
-# Variable modules allow to dynamically modify their values; here, the query ranges
 var_min = Variable(name="var_min")
 var_max = Variable(name="var_max")
 query.input.lower = var_min.output.result
@@ -179,16 +173,13 @@ query.input.upper = var_max.output.result
 query.input.index = index.output.result
 query.input.min = index.output.min_out
 query.input.max = index.output.max_out
-# Create a module to compute the 2D histogram of the two columns specified
-# with the given resolution
+
 histogram2d = Histogram2D(col_x, col_y, xbins=RESOLUTION, ybins=RESOLUTION)
-# Connect the module to the csv results and the min,max bounds to rescale
 histogram2d.input.table = query.output.result
 histogram2d.input.min = query.output.min
 histogram2d.input.max = query.output.max
-# Create a module to create an heatmap image from the histogram2d
+
 heatmap = Heatmap()
-# Connect it to the histogram2d
 heatmap.input.array = histogram2d.output.result
 heatmap.display_notebook()
 csv.scheduler().task_start();
