@@ -31,11 +31,11 @@ Then, open the `notebooks` directory and load the notebook `userguide1.ipynb`. T
 :linenos:
 from progressivis import CSVLoader, Histogram2D, Quantiles, Heatmap
 
-LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
+LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
+                   "yellow_tripdata_2015-01.csv.bz2")
 RESOLUTION=512
 
-csv = CSVLoader(LARGE_TAXI_FILE,
-                index_col=False,
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False,
                 usecols=['pickup_longitude', 'pickup_latitude'])
 
 quantiles = Quantiles()
@@ -56,12 +56,12 @@ csv.scheduler().task_start()
 
 The image of all the taxi pickup positions appears immediately. All taxi pickup positions are overlaid at each pixel to produce a density map that becomes more detailed progressively, revealing the shape of Manhattan and the two New York City airports, La Guardia in the center top and JFK at the bottom right.  Yellow taxis in NYC are only authorized to pick up clients in Manhattan and in the airports, or when returning from their drop-off location; this is visible in the visualized patterns.
 
-![](images/nyc1.png) ![](images/NYC_map_osm.png)
+![](images/pv-userguide1.gif) ![](images/NYC_map_osm.png)
 
 With a standard visualization system, or using Pandas from python, you would have to wait several minutes to see the visualization due to the load time of the file.
 **ProgressiVis** shows the results in a few seconds, improving over time, irrespective to the file size and network speed.
 
-Let's explain the program. Line 6 creates a `CSV` loader module, providing the url of the taxi datasets and limiting the table to two columns: `pickup_longitude` and `pickup_latitude` that will be used in the example.
+Let's explain the program. Line 7 creates a `CSV` loader module, providing the url of the taxi datasets and limiting the table to two columns: `pickup_longitude` and `pickup_latitude` that will be used in the example.
 When created, the module does not start right away but after line 23 in that case when the whole program is started.
 
 Then, on line 10, a `Quantiles` module is created and connected to the `CSV` loader in line 11.  Modules can have input and output slots to connect them and let data flow between them. The slots are usually typed so the `CSV` output slot produces a data table and the `Quantiles` module expects a data table in its input.
@@ -98,9 +98,11 @@ When specifying a connection, input slots can be supplemented by `hints`, provid
 ```python
 from progressivis import RandomTable, Max, Print
 
-random = RandomPTable(10, rows=10000)  # produces 10 columns named _1, _2, ...
-max_ = Max(name="max_" + str(hash(random)))
-max_.input[0] = random.output.result["_1", "_2", "_3"]  # hint ("_1", "_2", "_3")
+random = RandomPTable(10, rows=10000)
+# produces 10 columns named _1, _2, ...
+max_ = Max()
+max_.input[0] = random.output.result["_1", "_2", "_3"]
+# slot hints to restrict the columns to ("_1", "_2", "_3")
 pr = Print(proc=self.terse)
 pr.input[0] = max_.output.result
 random.scheduler().task_start()
@@ -128,7 +130,7 @@ Alternatively, progressive programs can be run in a _headless_ environment.
 
 ProgressiVis is built on top of python asynchronous functions. The communication between ProgressiVis and the notebook is done through callbacks and function calls.
 Module callbacks are handy to update the environment outside of ProgressiVis.
-For example, visualizing the heatmap shown in the first example works like this:
+    For example, visualizing the heatmap shown in the first example works like this (see also the Jupyter Notebook widgets documentation at [ipywidgets.readthedocs.io](https://ipywidgets.readthedocs.io/)):
 ```python
 import ipywidgets as ipw
 from IPython.display import display
@@ -137,12 +139,14 @@ from IPython.display import display
 img = ipw.Image(value=b'\x00', width=width, height=height)
 display(img)
 
-# Define a callback (not that it is `async`) run after the heatmap module is updated
+# Define a callback (not that it is `async`)
+# that runs after the heatmap module is updated
 async def _after_run(m: Module, run_number: int) -> None:
     assert isinstance(m, Heatmap)
     image = m.get_image_bin()  # get the image from the heatmap
     if image is not None:
-        img.value = image  # Replace the displayed image with the new one
+        img.value = image
+        # Replace the displayed image with the new one
 
 heatmap.on_after_run(_after_run)  # Install the callback
 ```
@@ -152,24 +156,16 @@ On the other direction, an external function can trigger changes in a ProgressiV
 (range-query-2d)=
 ```{code-block}
 :linenos:
-from progressivis import (
-    CSVLoader, Histogram2D, ConstDict, Heatmap, PDict,
-    BinningIndexND, RangeQuery2d, Variable
-)
-import progressivis.core.aio as aio
+from progressivis import (CSVLoader, Histogram2D, Heatmap, PDict,
+                          BinningIndexND, RangeQuery2d, Variable)
 
 col_x = "pickup_longitude"
 col_y = "pickup_latitude"
 
-# Create a csv loader for the taxi data file
 csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=[col_x, col_y])
-# Create an indexing module on the csv loader output columns
 index = BinningIndexND()
-# Creates one index per numeric column
 index.input.table = csv.output.result[col_x, col_y]
-# Create a querying module
 query = RangeQuery2d(column_x=col_x, column_y=col_y)
-# Variable modules allow to dynamically modify their values; here, the query ranges
 var_min = Variable(name="var_min")
 var_max = Variable(name="var_max")
 query.input.lower = var_min.output.result
@@ -177,16 +173,13 @@ query.input.upper = var_max.output.result
 query.input.index = index.output.result
 query.input.min = index.output.min_out
 query.input.max = index.output.max_out
-# Create a module to compute the 2D histogram of the two columns specified
-# with the given resolution
+
 histogram2d = Histogram2D(col_x, col_y, xbins=RESOLUTION, ybins=RESOLUTION)
-# Connect the module to the csv results and the min,max bounds to rescale
 histogram2d.input.table = query.output.result
 histogram2d.input.min = query.output.min
 histogram2d.input.max = query.output.max
-# Create a module to create an heatmap image from the histogram2d
+
 heatmap = Heatmap()
-# Connect it to the histogram2d
 heatmap.input.array = histogram2d.output.result
 heatmap.display_notebook()
 csv.scheduler().task_start();
@@ -227,12 +220,11 @@ dataset is the follwing:
 ```python
 from progressivis import CSVLoader, Histogram2D, Min, Max, Heatmap
 
-LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
+LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
+                   "yellow_tripdata_2015-01.csv.bz2")
 RESOLUTION=512
 
-
-csv = CSVLoader(LARGE_TAXI_FILE,
-                index_col=False,
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False,
                 usecols=['pickup_longitude', 'pickup_latitude'])
 
 min = Min()
@@ -262,11 +254,12 @@ The `Quantiles` module allows getting rid of outliers that always exist in real 
 Alternatively, you may know the boundaries of NYC and specify them:
 (filtering-variant)=
 ```python
-from progressivis import CSVLoader, Histogram2D, ConstDict, Heatmap, PDict
+from progressivis import (CSVLoader, Histogram2D, ConstDict,
+                          Heatmap, PDict)
 from dataclasses import dataclass
 
-
-LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
+LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
+                   "yellow_tripdata_2015-01.csv.bz2")
 RESOLUTION=512
 
 @dataclass
@@ -280,9 +273,7 @@ bounds = Bounds()
 col_x = "pickup_longitude"
 col_y = "pickup_latitude"
 
-
-csv = CSVLoader(LARGE_TAXI_FILE,
-                index_col=False,
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False,
                 usecols=[col_x, col_y])
 
 min = ConstDict(PDict({col_x: bounds.left, col_y: bounds.bottom}))
