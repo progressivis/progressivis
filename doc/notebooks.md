@@ -32,6 +32,12 @@ c.FileContentsManager.pre_save_hook = ipyprogressivis.pre_save
 
 to your `jupyter_lab_config.py` file and run jupyterlab as usual.
 
+```{eval-rst}
+.. note::
+   If you don't have a `jupyter_lab_config.py` yet you can generate one with::
+
+       jupyter lab --generate-config
+```
 
 
 (create-scenario)=
