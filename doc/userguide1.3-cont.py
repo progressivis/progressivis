@@ -1,4 +1,5 @@
 import ipywidgets as widgets
+import progressivis.core.aio as aio
 
 # Yield control to the scheduler to start
 await aio.sleep(1)
