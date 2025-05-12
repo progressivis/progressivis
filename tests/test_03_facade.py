@@ -141,7 +141,7 @@ class TestModuleFacade(ProgressiveTest):
             v, bins=histogram1d.params.bins, density=False, range=bounds
         )
         self.assertEqual(np.sum(h1), np.sum(h2))
-        self.assertListEqual(h1.tolist(), h2.tolist())  # type: ignore
+        self.assertListEqual(h1.tolist(), h2.tolist())
 
     def test_table_module_configure_hist2d(self) -> None:
         s = self.scheduler()
