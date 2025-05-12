@@ -48,6 +48,18 @@ pip install git+https://github.com/progressivis/progressivis.git
 
 #### Installing `ProgressiVis` with it's `Jupyter` extension:
 
+1. Install `yarn v1` in your environment
+
+If you are using a conda environment do:
+
+```
+conda install yarn=1
+```
+
+Otherwise use the means specific to your environment to install `yarn v1`
+
+2. Install `progressivis`:
+
 ```
 pip install progressivis[jupyter]@git+https://github.com/progressivis/progressivis.git
 ```
@@ -104,6 +116,12 @@ conda activate pvenv
 cd $WORKDIR/progressivis
 pip install -e .[typing]
 ```
+#### Getting updates
+
+```
+cd $WORKDIR/progressivis
+git pull
+```
 
 ### Installing the `Jupyter` extension for `ProgressiVis`:
 
@@ -132,6 +150,22 @@ Otherwise use the means specific to your environment to install `yarn v1`
 cd $WORKDIR/ipyprogressivis
 pip install -e .[dev]
 ```
+
+#### Getting updates
+
+```
+cd $WORKDIR/ipyprogressivis
+git pull
+```
+
+then:
+
+```
+cd $WORKDIR/ipyprogressivis/ipyprogressivis/js
+yarn run build
+```
+
+If `jupyter` is running, you should restart it.
 
 ```{eval-rst}
 .. note::
