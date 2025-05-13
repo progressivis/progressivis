@@ -120,7 +120,7 @@ By combining two _CWs_: `CSVLoader` and `Heatmap`, we'll reproduce the same beha
    The CSVLoader features advanced configuration mechanisms (column selection, retyping, filtering etc.) via the CSV sniffer, which is described with more details :ref:`here<sniffer>`
 ```
 
-The notebook below is available and ready to run [in the ipyprogressivis repository](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.0.ipynb):
+The notebook below is available and ready to run in the ipyprogressivis repository in [notebooks/userguide-widgets1.0.ipynb](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.0.ipynb):
 
 
 
@@ -139,7 +139,7 @@ then renew the operation for `pickup_latitude`, click **Start loading csv** butt
 
 ![](viz_images/single_heatmap.png)
 
-But if you don't know the bounds a priori, you can eliminate the noise using quantiles like [this python code](quantiles-variant) do because a `Quantile` chaining widget is available. The notebook below show this approach. It is available and ready to be replayed [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.1.ipynb)
+But if you don't know the bounds a priori, you can eliminate the noise using quantiles like [this python code](quantiles-variant) do because a `Quantile` chaining widget is available. The notebook below show this approach. It is available and ready to be replayed in [notebooks/userguide-widgets1.1.ipynb](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.1.ipynb)
 :
 
 
