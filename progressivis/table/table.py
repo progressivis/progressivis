@@ -19,10 +19,10 @@ from progressivis.core.utils import (
     gen_columns,
 )
 
-try:
-    from progressivis.utils.fast import indices_to_slice
-except ImportError:
-    from progressivis.core.utils import indices_to_slice
+# try:
+#    from progressivis.utils.fast import indices_to_slice
+# except ImportError:
+from progressivis.core.utils import indices_to_slice
 
 from progressivis.storage import Group
 from .dshape import (

@@ -7,10 +7,11 @@ import numpy as np
 from progressivis.storage import Group, Dataset
 from progressivis.core.utils import integer_types, get_random_name
 
-try:
-    from progressivis.utils.fast import indices_to_slice
-except ImportError:
-    from progressivis.core.utils import indices_to_slice
+# try:
+#     from progressivis.utils.fast import indices_to_slice
+# except ImportError:
+
+from progressivis.core.utils import indices_to_slice
 
 from .column_base import BasePColumn
 from .dshape import dshape_to_h5py, np_dshape, dshape_create, DataShape, EMPTY_DSHAPE

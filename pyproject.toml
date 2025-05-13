@@ -3,7 +3,6 @@ requires = [
     "hatchling>=1.18",
     "hatch-vcs",
     "wheel",
-    "cython",
 ]
 build-backend = "hatchling.build"
 
@@ -160,23 +159,11 @@ exclude = [
     "recipe",
     "examples",
     "benchmarks",
-    "progressivis/utils/fast*.so",
-    "progressivis/utils/fast*.dll",
 ]
 
 
 [tool.hatch.build.targets.wheel]
 exclude = ["progressivis/server"]
-
-[tool.hatch.build.targets.wheel.hooks.cython]
-dependencies = ["hatch-cython", "numpy"]
-[tool.hatch.build.targets.wheel.hooks.cython.options]
-# include .h or .cpp directories
-includes = []
-# include numpy headers
-include_numpy = true
-include_pyarrow = false
-compile_py = false
 
 [tool.hatch.metadata]
 allow-direct-references = true
