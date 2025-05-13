@@ -11,7 +11,7 @@ from progressivis.core.utils import integer_types, get_random_name
 #     from progressivis.utils.fast import indices_to_slice
 # except ImportError:
 
-from progressivis.core.utils import indices_to_slice
+# from progressivis.core.utils import indices_to_slice
 
 from .column_base import BasePColumn
 from .dshape import dshape_to_h5py, np_dshape, dshape_create, DataShape, EMPTY_DSHAPE
@@ -104,7 +104,8 @@ class PColumn(BasePColumn):
             raise ValueError("Bad index length (%d/%d)", len(indices), length)
         indices = self._allocate(len(data), indices)
         if is_array:
-            indices = indices_to_slice(indices)
+            # indices = indices_to_slice(indices)
+            indices = indices.to_slice_maybe()
             self[indices] = data[0:length]
         else:
             for i in range(length):

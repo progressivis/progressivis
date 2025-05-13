@@ -386,7 +386,8 @@ class PTable(IndexPTable):
         elif all_arrays:
             from_ind = slice(0, length)
             raw_indices = indices  # still PIntSet here
-            indices = indices_to_slice(indices)
+            # indices = indices_to_slice(indices)
+            indices = indices.to_slice_maybe()
             for colname in self:
                 tocol = self._column(colname)
                 fromcol = data[colname]
