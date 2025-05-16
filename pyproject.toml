@@ -103,7 +103,7 @@ typing = [
 [project.urls]
 Homepage = "https://github.com/progressivis/progressivis"
 Documentation = "https://progressivis.readthedocs.io/en/latest/"
-Repository = "https://github.com/progressivis/progressivis"
+Repository = "https://github.com/progressivis/progressivis.git"
 
 [tool.hatch.build]
 artifacts = [
