@@ -76,6 +76,7 @@ test = [
     "pytest",
     "pytest_cov",
     "duckdb",
+    "rangehttpserver",
 ]
 
 typing = [
