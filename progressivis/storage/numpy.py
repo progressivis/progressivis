@@ -7,10 +7,7 @@ import numpy as np
 
 from progressivis.core.utils import integer_types
 
-try:
-    from progressivis.utils.fast import next_pow2
-except ImportError:
-    from progressivis.core.utils import next_pow2
+from progressivis.core.utils import next_pow2
 from .base import StorageEngine, Dataset, Group
 from .hierarchy import GroupImpl, AttributeImpl
 
