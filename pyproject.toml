@@ -43,22 +43,19 @@ dependencies = [
     "pyyaml>=5.4.1",
     "tdigest>=0.4.1.0",
     "pyroaring",
-    "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
+    "python-dateutil>=2.6.1",  # datashape, botocore wants < 2.7.0,>=2.1
     "boto",
     "s3fs",
     "requests",
     "fast-histogram",
-    "rangehttpserver",
     "datasketches",
     "typeguard",
     "multipledispatch >= 0.4.7",  # datashape
-    "python-dateutil",  # datashape
-    "click",
 ]
 
 [project.optional-dependencies]
 
-jupyter = ["ipyprogressivis@git+https://github.com/progressivis/ipyprogressivis.git"]
+jupyter = ["ipyprogressivis"]
 
 docs = [
     "sphinx<8",
@@ -72,6 +69,8 @@ docs = [
     "jinja2",
     "sphinxemoji"
 ]
+
+scripts = ["click"]
 
 test = [
     "pytest",
@@ -102,13 +101,21 @@ typing = [
 
 [project.urls]
 Homepage = "https://github.com/progressivis/progressivis"
+Documentation = "https://progressivis.readthedocs.io/en/latest/"
+Repository = "https://github.com/progressivis/progressivis"
 
 [tool.hatch.build]
 artifacts = [
 ]
 
-[tool.setuptools]
-packages = [
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "progressivis/_version.py"
+
+[tool.hatch.build.targets.sdist]
+only-include = [
     "progressivis",
     "progressivis.utils",
     "progressivis.core",
@@ -120,58 +127,25 @@ packages = [
     "progressivis.datashape.util",
     "progressivis.vis",
     "progressivis.cluster",
-    "progressivis.server",
     "progressivis.table",
 ]
 
-
-[tool.hatch.version]
-source = "vcs"
-
-[tool.hatch.build.hooks.vcs]
-version-file = "progressivis/_version.py"
-
-[tool.hatch.build.targets.sdist]
-exclude = [
-    ".coveragerc",
-    ".gitattributes",
-    ".gitlab-ci.yml",
-    ".gitmodules",
-    ".mypy.ini",
-    ".pre-commit-config.yaml",
-    ".pylintrc",
-    ".readthedocs.yaml",
-    ".travis.yml",
-    "requirements_ci.txt",
-    "requirements_typing.txt",
-    "runserver.py",
-    ".github",
-    "binder",
-    "demos",
-    "doc",
-    "stool",
-    "tests",
-    "tests_js",
-    "typings",
-    "progressivis/server",
-    "notebooks",
-    "scripts",
-    "recipe",
-    "examples",
-    "benchmarks",
-]
-
-
 [tool.hatch.build.targets.wheel]
-exclude = ["progressivis/server"]
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
-
-directives = { boundscheck = false, nonecheck = false, language_level = 3, binding = true }
-
-compile_kwargs = { }
+only-include = [
+    "progressivis",
+    "progressivis.utils",
+    "progressivis.core",
+    "progressivis.storage",
+    "progressivis.io",
+    "progressivis.stats",
+    "progressivis.datasets",
+    "progressivis.datashape",
+    "progressivis.datashape.util",
+    "progressivis.vis",
+    "progressivis.cluster",
+    "progressivis.table",
+]
 
 [tool.ruff]
 extend-exclude = ["notebooks"]
