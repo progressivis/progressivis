@@ -26,7 +26,7 @@ pip install progressivis[jupyter]
 
 ```{eval-rst}
 .. note::
-   To fully utilize all the capabilities of `ProgressiVis`, including visualizations, you must install both the `progressivis` repository and it's `Jupyter` extension repository (named `ipyprogressivis`), as outlined below. It’s recommended to clone both repositories into a shared directory called `$WORKDIR` below.
+   To fully utilize all the capabilities of `ProgressiVis`, including visualizations, you must install both the `progressivis` repository and it's `Jupyter` extension repository (named `ipyprogressivis`), as outlined below. It’s recommended to clone both repositories into a shared directory. We assume you are connected to this directory.
 ```
 
 ### Installing `ProgressiVis`
@@ -34,7 +34,6 @@ pip install progressivis[jupyter]
 1. Clone the [ProgressiVis repository](https://github.com/progressivis/progressivis/):
 
 ```
-cd $WORKDIR
 git clone https://github.com/progressivis/progressivis.git
 ```
 
@@ -55,13 +54,13 @@ conda activate pvenv
 4. Execute:
 
 ```
-cd $WORKDIR/progressivis
+cd progressivis
 pip install -e .[typing]
 ```
 #### Getting updates
 
 ```
-cd $WORKDIR/progressivis
+cd progressivis
 git pull
 ```
 
@@ -70,7 +69,7 @@ git pull
 1. Clone the repository named [ipyprogressivis](https://github.com/progressivis/ipyprogressivis/):
 
 ```
-cd $WORKDIR
+cd (back to your main directory, e.g. ..)
 git clone https://github.com/progressivis/ipyprogressivis.git
 ```
 
@@ -89,21 +88,21 @@ Otherwise use the means specific to your environment to install `yarn v1`
 4. Execute:
 
 ```
-cd $WORKDIR/ipyprogressivis
+cd ipyprogressivis
 pip install -e .[dev]
 ```
 
 #### Getting updates
 
 ```
-cd $WORKDIR/ipyprogressivis
+cd ipyprogressivis
 git pull
 ```
 
 then:
 
 ```
-cd $WORKDIR/ipyprogressivis/ipyprogressivis/js
+cd ipyprogressivis/js
 yarn run build
 ```
 
