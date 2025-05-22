@@ -376,7 +376,7 @@ class RangeQuery(Module):
                 ts_k_ids = {ts_data.k_(i): i for i in ts_changes}
                 if -1 in ts_k_ids and ts_k_ids[-1] in tstamps.updated.changes:
                     tstamps.reset()
-                    print("Tstamp reset")
+                    # print("Tstamp reset")
                 else:
                     ts_k_ids.pop(-1, None)  # removing -1 key if present (at creation)
                     only_bins = PIntSet(ts_k_ids.values())  # relevant bins

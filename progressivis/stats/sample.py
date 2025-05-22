@@ -66,7 +66,7 @@ class Sample(Module):
         self.pintset: Optional[PIntSet] = None
 
     def reset(self) -> None:
-        self._tmp_table.resize(0)
+        self._tmp_table.truncate()
         self._size = 0
         self.pintset = None
         slot = self.get_input_slot("table")

@@ -422,7 +422,7 @@ class RangeQuery2d(Module):
             ts_k_ids = {ts_data.k_(i): i for i in ts_changes}  # type: ignore
             if -1 in ts_k_ids and ts_k_ids[-1] in tstamps.updated.changes:
                 tstamps.reset()
-                print("Tstamp reset")
+                # print("Tstamp reset")
                 return PIntSet()
             else:
                 ts_k_ids.pop(-1, None)  # removing -1 key if present (at creation)
