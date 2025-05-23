@@ -9,7 +9,7 @@ from progressivis.datasets.wget import wget_file
 KILOBYTE = 1 << 10
 MEGABYTE = KILOBYTE ** 2
 PQ_URL_BASE = "https://s3.amazonaws.com/nyc-tlc/trip+data"
-CSV_URL_BASE = "https://nyc-tlc.s3.amazonaws.com/csv_backup"
+CSV_URL_BASE = "https://aviz.fr/nyc-taxi"
 FILE = "{transp}_tripdata_{year}-{month:0>2}.{ext}"
 TRANSPORTS = ["yellow", "green", "fhv", "fhvhv"]
 
@@ -68,7 +68,7 @@ def main(year, month, row_group_size, transport, dest, prefix, fromcsv, n_rows):
     data_dir = osp.join(repo_root, dest)
     if not osp.isdir(data_dir):
         raise ValueError(f"{data_dir} does not exist or is not a directory, abort")
-    tmp_file = f"{data_dir}/tmp.parquet"
+    tmp_file = f"{data_dir}/tmp.csv.bz2" if fromcsv else f"{data_dir}/tmp.parquet"
     if osp.exists(tmp_file):
         raise ValueError(f"{tmp_file} already exists, abort")
     today = date.today()
@@ -81,7 +81,7 @@ def main(year, month, row_group_size, transport, dest, prefix, fromcsv, n_rows):
     for tr in transports:
         for mo in months:
             aws_file = FILE.format(
-                year=year, month=mo, transp=tr, ext="csv" if fromcsv else "parquet"
+                year=year, month=mo, transp=tr, ext="csv.bz2" if fromcsv else "parquet"
             )
             out_file = FILE.format(year=year, month=mo, transp=tr, ext="parquet")
             chunked_file = f"{data_dir}/{prefix}_{raw}_{out_file}"
@@ -89,6 +89,7 @@ def main(year, month, row_group_size, transport, dest, prefix, fromcsv, n_rows):
             try:
                 if osp.exists(chunked_file):
                     raise ValueError(f"{chunked_file} already exists")
+                print(f"Converting {tmp_file}")
                 wget_file(filename=tmp_file, url=url)
                 table = read_csv(tmp_file) if fromcsv else pq.read_table(tmp_file)
                 if n_rows:

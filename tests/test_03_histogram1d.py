@@ -55,7 +55,7 @@ class TestHistogram1D(ProgressiveTest):
         h2, _ = np.histogram(
             v, bins=histogram1d.params.bins, density=False, range=bounds
         )
-        self.assertListEqual(h1.tolist(), h2.tolist())
+        self.assertListEqual(h1.tolist(), h2.tolist())  # type: ignore
 
     def t_histogram1d_impl(self, **kw: Any) -> None:
         s = self.scheduler()
@@ -90,7 +90,7 @@ class TestHistogram1D(ProgressiveTest):
             v, bins=histogram1d.params.bins, density=False, range=bounds
         )
         self.assertEqual(np.sum(h1), np.sum(h2))
-        self.assertListEqual(h1.tolist(), h2.tolist())
+        self.assertListEqual(h1.tolist(), h2.tolist())  # type: ignore
 
     def test_histogram1d2(self) -> None:
         return self.t_histogram1d_impl(delete_rows=5)

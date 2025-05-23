@@ -17,14 +17,16 @@ import zlib
 import lzma
 from typing import Any, Dict, cast, Type
 
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data"))
+DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                        "../../data"))
 Z_CHUNK_SIZE = 16 * 1024 * 32
 
 
 def _check_kwds(kwds: Dict[str, Any], **defaults: Any) -> Dict[str, Any]:
     if ("rows" in kwds) or ("cols" in kwds) and ("overwrite" not in kwds):
         raise ValueError(
-            "'owerwrite' param. is mandatory when " "'rows' or 'cols' is specified"
+            "'owerwrite' param. is mandatory when "
+            "'rows' or 'cols' is specified"
         )
     res = kwds.copy()
     for k, v in defaults.items():
@@ -72,21 +74,34 @@ def get_dataset(name: str, **kwds: Any) -> str:
         return generate_multiscale_random_csv(
             f"{DATA_DIR}/smallfile_multiscale.csv", **kw
         )
+    if name == "taxis2015-01_parquet":
+        return wget_file(
+            filename=f"{DATA_DIR}/yellow_tripdata_2015-01.parquet",
+            url="https://aviz.fr/nyc-taxi/yellow_tripdata_2015-01.parquet"
+        )
+    if name == "short-taxis2015-01_parquet":
+        return wget_file(
+            filename=f"{DATA_DIR}/short_500k_yellow_tripdata_2015-01.parquet",
+            url=("https://aviz.fr/nyc-taxi/"
+                 "short_500k_yellow_tripdata_2015-01.parquet")
+        )
 
     if name == "warlogs":
         return wget_file(
             filename=f"{DATA_DIR}/warlogs.vec.bz2",
-            url="http://www.cs.ubc.ca/labs/imager/video/2014/QSNE/warlogs.vec.bz2"
+            url=("http://www.cs.ubc.ca/labs/imager/video/2014/QSNE/"
+                 "warlogs.vec.bz2")
         )
     if name == "mnist_784":
         # This file [mnist_784.csv] is made available under the Public Domain
-        # Dedication and License v1.0 whose full text can be found at: http://opendatacommons.org/licenses/pddl/1.0/
+        # Dedication and License v1.0 whose full text can be found at:
+        # http://opendatacommons.org/licenses/pddl/1.0/
         return wget_file(
             filename=f"{DATA_DIR}/mnist_784.csv",
             url="https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv"
         )
     if name.startswith("cluster:"):
-        fname = name[len("cluster:") :] + ".txt"
+        fname = name[len("cluster:"):] + ".txt"
         return wget_file(
             filename=f"{DATA_DIR}/{fname}",
             url=f"http://cs.joensuu.fi/sipu/datasets/{fname}",

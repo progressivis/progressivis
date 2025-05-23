@@ -387,41 +387,44 @@ class Scheduler:
         """Main scheduler loop."""
         # pylint: disable=broad-except
         blocked = 0  # all_blocked() cannot detect that all modules are blocked
-        async for module in self._next_module():
-            await aio.sleep(0)
-            if (
-                self.no_more_data()
-                and (self.all_blocked() or blocked == len(self._run_list))
-                and self.is_waiting_for_input()
-            ):
-                if self._keep_running <= 0:
-                    async with self._hibernate_cond:
-                        await self._hibernate_cond.wait()
-            if self._keep_running > 0:
-                self._keep_running -= 1
-            if not self._consider_module(module):
-                logger.info(
-                    "Module %s not scheduled" " because of interactive mode",
-                    module.name,
-                )
-                continue
-            # increment the run number, even if we don't call the module
-            self._run_number += 1
-            module.prepare_run(self._run_number)
-            if not (module.is_ready() or self.has_input() or module.is_greedy()):
-                logger.info(
-                    "Module %s not scheduled" " because not ready and has no input",
-                    module.name,
-                )
-                blocked += 1
-                continue
-            blocked = 0
-            await module.start_run(self._run_number)
-            module.run(self._run_number)
-            await module.after_run(self._run_number)
-            await self._run_tick_procs()
-        if self.shortcut_evt is not None:
-            self.shortcut_evt.set()
+        try:
+            async for module in self._next_module():
+                await aio.sleep(0)
+                if (
+                    self.no_more_data()
+                    and (self.all_blocked() or blocked == len(self._run_list))
+                    and self.is_waiting_for_input()
+                ):
+                    if self._keep_running <= 0:
+                        async with self._hibernate_cond:
+                            await self._hibernate_cond.wait()
+                if self._keep_running > 0:
+                    self._keep_running -= 1
+                if not self._consider_module(module):
+                    logger.info(
+                        "Module %s not scheduled" " because of interactive mode",
+                        module.name,
+                    )
+                    continue
+                # increment the run number, even if we don't call the module
+                self._run_number += 1
+                module.prepare_run(self._run_number)
+                if not (module.is_ready() or self.has_input() or module.is_greedy()):
+                    logger.info(
+                        "Module %s not scheduled" " because not ready and has no input",
+                        module.name,
+                    )
+                    blocked += 1
+                    continue
+                blocked = 0
+                await module.start_run(self._run_number)
+                module.run(self._run_number)
+                await module.after_run(self._run_number)
+                await self._run_tick_procs()
+            if self.shortcut_evt is not None:
+                self.shortcut_evt.set()
+        except Exception as exc:
+            logger.error(exc)
         print("Leaving run loop")
 
     async def _next_module(self) -> AsyncGenerator[Module, None]:

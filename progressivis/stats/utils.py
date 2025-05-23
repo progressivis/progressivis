@@ -119,8 +119,8 @@ class OnlineUnique(OnlineSet):
     name = "uniq"
 
     def get_value(self) -> Any:
-        assert len(self._set) == 1
-        return list(self._set)[0]
+        # assert len(self._set) == 1
+        return len(self._set)
 
 
 aggr_registry[OnlineUnique.name] = OnlineUnique
