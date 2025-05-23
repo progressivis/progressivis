@@ -424,7 +424,9 @@ class Scheduler:
             if self.shortcut_evt is not None:
                 self.shortcut_evt.set()
         except Exception as exc:
+            logger.info("Exception in run loop")
             logger.error(exc)
+            raise
         print("Leaving run loop")
 
     async def _next_module(self) -> AsyncGenerator[Module, None]:
