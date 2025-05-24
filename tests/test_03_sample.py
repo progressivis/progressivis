@@ -16,7 +16,7 @@ class TestSample(ProgressiveTest):
     def test_sample(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
         )
         smp = Sample(samples=10, scheduler=s)
         smp.input[0] = csv.output.result

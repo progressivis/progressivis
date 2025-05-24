@@ -12,7 +12,7 @@ class TestHistogram1D(ProgressiveTest):
     def test_histogram1d(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
         )
         min_ = Min(scheduler=s)
         min_.input[0] = csv.output.result
@@ -30,7 +30,7 @@ class TestHistogram1D(ProgressiveTest):
     def test_histogram1d1(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
         )
         min_ = Min(scheduler=s)
         min_.input[0] = csv.output.result
@@ -49,7 +49,7 @@ class TestHistogram1D(ProgressiveTest):
         h1 = last["array"]
         bounds = (last["min"], last["max"])
         df = pd.read_csv(
-            get_dataset("bigfile"), header=None, usecols=[2]
+            get_dataset("smallfile"), header=None, usecols=[2]
         )
         v = df.to_numpy().reshape(-1)
         h2, _ = np.histogram(
