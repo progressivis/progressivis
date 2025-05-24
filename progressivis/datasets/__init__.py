@@ -85,6 +85,12 @@ def get_dataset(name: str, **kwds: Any) -> str:
             url=("https://aviz.fr/nyc-taxi/"
                  "short_500k_yellow_tripdata_2015-01.parquet")
         )
+    if name == "newshort-taxis2015-01_parquet":
+        return wget_file(
+            filename=f"{DATA_DIR}/newstyle_500k_yellow_tripdata_2015-01.parquet",
+            url=("https://aviz.fr/nyc-taxi/"
+                 "newstyle_500k_yellow_tripdata_2015-01.parquet")
+        )
 
     if name == "warlogs":
         return wget_file(

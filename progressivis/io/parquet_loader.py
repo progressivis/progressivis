@@ -152,7 +152,7 @@ class ParquetLoader(BaseLoader):
         elif status != self.state_ready:
             logger.error("Invalid state returned by validate_parser: %d", status)
             raise ProgressiveStopIteration("Unexpected situation")
-        logger.info("loading %d lines", step_size)
+        # logger.info("loading %d lines", step_size)
         pa_batches = []
         cnt = step_size
         creates = 0
@@ -188,7 +188,7 @@ class ParquetLoader(BaseLoader):
         else:
             assert pa_batches
             self._rows_read += creates
-            logger.info("Loaded %d lines", self._rows_read)
+            # logger.info("Loaded %d lines", self._rows_read)
             if self.force_valid_ids:
                 if self._columns is None:
                     self._column = normalize_columns(bat_list[0].schema.names)

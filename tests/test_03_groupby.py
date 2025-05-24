@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import os
 from . import ProgressiveTest, skipIf
-from progressivis import Sink, ParquetLoader, PTable
+from progressivis import Sink, ParquetLoader, PTable, get_dataset
 from progressivis.table.group_by import GroupBy, SubPColumn as SC
 from progressivis.core import aio
 from typing import Any, Tuple
 
 PASSENGERS = {0, 1, 2, 3, 4, 5, 6, 9}
 
-PARQUET_FILE = "nyc-taxi/short_500k_yellow_tripdata_2015-01.parquet"
+# PARQUET_FILE = "nyc-taxi/short_500k_yellow_tripdata_2015-01.parquet"
+PARQUET_FILE = get_dataset("short-taxis2015-01_parquet")
 
 # NB: if PARQUET_FILE does not exist yet, consider running:
 # python scripts/create_nyc_parquet.py -p short -t yellow -f -m1 -n 300000
