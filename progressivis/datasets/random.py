@@ -21,7 +21,7 @@ def generate_random_csv(
     if os.path.exists(filename):
         return filename
     try:
-        with open(filename, "w") as csvfile:
+        with open(filename, "w", newline='') as csvfile:
             writer = csv.writer(csvfile)
             np.random.seed(seed=seed)
             for _ in range(0, rows):
