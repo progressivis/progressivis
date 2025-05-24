@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-# import os
-from . import ProgressiveTest
+import os
+from . import ProgressiveTest, skipIf
 from progressivis import Sink, ParquetLoader, PTable, get_dataset
 from progressivis.core import aio
 from progressivis.table.group_by import GroupBy, ByType, SubPColumn as SC
@@ -18,7 +18,7 @@ PARQUET_FILE = get_dataset("short-taxis2015-01_parquet")
 
 # NB: if PARQUET_FILE does not exist yet, consider running:
 # python scripts/create_nyc_parquet.py -p short -t yellow -f -m1 -n 300000
-if True:  #  not os.getenv("CI"):
+if not os.getenv("CI"):
     TABLE = pq.read_table(PARQUET_FILE)
     TABLE_AGGR = TABLE.group_by("passenger_count").aggregate(  # type: ignore
         [("trip_distance", "mean"),
@@ -42,7 +42,7 @@ if True:  #  not os.getenv("CI"):
     DF_AGGR = DF.groupby(DF.tpep_pickup_datetime.dt.day).trip_distance.mean()
 
 
-# @skipIf(os.getenv("CI"), "skipped because local nyc taxi files are required")
+@skipIf(os.getenv("CI"), "skipped because local nyc taxi files are required")
 class TestProgressiveAggregate(ProgressiveTest):
     def test_aggregate_1_col(self) -> None:
         s = self.scheduler()

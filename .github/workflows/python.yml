@@ -36,7 +36,7 @@ jobs:
     - name: Run tests
       run: |
         python -m pip install .[test]
-        LOGLEVEL=NOTSET coverage run -m pytest --durations=50 tests -vv
+        coverage run -m pytest --durations=50 tests -vv
 
     - name: Coverage
       run: |
