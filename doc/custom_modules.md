@@ -25,7 +25,56 @@ ProgressiVis modules rely on **cooperative scheduling**, contrary to modern oper
 
 Instead, ProgressiVis relies on each module to abide by a specified **quantum**.
 
-TODO
+## Example: The Max Module
+
+The `Max` module is among the simplest of ProgressiVis.
+It computes the maximum values of all the columns of the table that it takes in an input slot.
+Let's explain all its parts step by step.
+
+```{eval-rst}
+.. literalinclude:: ./max.py
+   :linenos:
+```
+
+ProgressiVis defines several python decorators to limit typing too much boilerplate code.
+Every Module class uses input slots, output slots, and parameters. They can be declared using the `@def_input`, `@def_output`, and `@def_param` decorators. These decorators can appear after the `@document` decorator.
+
+Line 12 declare an input slot called "table" of type `PTable`. The `hint_type` parameter specifies that this input slot can be parametered using a sequence of strings. Concretely, all the connections made with slots of type "PTable" can be parametered with a list of column names. We discuss these slot parameters in [slot hints](#slot_hints).
+
+Line 13 defines the output slot called "result", of type `PDict`, i.e., a "progressive dictionary".
+It will contain, associated with each column name of the input table, maximum value computed progressively. The ouput slot descriptor also defines a document string.
+
+Input and output slots can also be required or not; by default, they are required. When a slot is required, it should be connected for a dataflow configuration to be **valid**. We discuss later the notion of dataflow validity [later](#validity).
+
+Line 18 defined the class `Max`, inheriting from the `Module` class. Its `__init__` method is very standard and just catches the keyword parameter passed to keep them somewhere. It also defines the initial value of the `default_step_size` instance variable with a reasonable value for the `Max` module.
+Without the `@def_` decorators, the `__init__` method would require many lines of code to  declare the slots and parameters.
+
+The method that performs the main work of a module is `run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep`.
+The code relies on two decorators for this function: `@process_slot` and `@run_if_any`.
+
+`@process_slot` specifies that when the input slot "table" contains updated or deleted items (not created ones), the method `reset(self) -> None` should be called.  This method is defined on line 23.
+The simplest strategy to use when an input table is modified is to restart the work from the beginning, forgetting the current "max" value.
+
+`@run_if_any` means that if any of the input slots are modified, then the method should run.
+
+(slot_hints)=
+### Slot Hints
+
+Convenient syntax to adapt the behavior of slots according to parameters, called "slot hints".
+In PTable slots, the hints consist in a list of column names that restrict the columns received through the slot. Internally, this uses a PTable view. Creating a view can be done through a module, but the syntax is much heavier and the performance is much worse.
+
+In the fist example, we uses a `Quantiles` module where output slots can be parametered by a quantile, such as 0.03 or 0.97 in the [initial example](userguide.md#quantiles-variant).
+
+(validity)=
+### Validity of a Dataflow
+
+To run, a dataflow should be **valid**. The validity is defined as follows:
+- For all the modules, all the required slots should be connected
+- For All the connected slots, the input and output slots should be compatible
+- There should not be any cycle in the dataflow, it should be a **directed acyclic graph**
+
+By design, ProgressiVis checks the connection types as soon as they are specified. However, when building or modifying a dataflow graph, adding modules or removing modules, the dataflow graph remains invalid until all the connections are done and dependent modules are deleted from the dataflow. Therefore, checking for the required slots and cycles is done as a two-phase commit operation.
+
 
 ### Synchronization of Modules
 
