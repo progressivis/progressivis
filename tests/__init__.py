@@ -42,6 +42,8 @@ class ProgressiveTest(TestCase):
         level: Any = getenv("LOGLEVEL")
         if level in ProgressiveTest.levels:
             level = ProgressiveTest.levels[level]
+        else:
+            level = None
         if level:
             print(f"Logger level {level} for {self}", file=sys.stderr)
             self.log(int(level))
@@ -86,7 +88,8 @@ class ProgressiveTest(TestCase):
         return self._scheduler
 
     @staticmethod
-    def log(level: int = logging.NOTSET, package: str = "progressivis") -> None:
+    def log(level: int = logging.NOTSET,
+            package: str = "progressivis") -> None:
         log_level(level, package=package)
 
     @staticmethod

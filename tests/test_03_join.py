@@ -3,7 +3,9 @@ from __future__ import annotations
 import os
 from . import ProgressiveTest, skipIf
 from progressivis.core import aio
-from progressivis import Sink, ParquetLoader, SimpleCSVLoader, Join
+from progressivis import (
+    Sink, ParquetLoader, SimpleCSVLoader, Join, get_dataset
+)
 
 import pandas as pd
 import numpy as np
@@ -11,9 +13,11 @@ from itertools import product
 from io import StringIO
 from typing import Any, Sequence, Tuple, List, cast
 
-PARQUET_FILE = "nyc-taxi/newstyle_500k_yellow_tripdata_2015-01.parquet"
+# PARQUET_FILE = "nyc-taxi/newstyle_500k_yellow_tripdata_2015-01.parquet"
+PARQUET_FILE = get_dataset("newshort-taxis2015-01_parquet")
 # CSV_URL = "https://s3.amazonaws.com/nyc-tlc/misc/taxi+_zone_lookup.csv"
-CSV_URL = "nyc-taxi/taxi+_zone_lookup.csv"
+CSV_URL = "https://www.aviz.fr/nyc-taxi/taxi-zone-lookup.csv.bz2"
+# CSV_URL = "../nyc-taxi/taxi+_zone_lookup.csv"
 # NB: if PARQUET_FILE does not exist yet, consider running:
 # python scripts/create_nyc_parquet.py -p newstyle -t yellow -m1 -n 300000
 if not os.getenv("CI"):
@@ -107,7 +111,10 @@ def generate_random_csv_left(
     return df, sio.getvalue()
 
 
-def generate_random_csv_right(seq1: Tuple[Any, ...] = ("A", "B", "C", "D"), seq2: Sequence[Any] = range(FK2_N)) -> Tuple[pd.DataFrame, str]:
+def generate_random_csv_right(
+        seq1: Tuple[Any, ...] = ("A", "B", "C", "D"),
+        seq2: Sequence[Any] = range(FK2_N)
+) -> Tuple[pd.DataFrame, str]:
     pk1, pk2 = list(zip(*product(seq1, seq2)))
     info = [f"{tpl[0]}{tpl[1]}" for tpl in product(seq1, seq2)]
     df = pd.DataFrame(
@@ -204,6 +211,7 @@ class TestProgressiveJoin(ProgressiveTest):
         for col in df_concat.columns:
             self.assertTrue(np_array_equal(df_concat[col].values, OUTER[col].values))
 
+    #  @skipIf(True, "Too long")
     def test_inner_pu(self) -> None:
         s = self.scheduler()
         parquet = ParquetLoader(PARQUET_FILE, columns=TAXI_COLS, scheduler=s,)
@@ -213,16 +221,16 @@ class TestProgressiveJoin(ProgressiveTest):
         join.create_dependent_modules(
             related_module=parquet,
             primary_module=csv,
-            related_on="DOLocationID",
-            primary_on="LocationID",
+            related_on=["DOLocationID"],
+            primary_on=["LocationID"],
             related_cols=TAXI_COLS,
         )
         join_pu = Join(how="inner", scheduler=s)
         join_pu.create_dependent_modules(
             related_module=join,
             primary_module=csv,
-            related_on="PULocationID",
-            primary_on="LocationID",
+            related_on=["PULocationID"],
+            primary_on=["LocationID"],
             related_cols=TAXI_COLS + list(LOOKUP.columns),
             suffix="_pu",
         )
@@ -241,6 +249,7 @@ class TestProgressiveJoin(ProgressiveTest):
         for col in df.columns:
             self.assertTrue(np_array_equal(df[col].values, INNER_PU[col].values))
 
+    # @skipIf(True, "Too long")
     def test_outer_pu(self) -> None:
         s = self.scheduler()
         parquet = ParquetLoader(PARQUET_FILE, columns=TAXI_COLS, scheduler=s,)

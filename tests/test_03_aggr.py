@@ -115,10 +115,9 @@ class TestProgressiveAggregate(ProgressiveTest):
             "trip_distance_sum is not equal"
         )
 
-    @skipIf(True, "Too long")
     def test_aggregate_1_col_update(self) -> None:
         s = self.scheduler()
-        upd_id = 11142
+        upd_id = 1142
         new_val = 10.0
         parquet = ParquetLoader(
             PARQUET_FILE, columns=["passenger_count", "trip_distance"],

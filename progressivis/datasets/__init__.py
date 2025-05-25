@@ -41,54 +41,81 @@ def get_dataset(name: str, **kwds: Any) -> str:
         os.mkdir(DATA_DIR)
     if name == "bigfile":
         kw = _check_kwds(kwds, rows=1_000_000, cols=30)
-        return generate_random_csv(f"{DATA_DIR}/bigfile.csv", **kw)
+        return generate_random_csv(
+            os.path.join(DATA_DIR, "bigfile.csv"),
+            **kw
+        )
     if name == "bigfile_parquet":
         n_cols = 30
         kw = _check_kwds(kwds, rows=1_000_000, cols=n_cols)
-        csv_file = generate_random_csv(f"{DATA_DIR}/bigfile.csv", **kw)
+        csv_file = generate_random_csv(
+            os.path.join(DATA_DIR, "bigfile.csv"),
+            **kw
+        )
         return generate_random_parquet(
-            f"{DATA_DIR}/bigfile.parquet", csv_file, n_cols=n_cols
+            os.path.join(DATA_DIR, "bigfile.parquet"),
+            csv_file, n_cols=n_cols
         )
     if name == "bigfile_multiscale":
         kw = _check_kwds(kwds, rows=5_000_000)
         return generate_multiscale_random_csv(
-            f"{DATA_DIR}/bigfile_multiscale.csv", **kw
+            os.path.join(DATA_DIR, "bigfile_multiscale.csv"),
+            **kw
         )
     if name == "bigfile_mvn":
         kw = _check_kwds(kwds, rows=900_000)
         return generate_random_multivariate_normal_csv(
-            f"{DATA_DIR}/bigfile_mvn.csv", **kw
+            os.path.join(DATA_DIR, "bigfile_mvn.csv"),
+            **kw
         )
     if name == "smallfile":
         kw = _check_kwds(kwds, rows=30_000, cols=10)
-        return generate_random_csv(f"{DATA_DIR}/smallfile.csv", **kw)
+        return generate_random_csv(
+            os.path.join(DATA_DIR, "smallfile.csv"),
+            **kw
+        )
     if name == "smallfile_parquet":
         n_cols = 10
         kw = _check_kwds(kwds, rows=30_000, cols=n_cols)
         csv_file = generate_random_csv(f"{DATA_DIR}/smallfile.csv", **kw)
         return generate_random_parquet(
-            f"{DATA_DIR}/smallfile.parquet", csv_file, n_cols=n_cols
+            os.path.join(DATA_DIR, "smallfile.parquet"),
+            csv_file, n_cols=n_cols
         )
     if name == "smallfile_multiscale":
         kw = _check_kwds(kwds, rows=30_000)
         return generate_multiscale_random_csv(
-            f"{DATA_DIR}/smallfile_multiscale.csv", **kw
+            os.path.join(DATA_DIR, "smallfile_multiscale.csv"),
+            **kw
         )
     if name == "taxis2015-01_parquet":
         return wget_file(
-            filename=f"{DATA_DIR}/yellow_tripdata_2015-01.parquet",
+            filename=os.path.join(DATA_DIR,
+                                  "yellow_tripdata_2015-01.parquet"),
             url="https://aviz.fr/nyc-taxi/yellow_tripdata_2015-01.parquet"
         )
     if name == "short-taxis2015-01_parquet":
         return wget_file(
-            filename=f"{DATA_DIR}/short_500k_yellow_tripdata_2015-01.parquet",
+            filename=os.path.join(
+                DATA_DIR,
+                "short_500k_yellow_tripdata_2015-01.parquet"
+            ),
             url=("https://aviz.fr/nyc-taxi/"
                  "short_500k_yellow_tripdata_2015-01.parquet")
+        )
+    if name == "newshort-taxis2015-01_parquet":
+        return wget_file(
+            filename=os.path.join(
+                DATA_DIR,
+                "newstyle_500k_yellow_tripdata_2015-01.parquet"
+            ),
+            url=("https://aviz.fr/nyc-taxi/"
+                 "newstyle_500k_yellow_tripdata_2015-01.parquet")
         )
 
     if name == "warlogs":
         return wget_file(
-            filename=f"{DATA_DIR}/warlogs.vec.bz2",
+            filename=os.path.join(DATA_DIR, "warlogs.vec.bz2"),
             url=("http://www.cs.ubc.ca/labs/imager/video/2014/QSNE/"
                  "warlogs.vec.bz2")
         )
@@ -97,13 +124,13 @@ def get_dataset(name: str, **kwds: Any) -> str:
         # Dedication and License v1.0 whose full text can be found at:
         # http://opendatacommons.org/licenses/pddl/1.0/
         return wget_file(
-            filename=f"{DATA_DIR}/mnist_784.csv",
+            filename=os.path.join(DATA_DIR, "mnist_784.csv"),
             url="https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv"
         )
     if name.startswith("cluster:"):
         fname = name[len("cluster:"):] + ".txt"
         return wget_file(
-            filename=f"{DATA_DIR}/{fname}",
+            filename=os.path.join(DATA_DIR, fname),
             url=f"http://cs.joensuu.fi/sipu/datasets/{fname}",
         )
     raise ProgressiveError(f"Unknown dataset {name}")
@@ -120,7 +147,8 @@ class Compressor:
 compressors: Dict[str, Dict[str, Any]] = dict(
     bz2=dict(ext=".bz2", factory=bz2.BZ2Compressor),
     zlib=dict(ext=".zlib", factory=zlib.compressobj),
-    gzip=dict(ext=".gz", factory=partial(zlib.compressobj, wbits=zlib.MAX_WBITS | 16)),
+    gzip=dict(ext=".gz", factory=partial(zlib.compressobj,
+                                         wbits=zlib.MAX_WBITS | 16)),
     lzma=dict(ext=".xz", factory=lzma.LZMACompressor),
 )
 

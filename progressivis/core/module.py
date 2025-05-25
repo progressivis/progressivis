@@ -1192,7 +1192,7 @@ class Module(metaclass=ABCMeta):
         run_step_ret = {}
         tracer.start_run(now, run_number)
         step_size = self.predict_step_size(quantum)
-        logger.info(f"{self.name}: step_size={step_size}")
+        logger.debug(f"{self.name}: step_size={step_size}")
         if step_size != 0:
             # pylint: disable=broad-except
             try:
@@ -1204,7 +1204,7 @@ class Module(metaclass=ABCMeta):
                 now = self.timer()
                 self._last_update = run_number  # fix?
             except ProgressiveStopIteration:
-                logger.info("In Module.run(): Received a StopIteration")
+                logger.debug("In Module.run(): Received a StopIteration")
                 next_state = Module.state_zombie
                 run_step_ret["next_state"] = next_state
                 now = self.timer()
