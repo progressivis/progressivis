@@ -48,12 +48,6 @@ class Max(Module):
         super().__init__(**kwds)
         self.default_step_size = 10000
 
-    def is_ready(self) -> bool:
-        slot = self.get_input_slot("table")
-        if slot is not None and slot.created.any():
-            return True
-        return super().is_ready()
-
     def reset(self) -> None:
         if self.result is not None:
             self.result.fill(-np.inf)
@@ -91,12 +85,6 @@ class ScalarMax(Module):
         super().__init__(**kwds)
         self.default_step_size = 10000
         self._sensitive_ids: Dict[str, int] = {}
-
-    def is_ready(self) -> bool:
-        slot = self.get_input_slot("table")
-        if slot is not None and slot.created.any():
-            return True
-        return super().is_ready()
 
     def reset(self) -> None:
         if self.result is not None:
