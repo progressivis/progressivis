@@ -3,7 +3,7 @@
 
 New modules can be programmed in Python. They require some understanding of the internals of ProgressiVis. We introduce the main mechanisms step by step here.
 
-To summarize, a module has a simple life cycle. It is first created and then connected to other modules in a dataflow graph. At some later point, it is validated by the scheduler. If something is wrong, it is not installed in the dataflow of the scheduler since the program created is invalid in some way and should be fixed by the user. For example, an input slot is connected to an incompatible output slot somewhere in the dataflow or a mandatory slot is not connected.
+To summarize, a module has a simple life cycle. It is first created and then connected to other modules in a dataflow graph. At some later point, it is validated by the scheduler. If something is wrong, it is not installed in the dataflow of the scheduler since the program created is invalid in some way and should be fixed by the user. For example, an input slot is connected to an incompatible output slot somewhere in the dataflow, or a mandatory slot is not connected.
 
 Once the dataflow graph is validated, the module is runnable but **blocked**. The scheduler will decide at some point to try to unblock and run it (explained later). When the module is **run**, its method `run_step()` is called with a few parameters; this is where the execution takes place.
 
@@ -13,7 +13,7 @@ The method `run_step()` needs to perform many operations to get its data from th
 
 The `run_step()` method can decide whether to let the module continue running or to stop it. When a module continues to run, it can be **blocked** or **ready**. A blocked module needs some input data to continue, whereas a ready module can be rescheduled without further testing by the scheduler.
 
-When a module has finished, it becomes **terminated**. For example, once a CSV input module has finished loading a CSV file, its state becomes **terminated** and can be removed from the list of runnable modules.  Internally, the module first becomes a **zombie** to let the scheduler cleanup its dependency before it becomes **terminated**, but that's a small technical point.
+When a module has finished, it becomes **terminated**. For example, once a CSV input module has finished loading a CSV file, its state becomes **terminated** and can be removed from the list of runnable modules.  Internally, the module first becomes a **zombie** to let the scheduler clean up its dependency before it becomes **terminated**, but that's a small technical point.
 
 If a module has a non-recoverable runtime error, it becomes **invalid**. For now, this is equivalent to **terminated**, but some debugging facilities could revive it in the future.
 
@@ -36,17 +36,18 @@ Let's explain all its parts step by step.
    :linenos:
 ```
 
-ProgressiVis defines several python decorators to limit typing too much boilerplate code.
+ProgressiVis defines several Python decorators to limit the amount of boilerplate code.
 Every Module class uses input slots, output slots, and parameters. They can be declared using the `@def_input`, `@def_output`, and `@def_param` decorators. These decorators can appear after the `@document` decorator.
 
-Line 12 declare an input slot called "table" of type `PTable`. The `hint_type` parameter specifies that this input slot can be parametered using a sequence of strings. Concretely, all the connections made with slots of type "PTable" can be parametered with a list of column names. We discuss these slot parameters in [slot hints](#slot_hints).
+Line 12 declares an input slot called "table" of type `PTable`. The `hint_type` parameter specifies that this input slot can be parameterized using a sequence of strings. Concretely, all the connections made with slots of type "PTable" can be parameterized with a list of column names. We discuss these slot parameters in [slot hints](#slot_hints).
 
-Line 13 defines the output slot called "result", of type `PDict`, i.e., a "progressive dictionary".
-It will contain, associated with each column name of the input table, maximum value computed progressively. The ouput slot descriptor also defines a document string.
+Line 13 declares the output slot called "result", of type `PDict`, i.e., a "progressive dictionary".
+It will contain the maximum value of each column computed progressively. The output slot descriptor also defines a document string.
 
 Input and output slots can also be required or not; by default, they are required. When a slot is required, it should be connected for a dataflow configuration to be **valid**. We discuss later the notion of dataflow validity [later](#validity).
 
-Line 18 defined the class `Max`, inheriting from the `Module` class. Its `__init__` method is very standard and just catches the keyword parameter passed to keep them somewhere. It also defines the initial value of the `default_step_size` instance variable with a reasonable value for the `Max` module.
+Line 18 defined the class `Max`, inheriting from the `Module` class. Its `__init__` method is very standard and just catches the keyword parameter passed to keep it as an instance variable.
+It is redefined to initialize the value of the `default_step_size` instance variable with a reasonable value for the `Max` module, as described in the [Time Predictor section](#time-predictor).
 Without the `@def_` decorators, the `__init__` method would require many lines of code to  declare the slots and parameters.
 
 The method that performs the main work of a module is `run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep`.
@@ -60,20 +61,20 @@ The simplest strategy to use when an input table is modified is to restart the w
 (slot_hints)=
 ### Slot Hints
 
-Convenient syntax to adapt the behavior of slots according to parameters, called "slot hints".
-In PTable slots, the hints consist in a list of column names that restrict the columns received through the slot. Internally, this uses a PTable view. Creating a view can be done through a module, but the syntax is much heavier and the performance is much worse.
+Slot hints provide a convenient syntax to adapt the behavior of slots according to parameters that we call "slot hints".
+In PTable slots, the hints consist of a list of column names that restrict the columns received through the slot. Internally, this uses a PTable view. Creating a view can be done through a module, but the syntax is much heavier, and the performance is much worse.
 
-In the fist example, we uses a `Quantiles` module where output slots can be parametered by a quantile, such as 0.03 or 0.97 in the [initial example](userguide.md#quantiles-variant).
+In the [initial example](userguide.md#quantiles-variant) of ProgressiVis, we use a `Quantiles` module where output slots can be parameterized by a quantile, such as 0.03 or 0.97.
 
 (validity)=
 ### Validity of a Dataflow
 
 To run, a dataflow should be **valid**. The validity is defined as follows:
 - For all the modules, all the required slots should be connected
-- For All the connected slots, the input and output slots should be compatible
-- There should not be any cycle in the dataflow, it should be a **directed acyclic graph**
+- For all the connected slots, the input and output slots should be compatible
+- There should not be any cycle in the dataflow; it should be a **directed acyclic graph**
 
-By design, ProgressiVis checks the connection types as soon as they are specified. However, when building or modifying a dataflow graph, adding modules or removing modules, the dataflow graph remains invalid until all the connections are done and dependent modules are deleted from the dataflow. Therefore, checking for the required slots and cycles is done as a two-phase commit operation.
+By design, ProgressiVis checks the connection types as soon as they are specified. However, when building or modifying a dataflow graph, adding modules or removing modules, the dataflow graph remains invalid until all the connections are made and dependent modules are deleted from the dataflow. Therefore, checking for the required slots and cycles is done as a two-phase commit operation.
 
 
 ### Synchronization of Modules
