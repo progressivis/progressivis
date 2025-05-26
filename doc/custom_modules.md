@@ -3,28 +3,43 @@
 
 New modules can be programmed in Python. They require some understanding of the internals of ProgressiVis. We introduce the main mechanisms step by step here.
 
-To summarize, a module has a simple life cycle. It is first created and then connected to other modules in a dataflow graph. At some later point, it is validated by the scheduler. If something is wrong, it is not installed in the dataflow of the scheduler since the program created is invalid in some way and should be fixed by the user. For example, an input slot is connected to an incompatible output slot somewhere in the dataflow, or a mandatory slot is not connected.
+To summarize, a module has a simple life cycle. It is first created and then connected to other modules in a dataflow graph. At some later point, the dataflow is [validated by the scheduler](#validity). If something is wrong, the new dataflow is not installed in thescheduler since the program is invalid in some way and should be fixed by the user. For example, a required input slot is missing in a new module.
 
 Once the dataflow graph is validated, the module is runnable but **blocked**. The scheduler will decide at some point to try to unblock and run it (explained later). When the module is **run**, its method `run_step()` is called with a few parameters; this is where the execution takes place.
 
-The dataflow of the [user guide example](userguide.md#quantiles-variant) is shown below:
+As a simple example, dataflow of the [user guide example](userguide.md#quantiles-variant) is shown below:
 ```{eval-rst}
 .. progressivis_dot:: ./userguide1.py
 ```
-
-
+The modules are first ordered linearly using [topological sorting](https://en.wikipedia.org/wiki/Topological_sorting). Then, the scheduler runs them in order and starts again in the end.
+For each module, the scheduler calls the method `is_ready()` and, if it returns `True`, it calls the method `run()` that calls the method `run_step()` described in the next section.
+When reaching the end of the module list (called the `run_list` in the Scheduler), the Scheduler cleans-up its list by removing all the modules that have finished their work.
+This means that modules have an internal state, `Module.state`, with the following possible values:
+```Python
+class ModuleState(IntEnum):
+    state_created = 0
+    state_ready = 1
+    state_running = 2
+    state_blocked = 3
+    state_suspended = 4
+    state_zombie = 5
+    state_terminated = 6
+    state_invalid = 7
+```
 
 ## The `run_step()` method
 
 The method `run_step()` needs to perform many operations to get its data from the input slots, know how long it should run, post data on its output slots, and report its progression. ProgressiVis provides several Python mechanisms and decorators to avoid typing long boilerplate code. While they simplify the syntax, their role should be understood to control the execution of progressive modules correctly.
 
-The `run_step()` method can decide whether to let the module continue running or to stop it. When a module continues to run, it can be **blocked** or **ready**. A blocked module needs some input data to continue, whereas a ready module can be rescheduled without further testing by the scheduler.
+The `run_step()` method can decide whether to let the module continue running or to stop it. When a module continues to run, it can be **blocked** or **ready**. A blocked module needs some input data to continue, whereas a ready module can be rescheduled without further testing by the scheduler. This is checked by the method `is_ready()`; if the module state is `state_ready`, the module is ready to go, if it is `state_blocked`, it becomes ready if one of its input slots has more data available. Otherwise, the module is not ready.
 
 When a module has finished, it becomes **terminated**. For example, once a CSV input module has finished loading a CSV file, its state becomes **terminated** and can be removed from the list of runnable modules.  Internally, the module first becomes a **zombie** to let the scheduler clean up its dependency before it becomes **terminated**, but that's a small technical point.
 
 If a module has a non-recoverable runtime error, it becomes **invalid**. For now, this is equivalent to **terminated**, but some debugging facilities could revive it in the future.
 
 Finally, modules that are interactive can be resurrected after they are terminated.
+
+Implementing a new module mostly boils down to implementing its `run_step()` method. An example is given [below](#max_module).
 
 ## Cooperative Scheduling
 
@@ -40,7 +55,7 @@ The time predictor updates is throughput measure each time the module runs so it
 ## Managing Changes
 
 
-
+(max_module) =
 ## Example: The Max Module
 
 The `Max` module is among the simplest of ProgressiVis.
