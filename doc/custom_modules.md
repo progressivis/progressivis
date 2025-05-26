@@ -7,7 +7,7 @@ To summarize, a module has a simple life cycle. It is first created and then con
 
 Once the dataflow graph is validated, the module is runnable but **blocked**. The scheduler will decide at some point to try to unblock and run it (explained later). When the module is **run**, its method `run_step()` is called with a few parameters; this is where the execution takes place.
 
-As a simple example, dataflow of the [user guide example](userguide.md#quantiles-variant) is shown below:
+As a simple example, dataflow of the [user guide example](#quantiles-variant) is shown below:
 ```{eval-rst}
 .. progressivis_dot:: ./userguide1.py
 ```
@@ -55,7 +55,7 @@ The time predictor updates is throughput measure each time the module runs so it
 ## Managing Changes
 
 
-(max_module) =
+(max_module)=
 ## Example: The Max Module
 
 The `Max` module is among the simplest of ProgressiVis.
@@ -99,7 +99,7 @@ Since the `Max` module only deals with one input slot, the "table", the followin
 Slot hints provide a convenient syntax to adapt the behavior of slots according to parameters that we call "slot hints".
 In PTable slots, the hints consist of a list of column names that restrict the columns received through the slot. Internally, this uses a PTable view. Creating a view can be done through a module, but the syntax is much heavier, and the performance is much worse.
 
-In the [initial example](userguide.md#quantiles-variant) of ProgressiVis, we use a `Quantiles` module where output slots can be parameterized by a quantile, such as 0.03 or 0.97.
+In the [initial example](#quantiles-variant) of ProgressiVis, we use a `Quantiles` module where output slots can be parameterized by a quantile, such as 0.03 or 0.97.
 
 (validity)=
 ### Validity of a Dataflow
@@ -110,6 +110,10 @@ To run, a dataflow should be **valid**. The validity is defined as follows:
 - There should not be any cycle in the dataflow; it should be a **directed acyclic graph**
 
 By design, ProgressiVis checks the connection types as soon as they are specified. However, when building or modifying a dataflow graph, adding modules or removing modules, the dataflow graph remains invalid until all the connections are made and dependent modules are deleted from the dataflow. Therefore, checking for the required slots and cycles is done as a two-phase commit operation.
+
+(time_predictor) =
+### Time Predictor
+
 
 
 ### Synchronization of Modules
