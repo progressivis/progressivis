@@ -42,7 +42,7 @@ from progressivis import (
 )
 
 # Create a csv loader filtering out data outside NYC
-csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=['pickup_longitude', 'pickup_latitude'])  # , filter_=filter_)
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=['pickup_longitude', 'pickup_latitude'])
 
 # Create a Quantile module to get rid of the 3% outliers both sides
 quantiles = Quantiles()

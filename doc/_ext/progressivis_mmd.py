@@ -1,5 +1,6 @@
 # type: ignore
 
+from progressivis import Scheduler
 import sphinx
 from sphinxcontrib.mermaid import Mermaid
 from sphinx.ext.graphviz import Graphviz
@@ -44,6 +45,7 @@ class ProgressivisDOT(Graphviz):
                     line=self.lineno)]
         self.arguments = None
         locals_ = dict(scheduler=None)
+        Scheduler.reset()
         exec(py_code, globals(), locals_)
         dotcode = locals_["scheduler"].to_graphviz()
         self.content = [dotcode]

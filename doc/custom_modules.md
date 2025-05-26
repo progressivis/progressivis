@@ -7,6 +7,12 @@ To summarize, a module has a simple life cycle. It is first created and then con
 
 Once the dataflow graph is validated, the module is runnable but **blocked**. The scheduler will decide at some point to try to unblock and run it (explained later). When the module is **run**, its method `run_step()` is called with a few parameters; this is where the execution takes place.
 
+The dataflow of the [user guide example](userguide.md#quantiles-variant) is shown below:
+```{eval-rst}
+.. progressivis_dot:: ./userguide1.py
+```
+
+
 ## The `run_step()` method
 
 The method `run_step()` needs to perform many operations to get its data from the input slots, know how long it should run, post data on its output slots, and report its progression. ProgressiVis provides several Python mechanisms and decorators to avoid typing long boilerplate code. While they simplify the syntax, their role should be understood to control the execution of progressive modules correctly.
@@ -23,7 +29,16 @@ Finally, modules that are interactive can be resurrected after they are terminat
 
 ProgressiVis modules rely on **cooperative scheduling**, contrary to modern operating systems that use **preemptive scheduling**. In the latter, the scheduler decides on its own to interrupt the execution of a process to start another one. This decision is based on the time spent in the process and other factors that are opaque to the user (but can be found deep down in the description of the scheduler).
 
-Instead, ProgressiVis relies on each module to abide by a specified **quantum**.
+Instead, ProgressiVis relies on each module to abide by a specified **quantum** of time.  It means that, when the main method `run_step()` of a module is called, it is given a certain time. Within this time, it should perform its computation, return a useful result (approximate if needed), and return information regarding its state, either `ready`, `blocked`, or `zombie` (about to terminate but still alive).
+
+Additionally, ProgressiVis provides an additional mechanism: the **Time Predictor**. Instead of only asking the `run_step` method to run for a given time, it also converts this time in `steps`.
+Intuitively, when loading a given csv file, the time predictor reads a small number of lines and measures the time. Assuming that run time is linear with the number of lines read, the time predictor computes a throughput for the module and gives a number of steps the module should run to maintain its quantum.
+The time predictor updates is throughput measure each time the module runs so it can accomodate a slight non-linearity but expect modules to spend a time proportional to the number of steps, or to run steps at a constant speed.
+
+(change_management)=
+## Managing Changes
+
+
 
 ## Example: The Max Module
 
@@ -56,7 +71,11 @@ The code relies on two decorators for this function: `@process_slot` and `@run_i
 `@process_slot` specifies that when the input slot "table" contains updated or deleted items (not created ones), the method `reset(self) -> None` should be called.  This method is defined on line 23.
 The simplest strategy to use when an input table is modified is to restart the work from the beginning, forgetting the current "max" value.
 
-`@run_if_any` means that if any of the input slots are modified, then the method should run.
+`@run_if_any` means that if any of the input slots are modified, then the method should run. This is the default behavior for modules. This decorator also prepares the `self.context` context manager that does a great deal of bookkeeping.
+
+Since the `Max` module only deals with one input slot, the "table", the following lines extract the items of the table that have been modified since the last call to `run_step()`. These lines rely on the change management provided by ProgressiVis's progressive data structures.
+
+
 
 (slot_hints)=
 ### Slot Hints

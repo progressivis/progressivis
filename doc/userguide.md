@@ -43,7 +43,7 @@ quantiles.input.table = csv.output.result
 
 histogram2d = Histogram2D('pickup_longitude', 'pickup_latitude',
                           xbins=RESOLUTION, ybins=RESOLUTION)
-histogram2d.input.table = csv.output.result
+histogram2d.input.table = quantiles.output.table
 histogram2d.input.min = quantiles.output.result[0.03]
 histogram2d.input.max = quantiles.output.result[0.97]
 

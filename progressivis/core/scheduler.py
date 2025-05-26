@@ -910,5 +910,9 @@ class Scheduler:
         sio.write(f"class {outslots} outslot\n")
         return sio.getvalue()
 
+    @staticmethod
+    def reset() -> None:
+        Scheduler.default = Scheduler()
 
-Scheduler.default = Scheduler()
+
+Scheduler.reset()
