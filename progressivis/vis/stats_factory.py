@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 @def_output("result", PTable)
-class Histogram1dPattern(Pattern):
+class Histogram1DPattern(Pattern):
     def __init__(self, column: str, factory: StatsFactory, **kwds: Any) -> None:
         """ """
         super().__init__(**kwds)
@@ -81,7 +81,7 @@ class Histogram1dPattern(Pattern):
 
 
 @def_output("result", PTable)
-class Histogram2dPattern(Pattern):
+class Histogram2DPattern(Pattern):
     def __init__(
         self, x_column: str, y_column: str, factory: StatsFactory, **kwds: Any
     ) -> None:
@@ -234,7 +234,7 @@ def _add_hist_col(col: str, factory: StatsFactory) -> Module:
         return _add_barplot_col(col, factory)
     scheduler = factory.scheduler()
     with scheduler:
-        m = Histogram1dPattern(column=col, factory=factory, scheduler=scheduler)
+        m = Histogram1DPattern(column=col, factory=factory, scheduler=scheduler)
         # sink = Sink(scheduler=scheduler)
         # sink.input.inp = m.output.result
         m.create_dependent_modules()
@@ -249,10 +249,10 @@ def _hide_func(col: str, factory: StatsFactory) -> None:
     raise ValueError("hide function should never be called ...")
 
 
-def _h2d_func(cx: str, cy: str, factory: StatsFactory) -> Histogram2dPattern:
+def _h2d_func(cx: str, cy: str, factory: StatsFactory) -> Histogram2DPattern:
     scheduler = factory.scheduler()
     with scheduler:
-        m = Histogram2dPattern(
+        m = Histogram2DPattern(
             x_column=cx, y_column=cy, factory=factory, scheduler=scheduler
         )
         # sink = Sink(scheduler=scheduler)

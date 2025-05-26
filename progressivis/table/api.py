@@ -9,7 +9,7 @@ from .changemanager_table import PTableChangeManager
 from .paging_helper import PagingHelper
 from .binning_index import BinningIndex
 from .binning_index_nd import BinningIndexND
-from .range_query_2d import RangeQuery2d
+from .range_query_2d import RangeQuery2D
 from .range_query import RangeQuery
 from .join import Join
 from .merge import Merge
@@ -37,7 +37,7 @@ __all__ = [
     "BinningIndex",
     "BinningIndexND",
     "RangeQuery",
-    "RangeQuery2d",
+    "RangeQuery2D",
     "Join",
     "Merge",
     "LastRow",

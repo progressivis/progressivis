@@ -161,12 +161,12 @@ And in this case it produces the following topology:
 ```{eval-rst}
 .. currentmodule:: progressivis.table.range_query_2d
 
-.. autoclass:: RangeQuery2d
+.. autoclass:: RangeQuery2D
    :members:
    :exclude-members: run_step, parameters
 ```
 
-Just like `RangeQuery`, the module `RangeQuery2d` is not self-sufficient. In order to provide it with an environment, the `create_dependent_modules()` method can be used in the same way:
+Just like `RangeQuery`, the module `RangeQuery2D` is not self-sufficient. In order to provide it with an environment, the `create_dependent_modules()` method can be used in the same way:
 
 ```{eval-rst}
 .. literalinclude:: ./example_range_query_2d.py

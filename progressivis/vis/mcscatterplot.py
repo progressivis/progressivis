@@ -7,7 +7,7 @@ import numpy as np
 
 from progressivis.core.module import Module, ReturnRunStep, JSon, def_input
 from progressivis.stats.api import MCHistogram2D, Sample
-from progressivis.table.range_query_2d import RangeQuery2d
+from progressivis.table.range_query_2d import RangeQuery2D
 from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
 from progressivis.io.api import Variable
@@ -80,7 +80,7 @@ class _DataClass:
         with scheduler:
             self.input_module = input_module
             self.input_slot = input_slot
-            range_query_2d = RangeQuery2d(
+            range_query_2d = RangeQuery2D(
                 column_x=self.x_column,
                 column_y=self.y_column,
                 group=self._group,

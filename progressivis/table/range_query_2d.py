@@ -40,7 +40,7 @@ class _Selection(object):
         self._values = PIntSet(values)
 
 
-class RangeQuery2dImpl:  # (ModuleImpl):
+class RangeQuery2DImpl:  # (ModuleImpl):
     def __init__(self, approximate: bool, column_x: str, column_y: str) -> None:
         super().__init__()
         self._table: Optional[BasePTable] = None
@@ -283,7 +283,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
 @def_output("result", PTableSelectedView)
 @def_output("min", PDict, attr_name="_min_table", required=False, doc="min doc")
 @def_output("max", PDict, attr_name="_max_table", required=False)
-class RangeQuery2d(Module):
+class RangeQuery2D(Module):
     """
     Selects rows that contain values within a provided 2D interval (two columns)
     """
@@ -305,7 +305,7 @@ class RangeQuery2d(Module):
         self._approximate = approximate
         self._column_x: str = self.params.column_x
         self._column_y: str = self.params.column_y
-        self._impl = RangeQuery2dImpl(
+        self._impl = RangeQuery2DImpl(
             approximate, self.params.column_x, self.params.column_y
         )
         # X ...
@@ -334,7 +334,7 @@ class RangeQuery2d(Module):
         min_value: Union[None, bool, Module] = None,
         max_value: Union[None, bool, Module] = None,
         **kwds: Any,
-    ) -> RangeQuery2d:
+    ) -> RangeQuery2D:
         """
         Creates a default configuration containing the necessary underlying modules.
         Beware, {min,max}_value=None is not the same as {min,max}_value=False.

@@ -3,8 +3,8 @@ __all__ = [
     "MCScatterPlot",
     "Histograms",
     "StatsFactory",
-    "Histogram1dPattern",
-    "Histogram2dPattern",
+    "Histogram1DPattern",
+    "Histogram2DPattern",
     "DataShape",
 ]
 
@@ -17,6 +17,6 @@ from .mcscatterplot import MCScatterPlot
 from .stats_factory import (
     StatsFactory,
     DataShape,
-    Histogram1dPattern,
-    Histogram2dPattern,
+    Histogram1DPattern,
+    Histogram2DPattern,
 )

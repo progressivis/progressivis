@@ -157,7 +157,7 @@ On the other direction, an external function can trigger changes in a ProgressiV
 ```{code-block}
 :linenos:
 from progressivis import (CSVLoader, Histogram2D, Heatmap, PDict,
-                          BinningIndexND, RangeQuery2d, Variable)
+                          BinningIndexND, RangeQuery2D, Variable)
 
 col_x = "pickup_longitude"
 col_y = "pickup_latitude"
@@ -165,7 +165,7 @@ col_y = "pickup_latitude"
 csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=[col_x, col_y])
 index = BinningIndexND()
 index.input.table = csv.output.result[col_x, col_y]
-query = RangeQuery2d(column_x=col_x, column_y=col_y)
+query = RangeQuery2D(column_x=col_x, column_y=col_y)
 var_min = Variable(name="var_min")
 var_max = Variable(name="var_max")
 query.input.lower = var_min.output.result
@@ -193,7 +193,7 @@ Visualizing the dataflow graph shows a cleaner view of the structure of the prog
 
 Compared to the initial non interactive program, we have added lines 12-26.  Line 13 creates a `BinningIndexND` that progessively maintains an index to all the numerical columns, allowing to quickly perform range queries over a large dataset. It is connected to the `CSV` module on line 15, with a slot hint restricting it to maintaining the index on two columns.
 
-Line 17 creates a `RangeQuery2d` module that creates a table filtered by a 2D range query. The outputs of this module are connected to the `Histogram2D` module on lines 30-32 instead of the min/max quantiles and the table produced by the `CSV` table in the first example. The `RangeQuery2d` module ouputs the current min/max ranges and the table filtered according to these ranges to the `Histogram2D` module that gets visualized like in the first example. The `RangeQuery2d` module takes two variables `var_min` and `var_max`, declared line 19-20m to specify the desired min-max range that the user wants to see. The variables can be controlled by a jupyter notebook range-query widget to pass the information from the notebook to the progressive program, as shown in the next listing.
+Line 17 creates a `RangeQuery2D` module that creates a table filtered by a 2D range query. The outputs of this module are connected to the `Histogram2D` module on lines 30-32 instead of the min/max quantiles and the table produced by the `CSV` table in the first example. The `RangeQuery2D` module ouputs the current min/max ranges and the table filtered according to these ranges to the `Histogram2D` module that gets visualized like in the first example. The `RangeQuery2D` module takes two variables `var_min` and `var_max`, declared line 19-20m to specify the desired min-max range that the user wants to see. The variables can be controlled by a jupyter notebook range-query widget to pass the information from the notebook to the progressive program, as shown in the next listing.
 
 ```{eval-rst}
 .. literalinclude:: ./userguide1.3-cont.py

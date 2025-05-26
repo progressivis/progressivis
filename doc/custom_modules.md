@@ -13,6 +13,7 @@ The dataflow of the [user guide example](userguide.md#quantiles-variant) is show
 ```
 
 
+
 ## The `run_step()` method
 
 The method `run_step()` needs to perform many operations to get its data from the input slots, know how long it should run, post data on its output slots, and report its progression. ProgressiVis provides several Python mechanisms and decorators to avoid typing long boilerplate code. While they simplify the syntax, their role should be understood to control the execution of progressive modules correctly.

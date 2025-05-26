@@ -8,7 +8,7 @@ from progressivis import (
     ConstDict,
     PIntSet,
     PDict,
-    RangeQuery2d,
+    RangeQuery2D,
 )
 from progressivis.core import aio
 
@@ -32,7 +32,7 @@ class TestRangeQuery(ProgressiveTest):
             min_value = ConstDict(pdict=t_min, scheduler=s)
             t_max = PDict({"_1": up_x, "_2": up_y})
             max_value = ConstDict(pdict=t_max, scheduler=s)
-            range_qry = RangeQuery2d(column_x="_1", column_y="_2", scheduler=s)
+            range_qry = RangeQuery2D(column_x="_1", column_y="_2", scheduler=s)
             range_qry.create_dependent_modules(
                 random, "result", min_value=min_value, max_value=max_value
             )
@@ -69,7 +69,7 @@ class TestRangeQuery(ProgressiveTest):
             min_value = ConstDict(pdict=t_min, scheduler=s)
             t_max = PDict({"_1": 0.8, "_2": 0.9})
             max_value = ConstDict(pdict=t_max, scheduler=s)
-            range_qry = RangeQuery2d(column_x="_1", column_y="_2", scheduler=s)
+            range_qry = RangeQuery2D(column_x="_1", column_y="_2", scheduler=s)
             range_qry.create_dependent_modules(
                 random, "result", min_value=min_value, max_value=max_value
             )
@@ -101,10 +101,10 @@ class TestRangeQuery(ProgressiveTest):
 
     def _query_min_max_impl(
         self, random: RandomPTable, t_min: PDict, t_max: PDict, s: Scheduler
-    ) -> RangeQuery2d:
+    ) -> RangeQuery2D:
         min_value = ConstDict(pdict=t_min, scheduler=s)
         max_value = ConstDict(pdict=t_max, scheduler=s)
-        range_qry = RangeQuery2d(column_x="_1", column_y="_2", scheduler=s)
+        range_qry = RangeQuery2D(column_x="_1", column_y="_2", scheduler=s)
         range_qry.create_dependent_modules(
             random, "result", min_value=min_value, max_value=max_value
         )

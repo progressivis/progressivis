@@ -625,7 +625,7 @@ class Module(metaclass=ABCMeta):
         "Return a the type name of this module in a pretty form"
         name = self.__class__.__name__
         pretty = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
-        pretty = re.sub("([a-z0-9])([A-Z])", r"\1_\2", pretty).lower()
+        pretty = re.sub("([a-z])([A-Z])", r"\1_\2", pretty).lower()
         pretty = re.sub("_module$", "", pretty)
         return pretty
 
