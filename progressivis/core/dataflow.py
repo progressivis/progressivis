@@ -221,7 +221,15 @@ class Dataflow:
             nslots = [
                 s for s in slots if s.input_module and s.input_module.name != name
             ]
-            assert slots != nslots  # we must remove a slot
+            if slots == nslots:  # in principle, we must remove a slot but
+                # this happens when the same output slot is connected to
+                # two (or more) input slots of a module.
+                # The first time, nslots != slots by two slots
+                # and the second (or more) times, nslots == slots
+                # There might be a way to avoid removing all the slots
+                # initially, but it should not matter.
+                logger.debug(f"Skipping another connection to {slot}")
+                continue
             if nslots:
                 self.outputs[slot.output_module.name][outname] = nslots
             else:
