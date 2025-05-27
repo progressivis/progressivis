@@ -221,7 +221,7 @@ class Dataflow:
             nslots = [
                 s for s in slots if s.input_module and s.input_module.name != name
             ]
-            # assert slots != nslots  # we must remove a slot
+            assert slots != nslots  # we must remove a slot
             if nslots:
                 self.outputs[slot.output_module.name][outname] = nslots
             else:
