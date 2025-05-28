@@ -55,7 +55,7 @@ class PPCA(Module):
     @process_slot("table", reset_cb="reset")
     @run_if_any
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         """ """
         assert self.context
@@ -271,7 +271,7 @@ class PPCATransformer(Module):
     @process_slot("transformer", reset_if=False)
     @run_if_any
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         """ """
         assert self.context

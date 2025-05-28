@@ -406,7 +406,7 @@ class RangeQuery2D(Module):
         return self._set_minmax_out("_max_table", val_x, val_y)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         """ """
         index_2d_slot = self.get_input_slot("index")

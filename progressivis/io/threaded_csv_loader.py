@@ -421,7 +421,7 @@ class ThreadedCSVLoader(Module):
         return sum([len(df) for df in self._df_todo_list])
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         if step_size == 0:  # bug
             logger.error("Received a step_size of 0")

@@ -27,7 +27,7 @@ from typing import (
 if TYPE_CHECKING:
     from .table_base import IndexPTable, PTableChanges
     from .dshape import DataShape
-    from ..core.index_update import IndexUpdate
+    from ..core.delta import Delta
 
 
 logger = logging.getLogger(__name__)
@@ -265,7 +265,7 @@ class BasePColumn(metaclass=ABCMeta):
 
     def compute_updates(
         self, start: int, now: int, mid: str, cleanup: bool = True
-    ) -> Optional[IndexUpdate]:
+    ) -> Optional[Delta]:
         "Return the updates of this column managed by the index"
         if self.index is None:
             return None

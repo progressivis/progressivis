@@ -78,7 +78,7 @@ class RandomPTable(Module):
         return len(self.result), self.rows
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         assert self.result is not None
         if step_size == 0:

@@ -47,7 +47,7 @@ class Stirrer(Module):
         return max(p, 1000)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         if self.params.fixed_step_size and False:
             step_size = self.params.fixed_step_size
@@ -132,7 +132,7 @@ class StirrerView(Module):
         return len(val) > self._delete_threshold
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         if self.params.fixed_step_size and False:
             step_size = self.params.fixed_step_size

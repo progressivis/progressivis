@@ -33,7 +33,7 @@ class Every(Module):
         return super().predict_step_size(duration)
 
     def run_step(
-        self, run_number: int, step_size: float, howlong: float
+        self, run_number: int, step_size: float, quantum: float
     ) -> ReturnRunStep:
         slot = self.get_input_slot("df")
         df = slot.data()

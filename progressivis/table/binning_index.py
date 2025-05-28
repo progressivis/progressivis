@@ -566,7 +566,7 @@ class BinningIndex(Module):
         self.bin_timestamps[-1] = impl.origin  # type: ignore
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         assert input_slot is not None

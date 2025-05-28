@@ -48,7 +48,7 @@ class Histograms(Module):
     def predict_step_size(self, duration: float) -> int:
         return 1
 
-    # def run_old_step(self, run_number, step_size, howlong):
+    # def run_old_step(self, run_number, step_size, quantum):
     #     dfslot = self.get_input_slot('table')
     #     input_df = dfslot.data()
     #     # dfslot.update(run_number)
@@ -111,6 +111,6 @@ class Histograms(Module):
         return json
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:  # pragma no cover
         raise NotImplementedError("run_step not defined")

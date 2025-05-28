@@ -10,7 +10,7 @@ import logging
 import numpy as np
 import pandas as pd
 import datetime as dt
-from progressivis.core.index_update import IndexUpdate
+from progressivis.core.delta import Delta
 from progressivis.core.utils import (
     integer_types,
     norm_slice,
@@ -1025,7 +1025,7 @@ class BasePTable(metaclass=ABCMeta):
 
     def compute_updates(
         self, start: int, now: int, mid: str, cleanup: bool = True
-    ) -> Optional[IndexUpdate]:
+    ) -> Optional[Delta]:
         """Compute the updates (delta) that happened to this table since the last call.
 
         Parameters
@@ -1041,13 +1041,13 @@ class BasePTable(metaclass=ABCMeta):
         Returns
         -------
         :
-            None or an IndexUpdate structure which describes the list of rows created, updated, and deleted.
+            None or an Delta structure which describes the list of rows created, updated, and deleted.
         """
         if self._changes:
             self._flush_cache()
             updates = self._changes.compute_updates(start, now, mid, cleanup=cleanup)
             if updates is None:
-                updates = IndexUpdate(created=PIntSet(self.index))
+                updates = Delta(created=PIntSet(self.index))
             return updates
         return None
 

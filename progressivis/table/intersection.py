@@ -41,7 +41,7 @@ class Intersection(Module):
         return 1000
 
     def run_step_progress(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         _b = PIntSet.aspintset
         # to_delete: List[PIntSet]
@@ -103,7 +103,7 @@ class Intersection(Module):
         return self._return_run_step(self.state_blocked, steps)
 
     def run_step_seq(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         steps = 0
         tables = []
@@ -141,6 +141,6 @@ class Intersection(Module):
         return self._return_run_step(self.state_blocked, steps)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:  # pragma no cover
         raise NotImplementedError("run_step not defined")

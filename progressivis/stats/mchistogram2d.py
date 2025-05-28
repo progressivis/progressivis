@@ -144,7 +144,7 @@ class MCHistogram2D(Module):
         return (xmin, xmax, ymin, ymax, has_creation)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         dfslot = self.get_input_slot("data")
         # dfslot.update(run_number)

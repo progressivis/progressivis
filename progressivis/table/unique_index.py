@@ -83,7 +83,7 @@ class UniqueIndex(Module):
         return [entry for (i, entry) in self._deleted.items() if i in ids]
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         assert input_slot is not None

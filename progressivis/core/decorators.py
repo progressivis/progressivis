@@ -75,7 +75,7 @@ def process_slot(
 
         @wraps(run_step_)
         def run_step_wrapper(
-            self: Module, run_number: int, step_size: int, howlong: float
+            self: Module, run_number: int, step_size: int, quantum: float
         ) -> ReturnRunStep:
             """
             decoration
@@ -110,7 +110,7 @@ def process_slot(
                 setattr(self.context._impl, name, slot)
                 if slot.has_buffered():
                     self.context._impl._has_buffered.add(name)
-            return run_step_(self, run_number, step_size, howlong)
+            return run_step_(self, run_number, step_size, quantum)
 
         return run_step_wrapper
 
@@ -142,7 +142,7 @@ def _slot_policy_rule(decname: str, *slots_maybe: str) -> RunStepCallable:
 
         @wraps(to_decorate)
         def decoration_(
-            self: Module, run_number: int, step_size: int, howlong: float
+            self: Module, run_number: int, step_size: int, quantum: float
         ) -> ReturnRunStep:
             """
             this function makes the decoration
@@ -171,7 +171,7 @@ def _slot_policy_rule(decname: str, *slots_maybe: str) -> RunStepCallable:
                 self.context._checked = True
                 if not run_step_required(self):
                     return self._return_run_step(self.state_blocked, steps_run=0)
-            return to_decorate(self, run_number, step_size, howlong)
+            return to_decorate(self, run_number, step_size, quantum)
 
         decoration_._hidden_progressivis_attr = True  # type: ignore
         return decoration_

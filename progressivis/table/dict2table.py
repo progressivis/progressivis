@@ -23,7 +23,7 @@ class Dict2PTable(Module):
         super().__init__(**kwds)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         dict_slot = self.get_input_slot("dict_")
         assert dict_slot is not None

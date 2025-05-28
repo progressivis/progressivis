@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from .pintset import PIntSet
-from .index_update import IndexUpdate
+from .delta import Delta
 from .changemanager_base import BaseChangeManager
 from .slot import Slot
 
@@ -37,9 +37,9 @@ class PIntSetChangeManager(BaseChangeManager):
         super().reset(mid)
         self._last_bm = None
 
-    def compute_updates(self, data: PIntSet) -> IndexUpdate:
+    def compute_updates(self, data: PIntSet) -> Delta:
         last_bm = self._last_bm
-        changes = IndexUpdate()
+        changes = Delta()
         if last_bm is None:
             if self.created.buffer:
                 changes.created.update(data)

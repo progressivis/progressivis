@@ -98,7 +98,7 @@ class Unary(Module):
             self.result.resize(0)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         data_in = slot.data()
@@ -214,7 +214,7 @@ class ColsBinary(Module):
             self.result.resize(0)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         data_in = slot.data()
@@ -326,7 +326,7 @@ class Binary(Module):
             self.result.resize(0)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         first = self.get_input_slot("first")
         second = self.get_input_slot("second")
@@ -439,7 +439,7 @@ class Reduce(Module):
     @process_slot("table", reset_cb="reset")
     @run_if_any
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:

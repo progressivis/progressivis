@@ -25,7 +25,7 @@ class WaitForData(Module):
         self._proc = proc
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         table = slot.data()

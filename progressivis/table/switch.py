@@ -44,7 +44,7 @@ class Switch(Module):
             self.result_else.selection = PIntSet()
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         input_df = slot.data()

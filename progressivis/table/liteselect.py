@@ -22,7 +22,7 @@ class LiteSelect(Module):
         self.default_step_size = 1000
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         step_size = 1000
         table_slot = self.get_input_slot("table")

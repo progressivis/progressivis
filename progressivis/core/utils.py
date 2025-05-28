@@ -929,7 +929,7 @@ def patch_this(
         def patch_wrapper(*args: Any, **kwargs: Any) -> PatchRunStepCallable:
             """
             This function is the decoration
-            run_step(self, run_number, step_size, howlong)
+            run_step(self, run_number, step_size, quantum)
             """
             patch.before_run_step(module, *args, **kwargs)
             ret = to_decorate(*args, **kwargs)

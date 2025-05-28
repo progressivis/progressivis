@@ -81,7 +81,7 @@ Line 18 defined the class `Max`, inheriting from the `Module` class. Its `__init
 It is redefined to initialize the value of the `default_step_size` instance variable with a reasonable value for the `Max` module, as described in the [Time Predictor section](#time-predictor).
 Without the `@def_` decorators, the `__init__` method would require many lines of code to  declare the slots and parameters.
 
-The method that performs the main work of a module is `run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep`.
+The method that performs the main work of a module is `run_step(self, run_number: int, step_size: int, quantum: float) -> ReturnRunStep`.
 The code relies on two decorators for this function: `@process_slot` and `@run_if_any`.
 
 `@process_slot` specifies that when the input slot "table" contains updated or deleted items (not created ones), the method `reset(self) -> None` should be called.  This method is defined on line 23.

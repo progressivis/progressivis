@@ -28,7 +28,7 @@ class MergeDict(Module):
     # parameters = []
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         if self.result is None:
             self.result = PDict()

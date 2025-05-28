@@ -30,7 +30,7 @@ class KernelDensity(Module):
         self.tags.add(self.TAG_VISUALIZATION)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         dfslot = self.get_input_slot("table")
         assert dfslot is not None

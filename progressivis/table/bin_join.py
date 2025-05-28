@@ -30,7 +30,7 @@ class BinJoin(Module):
         self._dialog = Dialog(self)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         first_slot = self.get_input_slot("first")
         # first_slot.update(run_number)

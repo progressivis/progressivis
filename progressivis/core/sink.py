@@ -36,6 +36,6 @@ class Sink(Module):
         return False
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:  # pragma no cover
         raise NotImplementedError("run_step not defined")

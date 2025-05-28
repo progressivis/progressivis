@@ -186,7 +186,7 @@ class MinMaxScaler(Module):
     # @process_slot("control")
     @run_if_any
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:

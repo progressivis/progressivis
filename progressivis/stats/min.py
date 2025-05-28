@@ -57,7 +57,7 @@ class Min(Module):
     @process_slot("table", reset_cb="reset")
     @run_if_any
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
@@ -110,7 +110,7 @@ class ScalarMin(Module):
         return False
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         assert slot is not None

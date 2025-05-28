@@ -136,7 +136,7 @@ class MBKMeans(Module):
         self._labels.append({"labels": a_labels}, indices=a_locs)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         dfslot = self.get_input_slot("table")
         # TODO varslot is only required if we have tol > 0
@@ -295,7 +295,7 @@ class MBKMeansFilter(Module):
     @process_slot("table", "labels")
     @run_if_any
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:

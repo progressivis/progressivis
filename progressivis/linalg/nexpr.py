@@ -40,7 +40,7 @@ class NumExprABC(Module):
             self.result.resize(0)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         """ """
         reset_all = False

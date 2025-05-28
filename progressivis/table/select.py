@@ -73,7 +73,7 @@ class Select(Module):
             return select
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         table_slot = self.get_input_slot("table")
         table = table_slot.data()

@@ -852,9 +852,9 @@ class Module(metaclass=ABCMeta):
 
     @abstractmethod
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:  # pragma no cover
-        """Run one step of the module, with a duration up to the 'howlong' parameter.
+        """Run one step of the module, with a duration up to the 'quantum' parameter.
 
         Returns a dictionary with at least 5 pieces of information: 1)
         the new state among (ready, blocked, zombie),2) a number

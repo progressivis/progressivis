@@ -27,7 +27,7 @@ class Input(Module):
         return len(self.result) > self._last
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         assert self.result is not None
         self._last = len(self.result)

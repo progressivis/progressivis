@@ -237,7 +237,7 @@ class JoinById(Module):
         self.join_kwds = filter_kwds(kwds, join)
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         frames: List[BasePTable] = []
         for name in self.get_input_slot_multiple("table"):

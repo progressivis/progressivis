@@ -27,7 +27,7 @@ class Max(Module):
     @process_slot("table", reset_cb="reset")
     @run_if_any
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         with self.context as ctx:
             indices = ctx.table.created.next(length=step_size)

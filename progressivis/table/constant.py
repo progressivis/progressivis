@@ -29,7 +29,7 @@ class Constant(Module):
         return 1
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         raise ProgressiveStopIteration()
 
@@ -54,6 +54,6 @@ class ConstDict(Module):
         return 1
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         raise ProgressiveStopIteration()

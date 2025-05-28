@@ -64,7 +64,7 @@ def combine_first(
 @def_output("result", PTable)
 class CombineFirst(Module):
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         logger.debug("Entering CombineFirst::run_step")
         frames: List[BasePTable] = []

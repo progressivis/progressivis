@@ -82,7 +82,7 @@ class Merge(Module):
         self._context: Dict[str, Any] = {}
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         frames: List[BasePTable] = []
         for name in self.get_input_slot_multiple("table"):

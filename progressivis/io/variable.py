@@ -52,7 +52,7 @@ class Variable(Module):
         return self._has_input
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         if self._stop_iter:
             raise ProgressiveStopIteration()

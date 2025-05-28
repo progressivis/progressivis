@@ -221,7 +221,7 @@ class Join(Module):
             self._maintain_primary_outer = True
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         if self.on is None:
             raise ValueError(

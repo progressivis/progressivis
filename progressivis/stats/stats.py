@@ -79,7 +79,7 @@ class Stats(Module):
         return super(Stats, self).is_ready()
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         prev_min = prev_max = np.nan
         dfslot = self.get_input_slot("table")

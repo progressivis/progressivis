@@ -23,7 +23,7 @@ class Percentiles(Module):
         self.result = PDict()
 
     def run_step(
-        self, run_number: int, step_size: int, howlong: float
+        self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         steps = 0
         percentiles_slot = self.get_input_slot("percentiles")
