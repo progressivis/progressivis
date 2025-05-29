@@ -52,7 +52,7 @@ try:
     s = scheduler
 except NameError:
     s = Scheduler()
-    
+
 cpanel = ControlPanel(s)
 
 class MyScatterPlot(MCScatterPlot):
@@ -60,8 +60,8 @@ class MyScatterPlot(MCScatterPlot):
         await super().run(run_number)
         aio.create_task(asynchronize(feed_widget, sc, self._json_cache))
         aio.create_task(asynchronize(feed_widget, gr, self.scheduler().to_json(short=False)))
-        aio.create_task(asynchronize(feed_widget, cpanel, run_number))        
-                        
+        aio.create_task(asynchronize(feed_widget, cpanel, run_number))
+
 
 
 
@@ -83,7 +83,7 @@ URLS = [
 FILENAMES = pd.DataFrame({'filename': URLS})
 #import pdb;pdb.set_trace()
 CST = Constant(Table('filenames', data=FILENAMES), scheduler=s)
-CSV = CSVLoader(index_col=False, skipinitialspace=True,
+CSV = CSVLoader(skipinitialspace=True,
                 usecols=['pickup_longitude', 'pickup_latitude',
                              'dropoff_longitude', 'dropoff_latitude'],
                 filter_=_filter, scheduler=s) # TODO: reimplement filter in read_csv.py
@@ -109,9 +109,9 @@ async def control_panel(action):
     while True:
         await wait_for_click(btn, cb)
 
-aio.create_task(s.start(coros=[from_input(), 
+aio.create_task(s.start(coros=[from_input(),
                                control_panel("resume"),
-                               control_panel("stop"), 
+                               control_panel("stop"),
                                control_panel("step")]));
 # -
 

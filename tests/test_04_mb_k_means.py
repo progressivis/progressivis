@@ -38,7 +38,6 @@ class TestMBKmeans(ProgressiveTest):
                 sep=" ",
                 skipinitialspace=True,
                 header=None,
-                index_col=False,
                 scheduler=s,
             )
             km = MBKMeans(

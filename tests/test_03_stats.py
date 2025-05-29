@@ -11,7 +11,7 @@ class TestStats(ProgressiveTest):
     def test_stats(self) -> None:
         s = self.scheduler()
         csv_module = CSVLoader(
-            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), header=None, scheduler=s
         )
         stats = Stats("_1", name="test_stats", scheduler=s)
         wait = Wait(name="wait", delay=3, scheduler=s)

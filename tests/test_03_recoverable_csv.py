@@ -59,7 +59,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         s = self.scheduler()
         n_rows = 100_000
         sio = make_int_csv(n_rows=n_rows, n_cols=3)
-        module = SimpleCSVLoader(sio, index_col=False, scheduler=s, dtype="int64")
+        module = SimpleCSVLoader(sio, scheduler=s, dtype="int64")
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
@@ -98,7 +98,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
 
         df.loc[i_row, "B"] = _subst()
         module = SimpleCSVLoader(
-            sio, index_col=False, scheduler=s, dtype=dtype, imputer=imputer
+            sio, scheduler=s, dtype=dtype, imputer=imputer
         )
         if fixed_step_size:
             setattr(module, "predict_step_size", lambda x: fixed_step_size)
@@ -195,7 +195,6 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         df.loc[i_row, "B"] = _subst()
         module = SimpleCSVLoader(
             sio,
-            index_col=False,
             scheduler=s,
             dtype=dtype,
             na_filter=na_filter,

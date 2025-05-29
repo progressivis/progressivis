@@ -139,7 +139,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         s = self.scheduler()
         url = make_url("bigfile")
         module = CSVLoader(
-            url, index_col=False, recovery_tag=tag, header=None, scheduler=s
+            url, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -152,7 +152,6 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
             url,
             recovery=True,
             recovery_tag=tag,
-            index_col=False,
             header=None,
             scheduler=s,
         )
@@ -175,7 +174,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         s = self.scheduler()
         url = make_url("bigfile")
         module = CSVLoader(
-            url, index_col=False, recovery_tag=tag, header=None, scheduler=s
+            url, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -187,7 +186,6 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         csv = CSVLoader(
             url,
             recovery=True,
-            index_col=False,
             recovery_tag=tag,
             header=None,
             scheduler=s,
@@ -210,7 +208,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         s = self.scheduler()
         url = make_url("bigfile", ext=BZ2)
         module = CSVLoader(
-            url, index_col=False, recovery_tag=tag, header=None, scheduler=s
+            url, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -223,7 +221,6 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
             url,
             recovery=True,
             recovery_tag=tag,
-            index_col=False,
             header=None,
             scheduler=s,
         )
@@ -240,7 +237,6 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         s = self.scheduler()
         module = CSVLoader(
             [make_url("smallfile"), make_url("smallfile")],
-            index_col=False,
             header=None,
             scheduler=s,
         )
@@ -257,7 +253,6 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         s = self.scheduler()
         module = CSVLoader(
             [make_url("smallfile", ext=BZ2)] * 2,
-            index_col=False,
             header=None,
             scheduler=s,
         )
@@ -278,7 +273,7 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
         s = self.scheduler()
         url_list = [make_url("bigfile"), make_url("bigfile")]
         module = CSVLoader(
-            url_list, index_col=False, recovery_tag=tag, header=None, scheduler=s
+            url_list, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -291,7 +286,6 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
             url_list,
             recovery=True,
             recovery_tag=tag,
-            index_col=False,
             header=None,
             scheduler=s,
         )
@@ -309,7 +303,7 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
         s = self.scheduler()
         url_list = [make_url("bigfile", ext=BZ2)] * 2
         module = CSVLoader(
-            url_list, index_col=False, recovery_tag=tag, header=None, scheduler=s
+            url_list, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -322,7 +316,6 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
             url_list,
             recovery=True,
             recovery_tag=tag,
-            index_col=False,
             header=None,
             scheduler=s,
         )
@@ -338,7 +331,6 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
         s = self.scheduler()
         module = CSVLoader(
             [get_dataset("smallfile"), get_dataset("smallfile")],
-            index_col=False,
             header=None,
             scheduler=s,
         )
@@ -355,7 +347,7 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
     def _tst_08_read_multi_csv_file_compress_no_crash(self, files: List[str]) -> None:
         s = self.scheduler()
         module = CSVLoader(
-            files, index_col=False, header=None, scheduler=s
+            files, header=None, scheduler=s
         )  # , save_context=False)
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -385,7 +377,7 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
         tag = "t9"
         file_list = [get_dataset("bigfile"), get_dataset("bigfile")]
         module = CSVLoader(
-            file_list, index_col=False, recovery_tag=tag, header=None, scheduler=s
+            file_list, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -398,7 +390,6 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
             file_list,
             recovery=True,
             recovery_tag=tag,
-            index_col=False,
             header=None,
             scheduler=s,
         )
@@ -414,7 +405,7 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
     ) -> None:
         s = self.scheduler()
         module = CSVLoader(
-            file_list, index_col=False, recovery_tag=tag, header=None, scheduler=s
+            file_list, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -427,7 +418,6 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
             file_list,
             recovery=True,
             recovery_tag=tag,
-            index_col=False,
             header=None,
             scheduler=s,
         )

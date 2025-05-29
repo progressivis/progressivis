@@ -100,7 +100,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         time.sleep(SLEEP)
         s = self.scheduler()
         module = CSVLoader(
-            make_url("bigfile"), index_col=False, header=None, scheduler=s
+            make_url("bigfile"), header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -117,7 +117,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         time.sleep(SLEEP)
         s = self.scheduler()
         module = CSVLoader(
-            make_url("bigfile"), index_col=False, header=None, scheduler=s, timeout=0.01
+            make_url("bigfile"), header=None, scheduler=s, timeout=0.01
         )
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -139,7 +139,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
             data={"filename": [make_url("smallfile"), make_url("smallfile")]},
         )
         cst = Constant(table=filenames, scheduler=s)
-        csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
+        csv = CSVLoader(header=None, scheduler=s, timeout=0.01)
         csv.input.filenames = cst.output.result
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = csv.output.result
@@ -155,7 +155,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         time.sleep(SLEEP)
         s = self.scheduler()
         module = CSVLoader(
-            make_url("bigfile", ext=BZ2), index_col=False, header=None, scheduler=s
+            make_url("bigfile", ext=BZ2), header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -173,7 +173,6 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         s = self.scheduler()
         module = CSVLoader(
             make_url("bigfile", ext=BZ2),
-            index_col=False,
             header=None,
             scheduler=s,
             timeout=0.01,
@@ -203,7 +202,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
             },
         )
         cst = Constant(table=filenames, scheduler=s)
-        csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
+        csv = CSVLoader(header=None, scheduler=s, timeout=0.01)
         csv.input.filenames = cst.output.result
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = csv.output.result

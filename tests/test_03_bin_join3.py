@@ -21,7 +21,7 @@ class TestJoin3(ProgressiveTest):
     def test_join(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("bigfile"), header=None, scheduler=s
         )
         stat1 = Stats(1, reset_index=True, scheduler=s)
         stat1.input[0] = csv.output.result

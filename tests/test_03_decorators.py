@@ -151,16 +151,16 @@ def _4_csv_scenario(
 ) -> Callable[[Scheduler, int], Coroutine[Any, Any, None]]:
     with s:
         csv_a = CSVLoader(
-            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), header=None, scheduler=s
         )
         csv_b = CSVLoader(
-            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), header=None, scheduler=s
         )
         csv_c = CSVLoader(
-            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), header=None, scheduler=s
         )
         csv_d = CSVLoader(
-            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), header=None, scheduler=s
         )
         module.input.a = csv_a.output.result
         module.input.b = csv_b.output.result
@@ -196,10 +196,10 @@ def _2_csv_2_const_scenario(
     module: Module, s: Scheduler
 ) -> Callable[[Scheduler, int], None]:
     csv_a = CSVLoader(
-        get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+        get_dataset("smallfile"), header=None, scheduler=s
     )
     csv_b = CSVLoader(
-        get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+        get_dataset("smallfile"), header=None, scheduler=s
     )
     table_c = PTable("const_c_2_csv_2_const_scenario", dshape="{a: int}", create=True)
     const_c = Constant(table=table_c, scheduler=s)

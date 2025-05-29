@@ -47,7 +47,6 @@ class TestDataflow(ProgressiveTest):
             csv = CSVLoader(
                 get_dataset("smallfile"),
                 name="csv",
-                index_col=False,
                 header=None,
                 scheduler=scheduler,
             )

@@ -14,7 +14,7 @@ except NameError:
     s = Scheduler()
     #log_level(package="progressivis.cluster")
 
-data = CSVLoader(get_dataset('cluster:s1'),sep='\\s+',skipinitialspace=True,header=None,index_col=False,scheduler=s)
+data = CSVLoader(get_dataset('cluster:s1'),sep='\\s+',skipinitialspace=True,header=None, scheduler=s)
 mbkmeans = MBKMeans(columns=['_0', '_1'], n_clusters=15, batch_size=100, is_input=False, scheduler=s)
 sp = MCScatterPlot(scheduler=s, classes=[('Scatterplot', '_0', '_1', mbkmeans)])
 sp.create_dependent_modules(data,'table')

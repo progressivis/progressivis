@@ -18,7 +18,6 @@ class TestHistogram2D(ProgressiveTest):
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("smallfile"),
-            index_col=False,
             header=None,
             scheduler=s
         )
@@ -43,7 +42,6 @@ class TestHistogram2D(ProgressiveTest):
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("smallfile"),
-            index_col=False,
             header=None,
             scheduler=s
         )

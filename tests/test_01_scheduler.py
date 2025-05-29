@@ -15,7 +15,6 @@ class TestScheduler(ProgressiveTest):
         csv = CSVLoader(
             get_dataset("bigfile"),
             name="csv",
-            index_col=False,
             header=None,
             scheduler=s,
         )

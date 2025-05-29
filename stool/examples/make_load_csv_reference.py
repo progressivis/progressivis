@@ -1,13 +1,8 @@
 import pandas as pd
-import csv
 from progressivis import Scheduler
 from progressivis.io import CSVLoader
-
-import sys
 import subprocess
 import glob
-
-import dask.dataframe as dd
 from progressivis.core.utils import RandomBytesIO
 from stool import BenchmarkCase, bench
 import unittest
@@ -35,7 +30,7 @@ class BenchLoadCsv(BenchmarkCase):
     @bench(name="Progressivis", corrected_by="Nop")
     def p10s_read_csv(self):
         s=Scheduler()
-        module=CSVLoader(RandomBytesIO(cols=30, size=self.current_step*GIGA), index_col=False, header=None, scheduler=s)
+        module=CSVLoader(RandomBytesIO(cols=30, size=self.current_step*GIGA), header=None, scheduler=s)
         module.start()
 
     @bench(name="Pandas", corrected_by="Nop")
@@ -57,7 +52,7 @@ class BenchLoadCsv(BenchmarkCase):
         return res
     def runTest(self):
         self.runBench()
-        self.save(db_name='bench_refs.db', name='load_csv')        
+        self.save(db_name='bench_refs.db', name='load_csv')
 
 if __name__ == '__main__':
     unittest.main()

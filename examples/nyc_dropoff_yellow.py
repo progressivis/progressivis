@@ -5,7 +5,7 @@ from progressivis import (
     Min, Max,
     CSVLoader,
     Heatmap,
-    Table
+    PTable
 )
 
 import pandas as pd
@@ -42,8 +42,8 @@ URLS = [
 ]
 
 filenames = pd.DataFrame({'filename': URLS})
-cst = Constant(Table('filenames', data=filenames), scheduler=s)
-csv = CSVLoader(index_col=False,skipinitialspace=True,usecols=['dropoff_longitude', 'dropoff_latitude'], filter_=filter_, scheduler=s)
+cst = Constant(PTable('filenames', data=filenames), scheduler=s)
+csv = CSVLoader(skipinitialspace=True,usecols=['dropoff_longitude', 'dropoff_latitude'], filter_=filter_, scheduler=s)
 csv.input.filenames = cst.output.table
 min = Min(scheduler=s)
 min.input.table = csv.output.table

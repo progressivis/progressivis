@@ -11,7 +11,7 @@ class TestLastRow(ProgressiveTest):
     def test_last_row(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), header=None, scheduler=s
         )
         lr1 = LastRow(scheduler=s)
         lr1.input[0] = csv.output.result

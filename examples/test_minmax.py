@@ -10,7 +10,7 @@ def filter_(df):
 s = Scheduler()
 ##########################################################################################
 #INPUT MODULE -> Random initialization of a tab with two columns
-#csv = CSVLoader('../nyc-taxi/yellow_tripdata_2015-10.csv.bz2', index_col=False,skipinitialspace=True,usecols=['pickup_longitude', 'pickup_latitude'], filter_=filter_, engine='c',scheduler=s)
+#csv = CSVLoader('../nyc-taxi/yellow_tripdata_2015-10.csv.bz2', skipinitialspace=True,usecols=['pickup_longitude', 'pickup_latitude'], filter_=filter_, engine='c',scheduler=s)
 csv = RandomTable(columns=['pickup_longitude', 'pickup_latitude'],rows=1000000, throttle=100000, scheduler=s)
 
 ##########################################################################################

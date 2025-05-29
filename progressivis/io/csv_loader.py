@@ -85,7 +85,6 @@ class CSVLoader(Module):
                     Example:
                         >>> CSVLoader(
                         ...             get_dataset("bigfile"),
-                        ...             index_col=False,
                         ...             as_array={
                         ...                 "first_group": ["_1", "_2", "_3"],
                         ...                 "second_group": ["_11", "_12", "_13"],
@@ -100,7 +99,6 @@ class CSVLoader(Module):
                     Example:
                         >>> CSVLoader(
                         ...                 get_dataset("mnist_784"),
-                        ...                 index_col=False,
                         ...                 as_array=lambda cols: {"array": [
                         ...                     c for c in cols if c != "class"]},
                         ...                 scheduler=s,
@@ -118,12 +116,15 @@ class CSVLoader(Module):
             save_step_size: defines de number of rows to read between two context snapshots,
             kwds: extra keyword args to be passed to :func:`pandas.read_csv` and :class:`Module <progressivis.core.Module>` superclass
         """
+        if "index_col" in kwds:
+            raise ProgressiveError("'index_col' parameter is not supported here")
         super().__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
         self.default_step_size = kwds.get("chunksize", 1000)  # initial guess
         kwds.setdefault("chunksize", self.default_step_size)
         # Filter out the module keywords from the csv loader keywords
         csv_kwds = filter_kwds(kwds, pd.read_csv)
+        csv_kwds["index_col"] = False
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids

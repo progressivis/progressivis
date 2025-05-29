@@ -19,7 +19,6 @@ class TestScatterPlot(ProgressiveTest):
         with s:
             csv = CSVLoader(
                 get_dataset("smallfile"),
-                index_col=False,
                 header=None,
                 force_valid_ids=True,
                 scheduler=s,

@@ -399,7 +399,6 @@ class TestPTable(ProgressiveTest):
         module = CSVLoader(
             filepath_or_buffer=get_dataset("smallfile"),
             force_valid_ids=True,
-            index_col=False,
             header=None,
             scheduler=self.scheduler_,
         )

@@ -24,7 +24,6 @@ data = CSVLoader(
     sep="\\s+",
     skipinitialspace=True,
     header=None,
-    index_col=False,
     scheduler=s,
 )
 mbkmeans = MBKMeans(

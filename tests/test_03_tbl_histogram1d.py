@@ -14,7 +14,6 @@ class TestHistogram1D(ProgressiveTest):
         csv = CSVLoader(
             get_dataset("bigfile"),
             force_valid_ids=True,
-            index_col=False,
             header=None,
             scheduler=s,
         )

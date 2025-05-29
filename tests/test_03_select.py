@@ -17,7 +17,7 @@ class TestSelect(ProgressiveTest):
     def test_select_simple(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("bigfile"), header=None, scheduler=s
         )
         sample = Sample(samples=100, scheduler=s)
         sample.input[0] = csv.output.result
@@ -37,7 +37,6 @@ class TestSelect(ProgressiveTest):
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("bigfile"),
-            index_col=False,
             header=None,
             force_valid_ids=True,
             scheduler=s,

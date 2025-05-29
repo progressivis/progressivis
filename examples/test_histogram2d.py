@@ -12,7 +12,7 @@ from progressivis.datasets import get_dataset
 print("Loading test_histogram2d")
 print("Type of default_scheduler is %s" % type(Scheduler.default))
 
-csv = CSVLoader(get_dataset('bigfile'),index_col=False,header=None,engine='c')
+csv = CSVLoader(get_dataset('bigfile'),header=None,engine='c')
 pr = Every()
 pr.input.df = csv.output.result
 min_ = Min()

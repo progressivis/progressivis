@@ -46,7 +46,7 @@ URLS = [f"https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2015-0{n}.c
 FILENAMES = pd.DataFrame({'filename': URLS})
 #import pdb;pdb.set_trace()
 CST = Constant(Table('filenames', data=FILENAMES), scheduler=s)
-CSV = CSVLoader(index_col=False, skipinitialspace=True,
+CSV = CSVLoader(skipinitialspace=True,
                 usecols=['pickup_longitude', 'pickup_latitude',
                              'dropoff_longitude', 'dropoff_latitude'],
                 filter_=_filter, scheduler=s) # TODO: reimplement filter in read_csv.py

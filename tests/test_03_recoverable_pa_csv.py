@@ -61,7 +61,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         n_rows = 100_000
         bio = make_int_csv(n_rows=n_rows, n_cols=3, artifact=artifact)
         module = PACSVLoader(
-            bio, index_col=False, scheduler=s, force_valid_ids=force_valid_ids
+            bio, scheduler=s, force_valid_ids=force_valid_ids
         )
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)

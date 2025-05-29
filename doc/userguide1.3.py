@@ -27,7 +27,7 @@ col_y = "pickup_latitude"
 bnds_min = PDict({col_x: bounds.left, col_y: bounds.bottom})
 bnds_max = PDict({col_x: bounds.right, col_y: bounds.top})
 # Create a csv loader for the taxi data file
-csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=[col_x, col_y])
+csv = CSVLoader(LARGE_TAXI_FILE, usecols=[col_x, col_y])
 # Create an indexing module on the csv loader output columns
 index = BinningIndexND()
 # Creates one index per numeric column

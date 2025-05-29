@@ -4,7 +4,7 @@ LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
                    "yellow_tripdata_2015-01.csv.bz2")
 RESOLUTION=512
 
-csv = CSVLoader(LARGE_TAXI_FILE, index_col=False,
+csv = CSVLoader(LARGE_TAXI_FILE,
                 usecols=['pickup_longitude', 'pickup_latitude'])
 
 quantiles = Quantiles()

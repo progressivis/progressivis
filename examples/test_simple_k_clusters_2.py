@@ -20,7 +20,7 @@ except NameError:
 file_name = "/tmp/foobar.csv"
 gen_csv(file_name, rows=999999, reset=True)  # , header='_0,_1', reset=False)
 data = CSVLoader(
-    file_name, skipinitialspace=True, header=None, index_col=False, scheduler=s
+    file_name, skipinitialspace=True, header=None, scheduler=s
 )
 mbkmeans = MBKMeans(
     columns=["_0", "_1"],

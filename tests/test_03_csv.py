@@ -28,7 +28,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     def test_read_csv(self) -> None:
         s = self.scheduler()
         module = CSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("bigfile"), header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(name="sink", scheduler=s)
@@ -42,7 +42,6 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         length = 30_000
         module = CSVLoader(
             RandomBytesIO(cols=30, rows=length),
-            index_col=False,
             header=None,
             scheduler=s,
         )
@@ -61,7 +60,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             data={"filename": [get_dataset("smallfile"), get_dataset("smallfile")]},
         )
         cst = Constant(table=filenames, scheduler=s)
-        csv = CSVLoader(index_col=False, header=None, scheduler=s)
+        csv = CSVLoader(header=None, scheduler=s)
         csv.input.filenames = cst.output.result
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = csv.output.result
@@ -82,7 +81,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             },
         )
         cst = Constant(table=filenames, scheduler=s)
-        csv = CSVLoader(index_col=False, header=None, scheduler=s)
+        csv = CSVLoader(header=None, scheduler=s)
         csv.input.filenames = cst.output.result
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = csv.output.result
@@ -94,7 +93,6 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         s = self.scheduler()
         module = CSVLoader(
             get_dataset("bigfile"),
-            index_col=False,
             as_array="array",
             header=None,
             scheduler=s,
@@ -113,7 +111,6 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         s = self.scheduler()
         module = CSVLoader(
             get_dataset("bigfile"),
-            index_col=False,
             as_array={
                 "firsthalf": ["_" + str(r) for r in range(13)],
                 "secondhalf": ["_" + str(r) for r in range(13, 30)],
@@ -138,7 +135,6 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         try:
             module = CSVLoader(
                 get_dataset("mnist_784"),
-                index_col=False,
                 as_array=lambda cols: {"array": [c for c in cols if c != "class"]},
                 scheduler=s,
             )

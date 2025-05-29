@@ -18,7 +18,7 @@ class TestDistinct(ProgressiveTest):
     def test_distinct_categorical(self) -> None:
         s = self.scheduler()
         csv = SimpleCSVLoader(
-            get_dataset("nyc_taxis"), index_col=False, nrows=100_000, scheduler=s
+            get_dataset("nyc_taxis"), nrows=100_000, scheduler=s
         )
         dist = Distinct(scheduler=s)
         dist.input[0] = csv.output.result
@@ -35,7 +35,7 @@ class TestDistinct(ProgressiveTest):
     def test_distinct_float(self) -> None:
         s = self.scheduler()
         csv = SimpleCSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("bigfile"), header=None, scheduler=s
         )
         dist = Distinct(scheduler=s)
         dist.input[0] = csv.output.result

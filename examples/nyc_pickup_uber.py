@@ -40,7 +40,7 @@ URLS = [
 
 filenames = pd.DataFrame({'filename': URLS})
 cst = Constant(table=Table('filenames', data=filenames), scheduler=s)
-csv = CSVLoader(index_col=False,skipinitialspace=True,usecols=['Lon', 'Lat'], filter_=filter_, scheduler=s)
+csv = CSVLoader(skipinitialspace=True,usecols=['Lon', 'Lat'], filter_=filter_, scheduler=s)
 csv.input.filenames = cst.output.table
 min = Min(scheduler=s)
 min.input.table = csv.output.table

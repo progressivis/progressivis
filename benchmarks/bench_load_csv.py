@@ -33,7 +33,7 @@ if __name__=='__main__':
         @bench("Progressivis", corrected_by="Nop")
         def p10s_read_csv(f):
             s=Scheduler()
-            module=CSVLoader(f, index_col=False, header=None, scheduler=s)
+            module=CSVLoader(f, header=None, scheduler=s)
             module.start()
         @bench("Pandas", corrected_by="Nop")
         def pandas_read_csv(f):

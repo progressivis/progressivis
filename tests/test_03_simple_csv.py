@@ -32,7 +32,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         s = self.scheduler()
         module = SimpleCSVLoader(
             get_dataset("bigfile"),
-            index_col=False, header=None,
+             header=None,
             scheduler=s
         )
         self.assertTrue(module.result is None)
@@ -47,7 +47,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         length = 30_000
         module = SimpleCSVLoader(
             RandomBytesIO(cols=30, rows=length),
-            index_col=False,
+
             header=None,
             scheduler=s,
         )
@@ -66,7 +66,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             data={"filename": [get_dataset("smallfile"), get_dataset("smallfile")]},
         )
         cst = Constant(table=filenames, scheduler=s)
-        csv = SimpleCSVLoader(index_col=False, header=None, scheduler=s)
+        csv = SimpleCSVLoader(header=None, scheduler=s)
         csv.input.filenames = cst.output.result
         sink = Sink(scheduler=s)
         sink.input.inp = csv.output.result
@@ -87,7 +87,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             },
         )
         cst = Constant(table=filenames, scheduler=s)
-        csv = SimpleCSVLoader(index_col=False, header=None, scheduler=s)
+        csv = SimpleCSVLoader(header=None, scheduler=s)
         csv.input.filenames = cst.output.result
         sink = Sink(scheduler=s)
         sink.input.inp = csv.output.result

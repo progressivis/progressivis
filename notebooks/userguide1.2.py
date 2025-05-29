@@ -44,7 +44,7 @@ bounds = Bounds()
 from progressivis import (CSVLoader, Histogram2D, ConstDict, Heatmap, PDict)
 
 # Create a csv loader filtering out data outside NYC
-csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=['pickup_longitude', 'pickup_latitude'])
+csv = CSVLoader(LARGE_TAXI_FILE, usecols=['pickup_longitude', 'pickup_latitude'])
 # Create a module to compute the min value progressively
 min = ConstDict(PDict({'pickup_longitude': bounds.left, 'pickup_latitude': bounds.bottom}))
 max = ConstDict(PDict({'pickup_longitude': bounds.right, 'pickup_latitude': bounds.top}))

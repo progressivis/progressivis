@@ -25,7 +25,7 @@ try:
 except NameError:
     s = Scheduler()
 
-CSV = CSVLoader(get_dataset('bigfile_mvn'), index_col=False, header=None, scheduler=s)
+CSV = CSVLoader(get_dataset('bigfile_mvn'), header=None, scheduler=s)
 
 #PR = Every(scheduler=s)
 #PR.input.df = CSV.output.table

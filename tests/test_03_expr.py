@@ -38,7 +38,7 @@ class TestExpr(ProgressiveTest):
         Connecting modules via function calls
         """
         with Scheduler.default:
-            csv = pv.load_csv(get_dataset("smallfile"), index_col=False, header=None)
+            csv = pv.load_csv(get_dataset("smallfile"), header=None)
             m = pv.min(csv)
             pv.echo(m, proc=prtm)
             M = pv.max(csv)
@@ -67,7 +67,7 @@ class TestExpr(ProgressiveTest):
         with Scheduler.default:
             ret = (
                 PipedInput(get_dataset("smallfile"))
-                | pv.load_csv(index_col=False, header=None)
+                | pv.load_csv(header=None)
                 | pv.min()
                 | pv.echo(proc=prtm)
             )
@@ -97,7 +97,7 @@ class TestExpr(ProgressiveTest):
         with Scheduler.default:
             ret = (
                 PipedInput(get_dataset("smallfile"))
-                | pv.load_csv(index_col=False, header=None)
+                | pv.load_csv(header=None)
                 | pv.min()
                 | pv.echo(proc=prtm).repipe("csv_loader_1")
                 | pv.max()

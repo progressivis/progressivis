@@ -101,6 +101,8 @@ class SimpleCSVLoader(Module):
             imputer: a ``SimpleImputer`` provides basic strategies for imputing missing values
             kwds: extra keyword args to be passed to :func:`pandas.read_csv` and :class:`Module <progressivis.core.Module>` superclass
         """
+        if "index_col" in kwds:
+            raise ProgressiveError("'index_col' parameter is not supported here")
         super().__init__(**kwds)
         self.default_step_size = 1000
         chunksize_ = kwds.get("chunksize")
@@ -112,6 +114,7 @@ class SimpleCSVLoader(Module):
             kwds.setdefault("chunksize", self.default_step_size)
         # Filter out the module keywords from the csv loader keywords
         csv_kwds: Dict[str, Any] = filter_kwds(kwds, pd.read_csv)
+        csv_kwds["index_col"] = False
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids

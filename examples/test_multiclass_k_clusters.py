@@ -28,7 +28,7 @@ file_name = os.path.join(dir_name, "foobar.csv")
 gen_csv(file_name, rows=99999, reset=True)  # , header='_0,_1', reset=False)
 
 data = CSVLoader(
-    file_name, skipinitialspace=True, header=None, index_col=False, scheduler=s
+    file_name, skipinitialspace=True, header=None, scheduler=s
 )
 n_clusters = 3
 mbkmeans = MBKMeans(

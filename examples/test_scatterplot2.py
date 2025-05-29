@@ -40,7 +40,7 @@ URLS = [
 
 FILENAMES = pd.DataFrame({'filename': URLS})
 CST = Constant(Table('filenames', data=FILENAMES), scheduler=s)
-CSV = CSVLoader(index_col=False, skipinitialspace=True,
+CSV = CSVLoader(skipinitialspace=True,
                 usecols=['pickup_longitude', 'pickup_latitude'],
                 filter_=_filter, scheduler=s)
 

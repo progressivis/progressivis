@@ -12,7 +12,7 @@ class TestMerge(ProgressiveTest):
     def test_merge(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("bigfile"), header=None, scheduler=s
         )
         stat1 = Stats(1, scheduler=s)
         stat1.input[0] = csv.output.result

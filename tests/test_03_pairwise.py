@@ -43,7 +43,7 @@ class TestPairwiseDistances(ProgressiveTest):
     def test_csv_distances(self) -> None:
         s = self.scheduler()
         vec = CSVLoader(
-            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), header=None, scheduler=s
         )
         cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
         cnt.input[0] = vec.output.result

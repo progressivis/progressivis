@@ -17,7 +17,7 @@ class TestMCHistogram2D(ProgressiveTest):
     def test_histogram2d(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), header=None, scheduler=s
         )
         min_ = Min(scheduler=s)
         min_.input[0] = csv.output.result
@@ -39,7 +39,7 @@ class TestMCHistogram2D(ProgressiveTest):
     def test_histogram2d1(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
-            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+            get_dataset("smallfile"), header=None, scheduler=s
         )
         min_ = Min(scheduler=s)
         min_.input[0] = csv.output.result

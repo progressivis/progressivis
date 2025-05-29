@@ -77,7 +77,6 @@ class TestPPCA(ProgressiveTest):
             return 0
         data = CSVLoader(
             dataset,
-            index_col=False,
             as_array="array",
             usecols=lambda x: x != "class",
             scheduler=s,

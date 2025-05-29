@@ -36,7 +36,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     def test_read_csv(self) -> None:
         s = self.scheduler()
         module = ThreadedCSVLoader(
-            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+            get_dataset("bigfile"), header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)
@@ -48,7 +48,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     def test_read_csv_taxis(self) -> None:
         s = self.scheduler()
         module = ThreadedCSVLoader(
-            TAXI_FILE, index_col=False, header=None, scheduler=s
+            TAXI_FILE, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)

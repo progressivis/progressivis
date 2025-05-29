@@ -15,7 +15,7 @@ def print_len(x):
 s = Scheduler()
 
 
-csv = CSVLoader(get_dataset('bigfile'),header=None,index_col=False,force_valid_ids=True,scheduler=s)
+csv = CSVLoader(get_dataset('bigfile'),header=None,force_valid_ids=True,scheduler=s)
 pr = Every(scheduler=s)
 pr.input.df = csv.output.table
 scatterplot = ScatterPlot(x_column='_1', y_column='_2', scheduler=s)
