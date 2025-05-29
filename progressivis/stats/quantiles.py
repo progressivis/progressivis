@@ -137,7 +137,7 @@ class Quantiles(Module):
             for i, k in enumerate(self.result.keys()):
                 column = df[k]
                 column = column.loc[fixed_indices]
-                self._klls[i].update(column)  # type: ignore
+                self._klls[i].update(column)
                 self.result[k] = self._klls[i].n
             self._valid.clear()
             if self._maintain_table_out:
