@@ -36,7 +36,7 @@ The method `Module.run_step()` needs to perform several operations to get its da
 At a high level, `Module.run_step` performs the following operations:
 1. **Input Slot Management** See which input slots have changed and decide how much work it can do given its quantum; this work can become **chunks** of data to process, **number iterations** to perform, or both.
 2. **Partial Computation** Run the internal computation.
-3. **Prepare the Output** Fill the output slots with the approximate or partial results.
+3. **Preparing the Output** Fill the output slots with the approximate or partial results.
 4. **Update State and Speed** Return information on its new state and the actual work that has been performed.
 
 When a module has finished its computation, it becomes **terminated**.
@@ -125,6 +125,7 @@ class Slot:
         deleted: ChangeBuffer
         def data() -> Any: ...
         def reset() -> None: ...
+        def update(int) -> None: ...
 ```
 
 Line 23 obtains the "table" input slot. Line 24 checks if any item in the table have been updated or deleted since the last call to `next_step`. This information is obtained because ProgressiVis's data structures are designed to keep track of these changes.
@@ -132,15 +133,29 @@ Line 23 obtains the "table" input slot. Line 24 checks if any item in the table 
 (change_management)=
 ### Managing Changes
 
-TODO
+ProgressiVis calls `run_step` iteratively on all the modules. When entering the method, it is necessary to know what has changed since the last call. All the progressive data structure of ProgressiVis provide this information through an internal mechanism. The slot holding a `PTable` can be queried to know the table lines that have been created, updated, and deleted. The mechanism is identical for a slot containing a `PDict`; each key is given an index so the change mechanism returns the number of keys created, updated, and deleted. `PIntSet` also keep track of its changes.
+
+In our example, we only deal with created items. If the table had been changed by removing items or updating the value of items, line 25 resets the slot. The slot starts anew, ignoring all the previous operations. The `Slot.update(int)` method will then update the slot, considering all the items in the table as created.
+
+Once the slot has been reset, the value of the result dictionary should also be updated to minus infinity to be recomputed correctly in the next step.
+
+This management of updated and deleted items is the simplest strategy to handle changes. It simply restarts the computation to the whole table. In many cases, better strategies are possible, but that one always works and can be used to start.
+
+Note that the result `PDict` not be created again because of the change manager: the next modules relies on the key order to correctly handle changes. Creating another PDict would change the key order and break the change management.
 
 
-`@process_slot` specifies that when the input slot "table" contains updated or deleted items (not created ones), the method `reset(self) -> None` should be called.  This method is defined on line 23.
-The simplest strategy to use when an input table is modified is to restart the work from the beginning, forgetting the current "max" value.
+### Partial Computation
 
-`@run_if_any` means that if any of the input slots are modified, then the method should run. This is the default behavior for modules. This decorator also prepares the `self.context` context manager that does a great deal of bookkeeping.
+Since the `SimpleMax` module only deals with one input slot, the "table", lines 29-31 extract the items of the table that have been created since the last call to `run_step()`. This is our **chunk** of data to process.  Note that the chunk extraction in line 31 does not copy values in the `PTable`, it creates a lightweight `PTableSelectedView`.
 
-Since the `Max` module only deals with one input slot, the "table", the following lines extract the items of the table that have been modified since the last call to `run_step()`. These lines rely on the change management provided by ProgressiVis's progressive data structures.
+Line 33 computes the maximum value of all the columns of the chunk. The `PTable.max()` method performs this operation and returns the results in a dictionary.  This operation takes a time proportional to the size of the chunk.
+
+### Preparing the Output
+
+Lines 24-38 prepare the result of the module partial execution. The result should be stored in the `self.result` instance variable. This is handled by the `@def_output` declaration at line 12.
+The first time the module runs, the instance variable is `None` so line 35 creates the `PDict` from the `op` dictionary. If the `PDict` is already created, it is updated key by key by applying the `numpy.fmax` function between the current value in the result `PDict` and the new value in the `op` variable.
+
+### Update State and Speed
 
 The `run_step()` method can decide whether to let the module continue running or to stop it. When a module continues to run, it can be **blocked** or **ready**. A blocked module needs some input data to continue, whereas a ready module can be rescheduled without further testing by the scheduler. This is checked by the method `is_ready()`; if the module state is `state_ready`, the module is ready to go, if it is `state_blocked`, it becomes ready when one of its input slots has more data available. Otherwise, the module is not ready.
 
@@ -152,6 +167,12 @@ The `Max` module uses the standard `@process_slot` and `@run_if_any` decorators 
 The `hint_type` parameter specifies that this input slot can be parameterized using a sequence of strings. Concretely, all the connections made with slots of type "PTable" can be parameterized with a list of column names. We discuss these slot parameters in [slot hints](#slot_hints).
 
 The code relies on two decorators for this function: `@process_slot` and `@run_if_any`.
+
+`@process_slot` specifies that when the input slot "table" contains updated or deleted items (not created ones), the method `reset(self) -> None` should be called.  This method is defined on line 23.
+The simplest strategy to use when an input table is modified is to restart the work from the beginning, forgetting the current "max" value.
+
+`@run_if_any` means that if any of the input slots are modified, then the method should run. This is the default behavior for modules. This decorator also prepares the `self.context` context manager that does a great deal of bookkeeping.
+
 
 (slot_hints)=
 ### Slot Hints
