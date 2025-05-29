@@ -812,7 +812,7 @@ class Module(metaclass=ABCMeta):
         return name in self._output_slots
 
     def validate(self) -> None:
-        "called when the module have been validated"
+        "called when the module has been validated"
         if self.state == self.state_created:
             self.state = Module.state_ready
 
