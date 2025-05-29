@@ -1,15 +1,14 @@
 import numpy as np
 from typing import Any
 from progressivis import (
-    Module, ReturnRunStep, def_input, def_output,
-    PTable, PDict, document, process_slot, run_if_any
+    Module, ReturnRunStep, PTable, PDict,
+    document, def_input, def_output,
 )
 from ..core.utils import indices_len, fix_loc
-from progressivis.core.docstrings import INPUT_SEL
 
 
 @document
-@def_input("table", PTable, hint_type=Sequence[str], doc=INPUT_SEL)
+@def_input("table", PTable, doc="The input PTable to process")
 @def_output("result", PDict,
             doc=("PDict where each key represents a column"))
 class SimpleMax(Module):
