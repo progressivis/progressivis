@@ -1,8 +1,8 @@
-# Custom Modules
+# Writing New Modules
 
 New modules can be programmed in Python. They require some understanding of the internals of ProgressiVis. We introduce the main mechanisms step by step here.
 
-To summarize, a module has a simple life cycle. It is first created and then connected to other modules in a dataflow graph. At some later point, the dataflow is [validated by the scheduler](#validity). If something is wrong, the new dataflow is not installed in the scheduler since the program is invalid in some way and should be fixed by the user. For example, a required input slot is missing in a new module.
+To summarize, a module has a simple life cycle. It is first created and then connected to other modules in a dataflow graph. At some later point, the dataflow is [validated by the scheduler](#validity). If something is wrong, the new dataflow is not installed in the scheduler since the program is invalid in some way and should be fixed by the user. For example, a required input slot is not connected to the module.
 
 Once the dataflow graph is validated, the module is runnable and its state turns to **ready**. When the module is **run**, its method `run_step()` is called with a few parameters; this is where the execution takes place.
 
@@ -72,43 +72,54 @@ Let's explain all its parts step by step.
 
 ### Input/Output/Parameters Definition
 
-ProgressiVis defines several Python decorators to limit the amount of boilerplate code.
-Every Module class uses input slots, output slots, and parameters. They can be declared using the `@def_input`, `@def_output`, and `@def_paramameter` decorators. These decorators can appear after the `@document` decorator.
+ProgressiVis defines several Python decorators to limit the amount of boilerplate code to type.
+Every Module class uses some input slots, output slots, and parameters. They can be declared using the `@def_input`, `@def_output`, and `@def_paramameter` decorators. These decorators can appear after the `@document` decorator (line 10).
 
 Line 11 declares an input slot called "table" of type `PTable` and provides a short documentation.
 
 Line 12 declares the output slot called "result", of type `PDict`, i.e., a "progressive dictionary".
 It will contain the maximum value of each column computed progressively. The output slot descriptor also defines a documentation string.
 
-Input and output slots can also be required or not; by default, they are required. When a slot is required, it should be connected for a dataflow configuration to be **valid**. We discuss later the notion of dataflow validity [later](#validity).
+Input and output slots can also be required or not; by default, they are required. When a slot is required, it should be connected for a dataflow configuration to be **valid**. We discuss the notion of dataflow validity [next](#validity).
 
-Line 14 defined the class `SimpleMax`, inheriting from the `Module` class.
+Line 14 defines the class `SimpleMax`, inheriting from the `Module` class.
 Its `__init__` method is very standard and just catches the keyword parameter passed to keep it as an instance variable.
-It is redefined to initialize the value of the `default_step_size` instance variable with a reasonable value for the `SimpleMax` module, as described in the next [Time Predictor section](#time-predictor).
+It is redefined to initialize the value of the `default_step_size` instance variable with a reasonable value for the `SimpleMax` module, as explained in the next [Time Predictor section](#time-predictor).
 Without the `@def_` decorators, the `__init__` method would require many more lines of code to  declare the slots and parameters.
+
+(validity)=
+### Validity of a Dataflow
+
+To run, a dataflow should be **valid**. The validity is defined as follows:
+- For all the modules, all the required slots should be connected
+- For all the connected slots, the input and output slots should be compatible
+- There should not be any cycle in the dataflow; it should be a **directed acyclic graph**
+
+By design, ProgressiVis checks the connection types as soon as they are specified. However, when building or modifying a dataflow graph, adding modules or removing modules, the dataflow graph remains invalid until all the connections are made and dependent modules are deleted from the dataflow. Therefore, checking for the required slots and cycles is done as a two-phase commit operation.
+
 
 ### The `SimpleMax.run_step` Method
 The method that performs the main work of a module is:\
 `run_step(self, run_number: int, step_size: int, quantum: float) -> ReturnRunStep`.
-It takes three arguments. The first, `run_number`, is an integer provided by the Scheduler. Each time the scheduler calls the `run` method of a module, it increments that number. The `run_number` is a convenient timestamp, typically used to mark an operation performed on a data structure, e.g., to check if something has changed since the last run.
+It takes three arguments. The first, `run_number`, is an integer provided by the Scheduler. Each time the scheduler calls the `run` method of a module, it increments that number. The `run_number` is a convenient timestamp, typically used to mark an operation performed on a data structure, e.g., to check if something has changed since the last run of `run_step()`.
 
-The last argument is simply the `quantum`, the duration that the method is allowed to run. It is a floating point value specified in seconds.
+The last argument is simply the `quantum`, the maximum duration that the method is allowed to run. It is a floating point value specified in seconds (0.5 by default).
 
-The `step_size` argument specifies how many **steps** the method should perform. In our example, it is the number of lines that it will handle from the input table, i.e., the chunk size. For other module classes, it can be the number of iterations to perform. The notion of **step** is interpreted by the module itself, but in many cases, the interpretation is the size of the chunk to process to stay within the quantum.
+The `step_size` argument specifies how many **steps** the method should perform. In our example, it is the number of lines that it will handle from the input table, i.e., the **chunk size**. For other module classes, it can be the number of iterations to perform. The notion of **step** is interpreted by the module itself, but in many cases, the interpretation is the size of the chunk to process to stay within the quantum.
 
 (time_predictor)=
 ### Time Predictor
 ProgressiVis provides a mechanism to predict the number of steps the `run_step` method can perform within a given quantum: the **Time Predictor**.
 Instead of only asking the `run_step` method to run for a given quantum of time, it also converts this quantum into `steps`.
 
-It works as follows: the first time it runs the module, it uses the `default_step_size`, i.e., 10,000 lines (see line 17) in our example, and monitors the time needed to process them.
-Assuming that run time is proportional to the number of lines read, the time predictor computes a speed for the module and translates the quantum into a number of steps.
+It works as follows: the first time it runs a module, it uses the `default_step_size`, i.e., 10,000 lines (see line 17) in our example, and monitors the time needed to process that number of steps.
+Assuming that run time is proportional to the number of lines processed, the time predictor computes a speed for the module (number of steps per second) and translates the quantum into a number of steps.
 
-The time predictor updates its speed measure (steps per second) each time the module runs. It can accommodate a slight non-linearity, but it expects modules to spend a time roughly proportional to the number of steps, that is, to run each step at a constant speed.
+The time predictor adjusts this speed each time the module runs. It can accommodate a slight non-linearity, but it expects modules to spend a time roughly proportional to the number of steps, that is, to run each step at a constant speed.
 
 ### Input Slots Management
 
-Lines 23-27 take care of the input slot. The `SimpleMax` module has only one input slot, "table", but other modules can have more. Most of the information needed to handle the input slot is accessible through the `Slot` object that implements the connection between modules. The `Slot` class is similar to:
+Lines 23-27 take care of the input slot. The `SimpleMax` module has only one input slot, "table", but other Module classes can have more. Most of the information needed to handle the input slot is accessible through the `Slot` object that implements the connection between modules. The `Slot` has the following interface (simplified):
 
 ```
 @dataclass
@@ -127,10 +138,12 @@ class Slot:
         def update(int) -> None: ...
 ```
 
-Line 23 obtains the "table" input slot. Line 24 checks if any item in the table have been updated or deleted since the last call to `next_step`. This information is obtained because ProgressiVis's data structures are designed to keep track of these changes.
+Line 23 obtains the "table" input slot using the `Module.get_input_slot(name: str)->Slot` method.
+Line 24 checks if any item in the table has been updated or deleted since the last call to `next_step`. This information is obtained because ProgressiVis's data structures are designed to keep track of these changes made by modules.
 
 (change_management)=
 ### Managing Changes
+
 
 ProgressiVis calls `run_step` iteratively on all the modules. When entering the method, it is necessary to know what has changed since the last call. All the progressive data structures of ProgressiVis provide this information through an internal mechanism. The slot holding a `PTable` can be queried to know the table lines that have been created, updated, and deleted. The mechanism is identical for a slot containing a `PDict`; each key is given an index so the change mechanism returns the number of keys created, updated, and deleted. `PIntSet` also keeps track of its changes.
 
@@ -181,21 +194,12 @@ In PTable slots, the hints consist of a list of column names that restrict the c
 
 In the [initial example](#quantiles-variant) of ProgressiVis, we use a `Quantiles` module where output slots can be parameterized by a quantile, such as 0.03 or 0.97.
 
-(validity)=
-### Validity of a Dataflow
 
-To run, a dataflow should be **valid**. The validity is defined as follows:
-- For all the modules, all the required slots should be connected
-- For all the connected slots, the input and output slots should be compatible
-- There should not be any cycle in the dataflow; it should be a **directed acyclic graph**
-
-By design, ProgressiVis checks the connection types as soon as they are specified. However, when building or modifying a dataflow graph, adding modules or removing modules, the dataflow graph remains invalid until all the connections are made and dependent modules are deleted from the dataflow. Therefore, checking for the required slots and cycles is done as a two-phase commit operation.
-
-### Synchronization of Modules
+## Synchronization of Modules
 
 When multiple modules are computing values over the same table, they may become desynchronized; some may be lagging behind due to different processing speeds.
 
 (interactive_behavior)=
-# Interactive Behavior
+## Interactive Behavior
 
 TODO

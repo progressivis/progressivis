@@ -210,7 +210,7 @@ Line 11 and 12 use the `Module.from_input` method to initialize the
 
 Building a progressive visualization and making it interactive is conceptually easy with ProgressiVis, but can need long boilerplate code. To simplify the construction of complex loading, analysis, and visualization progressive pipelines, we provide higher-level abstractions in jupyter lab notebooks.  They are documented in the [notebooks section](notebooks).
 
-# Dealing with Noisy Data
+## Dealing with Noisy Data
 
 Big data is almost always noisy. The techniques that work on small data
 should be adapted to overcome this noise. As an illustration, the
