@@ -179,7 +179,7 @@ Slots are also used by modules to know what changed in the data structures since
 Modules are run multiple times for a limited amount of time to perform their computation.  In between two runs, their input data can be changed by other modules upwards in the dataflow.
 Under the hood, `ProgressiVis` tracks what changes from one run to the next in the progressive data structures carried by slots.  To simplify this change management, each data structure is considered as an indexed collection, with indices ranging from 0 to the length of the data structure. It means that these data structures are indexed with a main axis.  The information regarding the changes are limited to new `created` entries at specified indices, `deleted` entries at specified indices, and `updated` entries at specified indices. For the updated entries, the old values are not kept (so far).
 
-Therefore, when a module runs, it can access its input data through the input slots, and can see what has changed since the last run. It can then decide to act according to the changes.  For details, see the [Custom Modules](./custom_modules.md#custom-modules) section.
+Therefore, when a module runs, it can access its input data through the input slots, and can see what has changed since the last run. It can then decide to act according to the changes.  For details, see the [Writing New Modules](./custom_modules.md) section.
 
 (facade-concept)=
 ### Façade
