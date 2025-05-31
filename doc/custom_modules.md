@@ -37,7 +37,7 @@ At a high level, `Module.run_step` performs the following operations:
 1. **Input Slot Management** See which input slots have changed and decide how much work it can do given its quantum; this work can become **chunks** of data to process, **number iterations** to perform, or both.
 2. **Partial Computation** Run the internal computation.
 3. **Preparing the Output** Fill the output slots with the approximate or partial results.
-4. **Update State and Speed** Return information on its new state and the actual work that has been performed.
+4. **Updating State and Speed** Return information on its new state and the actual work that has been performed.
 
 When a module has finished its computation, it becomes **terminated**.
 For example, once a CSV loader module has finished loading a CSV file, its state becomes **terminated** and it can be removed by the scheduler from the list of runnable modules.
@@ -47,23 +47,21 @@ If a module has a non-recoverable runtime error or raises an exception, it becom
 
 Finally, modules that are interactive can be resurrected after they are terminated. We address this point in the [interactive behavior section](#interactive_behavior).
 
-Implementing a new module mostly boils down to implementing its `run_step()` method. An example is given [below](#max_module).
-
 ## Cooperative Scheduling
 
-ProgressiVis modules rely on **cooperative scheduling**, contrary to modern operating systems that use **preemptive scheduling**. In the latter, the scheduler decides on its own to interrupt the execution of a process to start another one. This decision is based on the time spent in the process and other factors that are opaque to the user (but can be found deep down in the description of the scheduler).
+ProgressiVis Scheduler implements **cooperative scheduling**, contrary to modern operating system schedulers that use **preemptive scheduling**. In the latter, the scheduler decides on its own to interrupt a process to start another one. This decision is based on the time spent in the process and other factors that are opaque to the user but try to be fair to all processes globally.
 
-Instead, ProgressiVis relies on each module to abide by a specified **quantum** of time.  It means that, when the main method `run_step()` of a module is called, it is given a quantum. Within this quantum, it should perform its computation, return a useful result (approximate or partial if needed), and return information regarding its state, either `ready`, `blocked`, or `zombie` (about to terminate but still alive).
+Instead, ProgressiVis's scheduler relies on each module to abide by a specified **quantum** of time.  It means that, when the method `run_step()` of a module is called, it is given a quantum. Within this quantum, it should perform its computation, return a useful result (approximate or partial if needed), and return information regarding its state, either `ready`, `blocked`, or `zombie` (about to terminate but still alive).
 
-ProgressiVis cannot use preemptive scheduling because of step 3; an arbitrary computation cannot be interrupted at any point and return a meaningful result. It should stop at a consistent point in its computation to prepare and provide a meaningful result.
+ProgressiVis cannot use preemptive scheduling because of step 3 above; an arbitrary computation cannot be interrupted at any point and return a meaningful result. It should stop at a consistent point in its computation to prepare and provide a meaningful result.
 
 
 (max_module)=
 ## Example: The SimpleMax Module
 
 The `SimpleMax` module is a simplification of the `Max` module of ProgressiVis.
-It computes the maximum values of all the columns of the table that it takes in an input slot and returns its result as a `PDict`, a dictionary that associates with each column name its maximum value, according to the data already processed progressively.
-Let's explain all its parts step by step.
+It computes the maximum values of all the columns of the `PTable' that it takes in its input slot named "table" and returns its result in the output slot called "result" as a `PDict`, a dictionary that associates with each column name its maximum value. This running maximum value is updated according to the data already processed progressively.
+Let's explain all the code parts step by step.
 
 ```{eval-rst}
 .. literalinclude:: ./simple_max.py
@@ -78,22 +76,22 @@ Every Module class uses some input slots, output slots, and parameters. They can
 Line 11 declares an input slot called "table" of type `PTable` and provides a short documentation.
 
 Line 12 declares the output slot called "result", of type `PDict`, i.e., a "progressive dictionary".
-It will contain the maximum value of each column computed progressively. The output slot descriptor also defines a documentation string.
+The output slot descriptor also defines a documentation string.
 
-Input and output slots can also be required or not; by default, they are required. When a slot is required, it should be connected for a dataflow configuration to be **valid**. We discuss the notion of dataflow validity [next](#validity).
+Input and output slots can also be required or not; by default, they are required. When a slot is required, it should be connected for the dataflow to be **valid**. We discuss the notion of dataflow validity [in the next section](#validity).
 
 Line 14 defines the class `SimpleMax`, inheriting from the `Module` class.
-Its `__init__` method is very standard and just catches the keyword parameter passed to keep it as an instance variable.
-It is redefined to initialize the value of the `default_step_size` instance variable with a reasonable value for the `SimpleMax` module, as explained in the next [Time Predictor section](#time-predictor).
+Its `__init__` method is minimal for modules; it catches all the keyword parameters to pass them to the `Module` constructor.
+It is redefined only to initialize the value of the `default_step_size` instance variable with a reasonable value for the `SimpleMax` module, as explained in the next [Time Predictor section](#time-predictor).
 Without the `@def_` decorators, the `__init__` method would require many more lines of code to  declare the slots and parameters.
 
 (validity)=
 ### Validity of a Dataflow
 
-To run, a dataflow should be **valid**. The validity is defined as follows:
+To run in the Scheduler, a dataflow should be **valid**. The validity is defined as follows:
 - For all the modules, all the required slots should be connected
 - For all the connected slots, the input and output slots should be compatible
-- There should not be any cycle in the dataflow; it should be a **directed acyclic graph**
+- There should not be any cycle in the dataflow; it should be a **directed acyclic graph**.
 
 By design, ProgressiVis checks the connection types as soon as they are specified. However, when building or modifying a dataflow graph, adding modules or removing modules, the dataflow graph remains invalid until all the connections are made and dependent modules are deleted from the dataflow. Therefore, checking for the required slots and cycles is done as a two-phase commit operation.
 
@@ -101,7 +99,7 @@ By design, ProgressiVis checks the connection types as soon as they are specifie
 ### The `SimpleMax.run_step` Method
 The method that performs the main work of a module is:\
 `run_step(self, run_number: int, step_size: int, quantum: float) -> ReturnRunStep`.
-It takes three arguments. The first, `run_number`, is an integer provided by the Scheduler. Each time the scheduler calls the `run` method of a module, it increments that number. The `run_number` is a convenient timestamp, typically used to mark an operation performed on a data structure, e.g., to check if something has changed since the last run of `run_step()`.
+It takes three arguments. The first, `run_number`, is an integer provided by the Scheduler. Each time it calls the `run` method of a module, it increments that number. The `run_number` is a convenient timestamp, typically used to mark an operation performed on a data structure, e.g., to check if something has changed since the last run of `run_step()`.
 
 The last argument is simply the `quantum`, the maximum duration that the method is allowed to run. It is a floating point value specified in seconds (0.5 by default).
 
@@ -126,8 +124,8 @@ Lines 23-27 take care of the input slot. The `SimpleMax` module has only one inp
 class Slot:
         output_module: Module
         output_name: str
-        input_module: Optional[Module]
-        input_name: Optional[str]
+        input_module: Module
+        input_name: str
         name: str
         hint: Any
         created: ChangeBuffer
@@ -139,37 +137,38 @@ class Slot:
 ```
 
 Line 23 obtains the "table" input slot using the `Module.get_input_slot(name: str)->Slot` method.
-Line 24 checks if any item in the table has been updated or deleted since the last call to `next_step`. This information is obtained because ProgressiVis's data structures are designed to keep track of these changes made by modules.
+Line 24 checks if any item in the table has been updated or deleted since the last call to `next_step`. This information is available because ProgressiVis's data structures are designed to keep track of these changes.
 
 (change_management)=
 ### Managing Changes
 
 
-ProgressiVis calls `run_step` iteratively on all the modules. When entering the method, it is necessary to know what has changed since the last call. All the progressive data structures of ProgressiVis provide this information through an internal mechanism. The slot holding a `PTable` can be queried to know the table lines that have been created, updated, and deleted. The mechanism is identical for a slot containing a `PDict`; each key is given an index so the change mechanism returns the number of keys created, updated, and deleted. `PIntSet` also keeps track of its changes.
+ProgressiVis calls `run_step` iteratively on all the modules. When entering the method, it is necessary to know what has changed since the last call. All the progressive data structures of ProgressiVis provide this information through an internal mechanism. The slot holding a `PTable` can be queried to know the table lines that have been **created**, **updated**, and **deleted**. We call these three list the change **Delta**.
+The mechanism is identical for a slot containing a `PDict`; each key is given an index so the change mechanism returns the index of keys created, updated, and deleted. `PIntSet` also keeps track of its changes.
 
-In our example, we only deal with created items. If the table had been changed by removing items or updating the value of items, line 25 resets the slot. The slot starts anew, ignoring all the previous operations. The `Slot.update(int)` method will then update the slot, considering all the items in the table as created.
+In our example, we only deal with created items. If the table had been changed by removing items or updating the value of items, line 25 resets the slot. The slot starts anew, ignoring all the previous operations. The `Slot.update(run_number:int)` method will then update the slot Delta, considering all the items in the table as created.
 
 Once the slot has been reset, the value of the result dictionary should also be updated to minus infinity to be recomputed correctly in the next step.
 
-This management of updated and deleted items is the simplest strategy to handle changes. It simply restarts the computation to the whole table. In many cases, better strategies are possible, but that one always works and can be used to start.
+This management of updated and deleted items is the simplest strategy to handle changes. It simply restarts the computation to the whole table. In many cases, better strategies are possible, but that one always works and can be used to start a Module implementation.
 
-Note that the result `PDict`  should not be created again because of the change manager: the next modules rely on the key order to correctly handle changes. Creating another PDict would change the key order and break the change management.
+Note that the result `PDict`  should not be created again because of the change manager: the next modules rely on the key order to correctly handle changes. Creating another PDict would break the change management.
 
 
 ### Partial Computation
 
-Since the `SimpleMax` module only deals with one input slot, the "table", lines 29-31 extract the items of the table that have been created since the last call to `run_step()`. This is our **chunk** of data to process.  Note that the chunk extraction in line 31 does not copy values in the `PTable`, it creates a lightweight `PTableSelectedView`.
+Since the `SimpleMax` module only deals with one input slot, the "table", lines 29-31 extract the items of the table that have been created since the last call to `run_step()`. This is our **chunk** of data to process.  Note that the chunk extraction in line 31 does not actually copy values in the `PTable`, it creates a lightweight `PTableSelectedView`.
 
 Line 33 computes the maximum value of all the columns of the chunk. The `PTable.max()` method performs this operation and returns the results in a dictionary.  This operation takes a time proportional to the size of the chunk.
 
 ### Preparing the Output
 
-Lines 24-38 prepare the result of the module's partial execution. The result should be stored in the `self.result` instance variable. This is handled by the `@def_output` declaration at line 12.
+Lines 34-38 prepare the result of the module's partial execution. The result should be stored in the `self.result` instance variable. This is specified by the `@def_output` declaration at line 12.
 The first time the module runs, the instance variable is `None`, so line 35 creates the `PDict` from the `op` dictionary. If the `PDict` is already created, it is updated key by key by applying the `numpy.fmax` function between the current value in the result `PDict` and the new value in the `op` variable.
 
-### Update State and Speed
+### Updating State and Speed
 
-The `run_step()` method can decide whether to let the module continue running or to stop it. When a module continues to run, it can be **blocked** or **ready**. A blocked module needs some input data to continue, whereas a ready module can be rescheduled without further testing by the scheduler. This is checked by the method `is_ready()`; if the module state is `state_ready`, the module is ready to go, if it is `state_blocked`, it becomes ready when one of its input slots has more data available. Otherwise, the module is not ready.
+The `run_step()` method can decide whether to let the module continue running or to stop it. When a module continues to run, it can be **blocked** or **ready**. A blocked module needs some input data to continue, whereas a ready module can be rescheduled without further testing by the scheduler. This is checked by the method `is_ready()`; if the module state is `state_ready`, the module is ready to go, if it is `state_blocked`, it becomes ready when one of its input slots has more data available. Otherwise, the module is not ready and the scheduler will not try to run it.
 
 
 ## Difference with the `Max` Module
