@@ -36,6 +36,7 @@ from typing import (
     List,
     Tuple,
     Callable,
+    NamedTuple,
     Type,
     Union,
     ClassVar,
@@ -63,8 +64,14 @@ ModuleProc = Union[ModuleCb, ModuleCoro]
 
 
 JSon = Dict[str, Any]
+
+
 # ReturnRunStep = Tuple[int, ModuleState]
-ReturnRunStep = Dict[str, int]
+# ReturnRunStep = Dict[str, int]
+class ReturnRunStep(NamedTuple):
+    next_state: ModuleState
+    steps_run: int
+    debug: bool = False
 
 
 logger = logging.getLogger(__name__)
@@ -877,10 +884,16 @@ class Module(metaclass=ABCMeta):
     ) -> ReturnRunStep:
         assert next_state >= Module.state_ready and next_state <= Module.state_zombie
         self.steps_acc += steps_run
-        return {"next_state": next_state, "steps_run": steps_run}
+        # return {"next_state": next_state, "steps_run": steps_run}
+        return ReturnRunStep(
+            next_state,
+            steps_run,
+            self.debug
+        )
 
     def _return_terminate(self, steps_run: int = 0) -> ReturnRunStep:
-        return {"next_state": Module.state_zombie, "steps_run": steps_run}
+        # return {"next_state": Module.state_zombie, "steps_run": steps_run}
+        return ReturnRunStep(Module.state_zombie, steps_run)
 
     def is_visualization(self) -> bool:
         return self.TAG_VISUALIZATION in self.tags
@@ -1189,7 +1202,7 @@ class Module(metaclass=ABCMeta):
         self._end_time = self._start_time + quantum
         self._update_params(run_number)
 
-        run_step_ret = {}
+        run_step_ret = ReturnRunStep(Module.state_invalid, 0)
         tracer.start_run(now, run_number)
         step_size = self.predict_step_size(quantum)
         logger.debug(f"{self.name}: step_size={step_size}")
@@ -1200,18 +1213,21 @@ class Module(metaclass=ABCMeta):
                 if self.debug:
                     pdb.set_trace()
                 run_step_ret = self.run_step(run_number, step_size, quantum)
-                next_state = cast(ModuleState, run_step_ret["next_state"])
+                # next_state = cast(ModuleState, run_step_ret["next_state"])
+                next_state = run_step_ret.next_state
                 now = self.timer()
                 self._last_update = run_number  # fix?
             except ProgressiveStopIteration:
                 logger.debug("In Module.run(): Received a StopIteration")
                 next_state = Module.state_zombie
-                run_step_ret["next_state"] = next_state
+                # run_step_ret["next_state"] = next_state
+                run_step_ret = ReturnRunStep(next_state, 0)
                 now = self.timer()
             except Exception as e:
                 print_exc()
                 next_state = Module.state_zombie
-                run_step_ret["next_state"] = next_state
+                # run_step_ret["next_state"] = next_state
+                run_step_ret = ReturnRunStep(next_state, 0)
                 now = self.timer()
                 tracer.exception(now, run_number)
                 exception = e
@@ -1222,9 +1238,13 @@ class Module(metaclass=ABCMeta):
                     "Error: %s run_step_ret"
                     " not returning a dict" % self.pretty_typename()
                 )
-                if self.debug:
-                    run_step_ret["debug"] = True
-                tracer.after_run_step(now, run_number, **run_step_ret)
+                # if self.debug:
+                #     run_step_ret["debug"] = True
+                tracer.after_run_step(
+                    now,
+                    run_number,
+                    **run_step_ret._asdict()
+                )
                 self.state = next_state
 
             if self._start_time == 0 or self.state != Module.state_ready:
@@ -1246,7 +1266,6 @@ class Module(metaclass=ABCMeta):
             if self.debug:
                 pdb.set_trace()
             raise RuntimeError("{} {}".format(type(exception), exception))
-
 
     def _path_to_origin_impl(self) -> List[Module]:
         res = [

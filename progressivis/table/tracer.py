@@ -107,10 +107,7 @@ class PTableTracer(Tracer):
         last_run_start["steps_run"] = cast(int, last_run_start["steps_run"]) + cast(
             int, row["steps_run"]
         )
-        if "debug" in kwds:
-            row["type"] = "debug_step"
-        else:
-            row["type"] = "step"
+        row["type"] = "debug_step" if "debug" in kwds else "step"
         self.table.add(row)
         self.step_count += 1
         self.last_run_details = ""
