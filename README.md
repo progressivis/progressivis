@@ -6,22 +6,9 @@
 [![types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
-ProgressiVis is a Python toolkit and scientific workflow system that
-implements a new [programming
-paradigm](https://en.wikipedia.org/wiki/Programming_paradigm) that we
-call _Progressive Analytics_ aimed at performing analytics in a
-progressive way.  It allows analysts to see the progress of their
-analysis and to steer it while the computation is being done. See the
-[workshop paper](https://hal.inria.fr/hal-01202901).
+ProgressiVis is a Python toolkit and scientific workflow system that implements a new [programming paradigm](https://en.wikipedia.org/wiki/Programming_paradigm) that we call _Progressive Data Analysis_ aimed at performing analytics in a progressive way.  It allows analysts to see the progress of their analysis and to steer it while the computation is being done. See the [book](https://www.aviz.fr/Progressive/PDABook).
 
-Instead of running algorithms to completion one after the other, as
-done in all existing scientific analysis systems, ProgressiVis modules
-run in short batches, each batch being only allowed to run for a
-specific quantum of time - typically 1 second - producing a usable
-result in the end, and yielding control to the next module.  To
-perform the whole computation, ProgressiVis loops over the modules as many
-times as necessary to converge to a result that the analyst considers
-satisfactory.
+Instead of running algorithms to completion one after the other, as done in all existing scientific analysis systems, ProgressiVis modules run in short batches, each batch being only allowed to run for a specific quantum of time&mdash;typically 0.5 second&mdash;producing a usable result in the end, and yielding control to the next module.  To perform the whole computation, ProgressiVis loops over the modules as many times as necessary to converge to a result that the analyst considers satisfactory.
 
 ProgressiVis relies on well-known Python libraries, such as
 [numpy](http://www.numpy.org/),[scipy](http://www.scipy.org/),
@@ -55,8 +42,6 @@ try the examples in the `examples` directory.
 ProgressiVis demos needs visualisations which are availables in the `progressivis` extension called `ipyprogressivis`. Please follow the instructions provided [here](https://github.com/progressivis/ipyprogressivis)
 
 
-## Contribute
-
 ## Support
 
 If you are having issues, please let us know at [issue](https://github.com/progressivis/progressivis/issues).
@@ -64,5 +49,5 @@ If you are having issues, please let us know at [issue](https://github.com/progr
 
 ## License
 
-The project is licensed under the BSD license.
+The project is licensed under the BSD-2-Clause license.
 
