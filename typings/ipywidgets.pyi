@@ -86,6 +86,7 @@ class Layout(DOMWidget):
 
 class Box(DOMWidget):
     children: Sequence[DOMWidget]
+    display: Any
     def __init__(self, *args: Any, **kw: Any) -> None: ...
 
 
