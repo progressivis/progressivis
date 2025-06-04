@@ -41,3 +41,4 @@ mmap_storage
 /coverage
 /mmap-storage
 progressivis/_version.py
+doc/_build

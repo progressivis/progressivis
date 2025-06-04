@@ -2,6 +2,8 @@
 
 New modules can be programmed in Python. They require some understanding of the internals of ProgressiVis. We introduce the main mechanisms step by step here.
 
+## Overview
+
 To summarize, a module has a simple life cycle. It is first created and then connected to other modules in a dataflow graph. At some later point, the dataflow is [validated by the scheduler](#validity). If something is wrong, the new dataflow is not installed in the scheduler since the program is invalid in some way and should be fixed by the user. For example, a required input slot is not connected to the module.
 
 Once the dataflow graph is validated, the module is runnable and its state turns to **ready**. When the module is **run**, its method `run_step()` is called with a few parameters; this is where the execution takes place.
@@ -11,8 +13,8 @@ As a simple example, the dataflow of the [user guide example](#quantiles-variant
 .. progressivis_dot:: ./userguide1.py
 ```
 The modules are first ordered linearly using [topological sorting](https://en.wikipedia.org/wiki/Topological_sorting), according to the dataflow graph made of modules linked by slots. Then, the scheduler runs them in order and starts again in the end.
-For each module, the scheduler calls the method `is_ready()` and, if it returns `True`, it calls the method `run()` that calls the method `run_step()` described in the next section.
-When reaching the end of the module list (called the `run_list` in the Scheduler), the Scheduler cleans-up its list by removing all the modules that have finished their work.
+For each module, the scheduler calls the method `Module.is_ready()` and, if it returns `True`, it calls the method `Module.run()` that calls the method `Module.run_step()` described in the next section.
+When reaching the end of the module list, the Scheduler cleans-up its list by removing all the modules that have finished their work.
 This means that modules have an internal state, `Module.state`, with the following possible values:
 ```Python
 state_created
@@ -31,7 +33,7 @@ Users only see these states in the process list, e.g., by looking at the value o
 
 The method `Module.run_step()` needs to perform several operations to get its data from the input slots, know how long it should run, post data on its output slots, and report its progression. ProgressiVis provides several Python mechanisms and decorators to avoid typing long boilerplate code. While they simplify the syntax, their role should be understood to control the execution of progressive modules correctly.
 
-`Module.run_step` is called by `Module.run`, which is not meant to be redefined in subclasses of `Module`. `Module.run` prepares the arguments of `run_step` and collects its return values or exception to monitor the module execution.
+`Module.run_step` is called by `Module.run`, which is not meant to be redefined in subclasses of `Module`. `Module.run` is called by the `Scheduler`; it wraps `run_step`,  prepares its arguments, calls it, and collects the return values or exception to monitor the module execution.
 
 At a high level, `Module.run_step` performs the following operations:
 1. **Input Slot Management** See which input slots have changed and decide how much work it can do given its quantum; this work can become **chunks** of data to process, **number iterations** to perform, or both.
@@ -157,7 +159,7 @@ Note that the result `PDict`  should not be created again because of the change 
 
 ### Partial Computation
 
-Since the `SimpleMax` module only deals with one input slot, the "table", lines 29-31 extract the items of the table that have been created since the last call to `run_step()`. This is our **chunk** of data to process.  Note that the chunk extraction in line 31 does not actually copy values in the `PTable`, it creates a lightweight `PTableSelectedView`.
+Since the `SimpleMax` module only deals with one input slot, the "table", lines 29-31 extract the items of the table that have been created since the last call to `run_step()`. This is our **chunk** of data to process.  Note that the chunk extraction in line 31 does not actually copy values in the `PTable`, it creates a lightweight `PTableSelectedView`, a filtered view of the `PTable`.
 
 Line 33 computes the maximum value of all the columns of the chunk. The `PTable.max()` method performs this operation and returns the results in a dictionary.  This operation takes a time proportional to the size of the chunk.
 

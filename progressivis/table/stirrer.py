@@ -163,4 +163,7 @@ class StirrerView(Module):
             else:
                 delete = self._delete_rows
             self.result.selection -= PIntSet(delete)
-        return self._return_run_step(self.next_state(input_slot), steps_run=steps)
+        return self._return_run_step(
+            self.next_state(input_slot),
+            steps_run=steps
+        )

@@ -1,6 +1,7 @@
 """
 Base class for progressive modules.
 """
+
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
@@ -11,7 +12,7 @@ from enum import IntEnum
 import pdb
 
 import numpy as np
-import inspect as ins # https://github.com/python/cpython/issues/122858
+import inspect as ins  # https://github.com/python/cpython/issues/122858
 from typeguard import check_type
 from .scheduler import Scheduler
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
@@ -128,7 +129,9 @@ class ModuleCallbackList(List[ModuleProc]):
                     await res
                 ret = True
             except Exception as exc:
-                logger.warning(f"Exception in callback {proc.__name__} on {module.name}")
+                logger.warning(
+                    f"Exception in callback {proc.__name__} on {module.name}"
+                )
                 logger.warning(exc)
         return ret
 
@@ -210,7 +213,7 @@ class Module(metaclass=ABCMeta):
             name = dataflow.generate_name(self.pretty_typename())
         elif name in dataflow:
             raise ProgressiveError(
-                "module already exists in scheduler," " delete it first"
+                "module already exists in scheduler, delete it first"
             )
         self.name = name  # need to set the name so exception can remove it
         """ The module's name """
@@ -222,11 +225,13 @@ class Module(metaclass=ABCMeta):
         self.storage = storage
         if storagegroup is None:
             assert Group.default_internal is not None
-            storagegroup = Group.default_internal(get_random_name(name + "_tracer"))
+            storagegroup = Group.default_internal(
+                get_random_name(name + "_tracer")
+            )
         self.storagegroup: Group = storagegroup
         tracer = Tracer.default(name, storagegroup)
 
-        self.tags : Set[str] = set(ModuleTag.tags)
+        self.tags: Set[str] = set(ModuleTag.tags)
         """ The set oftags attached to this module """
         self.order: int = -1
         """ The order of this module in the scheduler, or -1 if not valid """
@@ -245,7 +250,7 @@ class Module(metaclass=ABCMeta):
         # always present
         input_descriptors = self.all_inputs
         output_descriptors = self.all_outputs
-        self._input_slots: dict[str, Optional[Slot]] = self._validate_descriptors(
+        self._input_slots: dict[str, Slot | None] = self._validate_descriptors(
             input_descriptors
         )
         self.input_descriptors: dict[str, SlotDescriptor] = {
@@ -254,18 +259,18 @@ class Module(metaclass=ABCMeta):
         # self.input_multiple: Mapping[str, int] = {
         #     d.name: 0 for d in input_descriptors if d.multiple
         # }
-        self._output_slots: dict[
-            str, Optional[List[Slot]]
-        ] = self._validate_descriptors(output_descriptors)
+        self._output_slots: dict[str, Optional[List[Slot]]] = (
+            self._validate_descriptors(output_descriptors)
+        )
         self.output_descriptors: dict[str, SlotDescriptor] = {
             d.name: d for d in output_descriptors
         }
         self.default_step_size: int = 100
-        """ step size used by default when running this module for the first time """
+        """ step size used by default when running for the first time """
         self.input = InputSlots(self)
-        """ input slots are created and accessed through this write-only attribute """
+        """ Write-only input slots"""
         self.output = OutputSlots(self)
-        """ output slots are created and accessed through this read-only attribute """
+        """ Read-onlye output slots"""
         self.steps_acc: int = 0
         # self.wait_expr = aio.FIRST_COMPLETED
         self.context: Optional[_Context] = None
@@ -385,6 +390,7 @@ class Module(metaclass=ABCMeta):
                 doclist.append(f"{sd.doc}\n")
             else:
                 doclist.append("\n")
+
         shift_ = 0
         shift2 = 4
         if cls.parameters:
@@ -405,8 +411,10 @@ class Module(metaclass=ABCMeta):
                 _slot(shift2, sd, cls, "out")
         raw_doc = "".join(doclist)
         from jinja2 import Template
+
         tmpl = Template(raw_doc)
-        from progressivis_doc_params import napoleon_type_aliases  # type: ignore
+        from progressivis_doc_params import napoleon_type_aliases
+
         assert isinstance(napoleon_type_aliases, dict)
         cls.__doc__ = tmpl.render(**napoleon_type_aliases)
 
@@ -426,12 +434,12 @@ class Module(metaclass=ABCMeta):
 
     @classmethod
     def make(
-            cls,
-            factory: "ModuleFactory",
-            name: Optional[str] = None,
-            *,
-            scheduler: Optional[Scheduler] = None,
-            **kwds: Any
+        cls,
+        factory: "ModuleFactory",
+        name: Optional[str] = None,
+        *,
+        scheduler: Optional[Scheduler] = None,
+        **kwds: Any,
     ) -> Module:
         """Get a module of my class if it is already registered, or
         create a module of my class, register it, and return it.
@@ -441,10 +449,11 @@ class Module(metaclass=ABCMeta):
         factory:
             The ModuleFactory registering the modules by name
         name (optional):
-            The name used to access this module, which can be different from the
-            class name sometimes.
+            The name used to access this module, which can be different from
+            the class name sometimes.
         kw:
-            keyword parameters used to create the instance if it does not exist.
+            keyword parameters used to create the instance if it does
+            not exist.
 
         Returns
         -------
@@ -458,11 +467,7 @@ class Module(metaclass=ABCMeta):
                 raise ProgressiveError("Invalid scheduler")
         return cls(scheduler=scheduler, **kwds)
 
-    def make_connections(
-            self,
-            factory: "ModuleFactory",
-            name: str
-    ) -> None:
+    def make_connections(self, factory: "ModuleFactory", name: str) -> None:
         """
         Create the connections after a module has been created by `make`
         """
@@ -506,12 +511,14 @@ class Module(metaclass=ABCMeta):
     #         kwds[kwd] = slots
 
     @staticmethod
-    def _validate_descriptors(descriptor_list: List[SlotDescriptor]) -> dict[str, Any]:
+    def _validate_descriptors(
+            descriptor_list: List[SlotDescriptor]
+    ) -> dict[str, Any]:
         slots: dict[str, Any] = {}
         for desc in descriptor_list:
             if desc.name in slots:
                 raise ProgressiveError(
-                    "Duplicate slot name %s" f" in slot descriptor {desc.name}"
+                    f"Duplicate slot name %s in slot descriptor {desc.name}"
                 )
             slots[desc.name] = None
         return slots
@@ -534,6 +541,7 @@ class Module(metaclass=ABCMeta):
     def _parse_parameters(self, kwds: dict[str, Any]) -> None:
         # pylint: disable=no-member
         from progressivis.table.row import Row
+
         self._params = _create_table(
             self.generate_table_name("params"), self.all_parameters
         )
@@ -575,20 +583,18 @@ class Module(metaclass=ABCMeta):
         if short:
             return json
 
-        json.update(
-            {
-                "start_time": self._start_time,
-                "end_time": self._end_time,
-                "input_slots": {
-                    k: _islot_to_json(s) for (k, s) in self._input_slots.items()
-                },
-                "output_slots": {
-                    k: _oslot_to_json(s) for (k, s) in self._output_slots.items()
-                },
-                "default_step_size": self.default_step_size,
-                "parameters": self.current_params().to_json(),
-            }
-        )
+        json.update({
+            "start_time": self._start_time,
+            "end_time": self._end_time,
+            "input_slots": {
+                k: _islot_to_json(s) for (k, s) in self._input_slots.items()
+            },
+            "output_slots": {
+                k: _oslot_to_json(s) for (k, s) in self._output_slots.items()
+            },
+            "default_step_size": self.default_step_size,
+            "parameters": self.current_params().to_json(),
+        })
         return json
 
     async def from_input(self, msg: JSon, stop_iter: bool = False) -> str:
@@ -607,7 +613,9 @@ class Module(metaclass=ABCMeta):
         "Return True if this module brings new data"
         return False
 
-    def get_image(self, run_number: Optional[int] = None) -> Any:  # pragma no cover
+    def get_image(
+            self, run_number: Optional[int] = None
+    ) -> Any:  # pragma no cover
         "Return an image created by this module or None"
         # pylint: disable=unused-argument, no-self-use
         return None
@@ -698,11 +706,9 @@ class Module(metaclass=ABCMeta):
         if not self.input_slot_multiple(name):
             return [name]  # self.get_input_slot(name)]
         prefix = name + "."
-        return sorted(
-            [  # maintains the creation order
-                iname for iname in self._input_slots if iname.startswith(prefix)
-            ]
-        )
+        return sorted([  # maintains the creation order
+            iname for iname in self._input_slots if iname.startswith(prefix)
+        ])
 
     def get_input_module(self, name: str) -> Optional[Module]:
         "Return the specified input module"
@@ -711,7 +717,9 @@ class Module(metaclass=ABCMeta):
         return slot.output_module
 
     def input_slot_values(self) -> List[Slot]:
-        return [slot for slot in self._input_slots.values() if slot is not None]
+        return [
+            slot for slot in self._input_slots.values() if slot is not None
+        ]
 
     def input_slot_descriptor(self, name: str) -> SlotDescriptor:
         return self.input_descriptors[name]
@@ -846,8 +854,7 @@ class Module(metaclass=ABCMeta):
         return 0
 
     def get_data(self, name: str, hint: Any = None) -> Any:
-        """Return the data of the named output slot.
-        """
+        """Return the data of the named output slot."""
         if name == Module.TRACE_SLOT:
             return self.tracer.trace_stats()
         if name == Module.PARAMETERS_SLOT:
@@ -885,11 +892,7 @@ class Module(metaclass=ABCMeta):
         assert next_state >= Module.state_ready and next_state <= Module.state_zombie
         self.steps_acc += steps_run
         # return {"next_state": next_state, "steps_run": steps_run}
-        return ReturnRunStep(
-            next_state,
-            steps_run,
-            self.debug
-        )
+        return ReturnRunStep(next_state, steps_run, self.debug)
 
     def _return_terminate(self, steps_run: int = 0) -> ReturnRunStep:
         # return {"next_state": Module.state_zombie, "steps_run": steps_run}
@@ -973,9 +976,7 @@ class Module(metaclass=ABCMeta):
                 term_count += 1
 
         logger.debug(
-            f"ready_count={ready_count}, "
-            f"term_count={term_count}, "
-            f"in_count={in_count}"
+            f"ready_count={ready_count}, term_count={term_count}, in_count={in_count}"
         )
         if self.state == Module.state_blocked:
             # if all the input slot modules are terminated or invalid
@@ -985,7 +986,7 @@ class Module(metaclass=ABCMeta):
                 and term_count == in_count
             ):
                 logger.info(
-                    "%s becomes zombie because all its input slots" " are terminated",
+                    "%s becomes zombie because all its input slots are terminated",
                     self.name,
                 )
                 self.state = Module.state_zombie
@@ -1136,7 +1137,7 @@ class Module(metaclass=ABCMeta):
         self.do_ending(self._last_update)
         self._state = Module.state_terminated
         # jdf+cp talk 2025-03-05: don't reset input slots, they may contain unprocessed information
-        #for islot in self._input_slots.values():
+        # for islot in self._input_slots.values():
         #    if islot is not None:
         #        islot.reset()
         # jdf: don't reset output slots, they may contain unprocessed information
@@ -1195,7 +1196,7 @@ class Module(metaclass=ABCMeta):
         if quantum == 0:
             quantum = 0.1
             logger.error(
-                "Quantum is 0 in %s, setting it to a" " reasonable value", self.name
+                "Quantum is 0 in %s, setting it to a reasonable value", self.name
             )
         self.state = Module.state_running
         self._start_time = now
@@ -1240,11 +1241,7 @@ class Module(metaclass=ABCMeta):
                 )
                 # if self.debug:
                 #     run_step_ret["debug"] = True
-                tracer.after_run_step(
-                    now,
-                    run_number,
-                    **run_step_ret._asdict()
-                )
+                tracer.after_run_step(now, run_number, **run_step_ret._asdict())
                 self.state = next_state
 
             if self._start_time == 0 or self.state != Module.state_ready:
@@ -1428,7 +1425,9 @@ class InputSlots:
     def __getitem__(self, name: str) -> Slot:
         raise ProgressiveError("Input slots cannot be read, only assigned to")
 
-    def __setitem__(self, name: Union[int, str, Tuple[str, Any]], slot: Slot | SlotHint) -> None:
+    def __setitem__(
+        self, name: Union[int, str, Tuple[str, Any]], slot: Slot | SlotHint
+    ) -> None:
         return self.__setattr__(name, slot)  # type: ignore
 
     def __dir__(self) -> Iterable[str]:
@@ -1640,7 +1639,7 @@ def _islot_to_json(slot: Optional[Slot]) -> Optional[JSon]:
     return slot.to_json()
 
 
-def _oslot_to_json(slots: Optional[List[Slot]]) -> Optional[List[Optional[JSon]]]:
+def _oslot_to_json(slots: List[Slot] | None) -> Optional[List[JSon | None]]:
     if slots is None:
         return None
     return [_islot_to_json(s) for s in slots]
@@ -1649,6 +1648,7 @@ def _oslot_to_json(slots: Optional[List[Slot]]) -> Optional[List[Optional[JSon]]
 def _create_table(tname: str, columns: Parameters) -> PTable:
     from progressivis.table.dshape import dshape_from_dtype
     from progressivis.table.table import PTable
+
     dshape = ""
     data = {}
     for name, dtype, val in columns:
@@ -1658,13 +1658,17 @@ def _create_table(tname: str, columns: Parameters) -> PTable:
         data[name] = val
     dshape = "{" + dshape + "}"
     assert Group.default_internal
-    table = PTable(tname, dshape=dshape, storagegroup=Group.default_internal(tname))
+    table = PTable(
+        tname, dshape=dshape, storagegroup=Group.default_internal(tname)
+    )
     table.add(data)
     return table
 
 
 class ModuleFactory(dict[str, Module]):
-    def __init__(self, data_module: Module, output_slot: str = "result") -> None:
+    def __init__(
+            self, data_module: Module, output_slot: str = "result"
+    ) -> None:
         self.data_module = data_module
         self.output_slot = output_slot
         self.registry: dict[str, Type[Module]] = {}

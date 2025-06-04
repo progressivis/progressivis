@@ -1,16 +1,13 @@
 import numpy as np
 from typing import Any
-from progressivis import (
-    Module, ReturnRunStep, PTable, PDict,
-    document, def_input, def_output,
-)
-from ..core.utils import indices_len, fix_loc
+from progressivis import (Module, ReturnRunStep, PTable, PDict,
+                          document, def_input, def_output)
+from progressivis.core.utils import indices_len, fix_loc
 
 
 @document
 @def_input("table", PTable, doc="The input PTable to process")
-@def_output("result", PDict,
-            doc=("PDict where each key represents a column"))
+@def_output("result", PDict, doc=("PDict where each key represents a column"))
 class SimpleMax(Module):
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -31,6 +28,7 @@ class SimpleMax(Module):
         chunk = table_slot.data().loc[fix_loc(indices)]
         # Apply the operation on the chunk
         op = chunk.max(keepdims=False)
+        # Update the result
         if self.result is None:
             self.result = PDict(op)
         else:
@@ -46,4 +44,3 @@ class SimpleMax(Module):
     def reset(self) -> None:
         if self.result is not None:
             self.result.fill(-np.inf)
-

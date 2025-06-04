@@ -838,7 +838,9 @@ def get_physical_base(t: Any) -> Any:
     return t
 
 
-def normalize_columns(raw_columns: Union[List[Any], pd.Index[Any]]) -> List[str]:
+def normalize_columns(
+        raw_columns: Union[List[Any], pd.Index[Any]]
+) -> List[str]:
     uniq: Set[str] = set()
     columns: List[str] = []
     for i, c in enumerate(raw_columns, 1):

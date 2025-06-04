@@ -4,7 +4,7 @@ from progressivis import (
     Module, ReturnRunStep, def_input, def_output,
     PTable, PDict, document, process_slot, run_if_any
 )
-from ..core.utils import indices_len, fix_loc
+from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.docstrings import INPUT_SEL
 
 
@@ -29,6 +29,7 @@ class Max(Module):
     def run_step(
         self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
+        assert self.context is not None
         with self.context as ctx:
             indices = ctx.table.created.next(length=step_size)
             steps = indices_len(indices)

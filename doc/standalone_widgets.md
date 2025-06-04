@@ -15,3 +15,13 @@ The **sniffer**, among other things, allows you to customize parsing options, se
 
 Once the configuration is complete, you can save it for later use, so you don't have to refill all the options manually, and start loading.
 
+TODO
+
+
+## The DAG Widget
+
+The **DAG Widget** visualizes a directed acyclic graph of notebook cell dependencies. It can be used to navigate between dependent cells, and also to monitor the status of these cells.
+It is used by ipyprogressivis to show the graph of Chained Widgets and the status of these widgets.
+
+TODO
+
