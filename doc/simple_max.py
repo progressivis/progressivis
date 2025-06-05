@@ -7,7 +7,7 @@ from progressivis.core.utils import indices_len, fix_loc
 
 @document
 @def_input("table", PTable, doc="The input PTable to process")
-@def_output("result", PDict, doc=("PDict where each key represents a column"))
+@def_output("result", PDict, doc=("PDict with max value of each column"))
 class SimpleMax(Module):
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)

@@ -6,13 +6,13 @@ New modules can be programmed in Python. They require some understanding of the 
 
 To summarize, a module has a simple life cycle. It is first created and then connected to other modules in a dataflow graph. At some later point, the dataflow is [validated by the scheduler](#validity). If something is wrong, the new dataflow is not installed in the scheduler since the program is invalid in some way and should be fixed by the user. For example, a required input slot is not connected to the module.
 
-Once the dataflow graph is validated, the module is runnable and its state turns to **ready**. When the module is **run**, its method `run_step()` is called with a few parameters; this is where the execution takes place.
+Once the dataflow graph is validated, the module is runnable and its state turns to **ready**. When the module is **run**, its method `run_step()` is called with a few parameters; this is where the main progressive execution takes place.
 
-As a simple example, the dataflow of the [user guide example](#quantiles-variant) is shown below:
+As a simple example, the dataflow of the [user guide example](#quantiles-variant) is shown below. For each module, the input slots are on the top, the output slots on the bottom, and the name (unique identifier) and type in the middle.
 ```{eval-rst}
 .. progressivis_dot:: ./userguide1.py
 ```
-The modules are first ordered linearly using [topological sorting](https://en.wikipedia.org/wiki/Topological_sorting), according to the dataflow graph made of modules linked by slots. Then, the scheduler runs them in order and starts again in the end.
+The scheduler first orders the modules linearly using [topological sorting](https://en.wikipedia.org/wiki/Topological_sorting), according to the dataflow graph made of modules linked by slots. Then, the scheduler runs them in order and starts again in the end.
 For each module, the scheduler calls the method `Module.is_ready()` and, if it returns `True`, it calls the method `Module.run()` that calls the method `Module.run_step()` described in the next section.
 When reaching the end of the module list, the Scheduler cleans-up its list by removing all the modules that have finished their work.
 This means that modules have an internal state, `Module.state`, with the following possible values:
@@ -31,11 +31,11 @@ Users only see these states in the process list, e.g., by looking at the value o
 
 ## The `Module.run_step()` method
 
-The method `Module.run_step()` needs to perform several operations to get its data from the input slots, know how long it should run, post data on its output slots, and report its progression. ProgressiVis provides several Python mechanisms and decorators to avoid typing long boilerplate code. While they simplify the syntax, their role should be understood to control the execution of progressive modules correctly.
+`Module.run_step` is called by `Module.run`, which is not meant to be redefined in subclasses of `Module`. `Module.run` is called by the scheduler and wraps `run_step`. It  prepares its arguments, calls it, and collects the return values or exception to monitor the module execution.
 
-`Module.run_step` is called by `Module.run`, which is not meant to be redefined in subclasses of `Module`. `Module.run` is called by the `Scheduler`; it wraps `run_step`,  prepares its arguments, calls it, and collects the return values or exception to monitor the module execution.
+The method `Module.run_step()` needs to perform several operations to get its data from the input slots, know how long it should run, run for its time quantum, post data on its output slots, and report its progression. ProgressiVis provides several Python mechanisms and decorators to avoid typing long boilerplate code. While they simplify the syntax, their role should be understood to control the execution of progressive modules correctly.
 
-At a high level, `Module.run_step` performs the following operations:
+To summarize, at a high level, `Module.run_step` performs the following operations:
 1. **Input Slot Management** See which input slots have changed and decide how much work it can do given its quantum; this work can become **chunks** of data to process, **number iterations** to perform, or both.
 2. **Partial Computation** Run the internal computation.
 3. **Preparing the Output** Fill the output slots with the approximate or partial results.
@@ -51,18 +51,18 @@ Finally, modules that are interactive can be resurrected after they are terminat
 
 ## Cooperative Scheduling
 
-ProgressiVis Scheduler implements **cooperative scheduling**, contrary to modern operating system schedulers that use **preemptive scheduling**. In the latter, the scheduler decides on its own to interrupt a process to start another one. This decision is based on the time spent in the process and other factors that are opaque to the user but try to be fair to all processes globally.
+ProgressiVis's Scheduler implements **cooperative scheduling**, contrary to modern operating system schedulers that use **preemptive scheduling**. In the latter, the scheduler decides on its own to interrupt a process to start another one. This decision is based on the time spent in the process and other factors that are opaque to the user but try to be fair to all processes globally.
 
-Instead, ProgressiVis's scheduler relies on each module to abide by a specified **quantum** of time.  It means that, when the method `run_step()` of a module is called, it is given a quantum. Within this quantum, it should perform its computation, return a useful result (approximate or partial if needed), and return information regarding its state, either `ready`, `blocked`, or `zombie` (about to terminate but still alive).
+Instead, ProgressiVis's scheduler relies on each module to abide by a specified **quantum** of time.  It means that, when the method `Module.run_step()` is called, it is given a quantum. Within this quantum, it should perform its computation, return a useful result (approximate or partial if needed), and return information regarding its state, either `ready`, `blocked`, or `zombie` (about to terminate but still alive).
 
-ProgressiVis cannot use preemptive scheduling because of step 3 above; an arbitrary computation cannot be interrupted at any point and return a meaningful result. It should stop at a consistent point in its computation to prepare and provide a meaningful result.
+ProgressiVis cannot use preemptive scheduling because of step 3 above; an arbitrary computation cannot, in general, be interrupted at any point and return a meaningful result. It should stop at a consistent point in its computation to prepare and provide a meaningful result.
 
 
 (max_module)=
 ## Example: The SimpleMax Module
 
 The `SimpleMax` module is a simplification of the `Max` module of ProgressiVis.
-It computes the maximum values of all the columns of the `PTable' that it takes in its input slot named "table" and returns its result in the output slot called "result" as a `PDict`, a dictionary that associates with each column name its maximum value. This running maximum value is updated according to the data already processed progressively.
+It computes the maximum values of all the columns of the `PTable` that it takes in its input slot named "table" and returns its result in the output slot called "result" as a `PDict`, a dictionary that associates with each column name its maximum value. This running maximum value is updated according to the data already processed progressively.
 Let's explain all the code parts step by step.
 
 ```{eval-rst}
