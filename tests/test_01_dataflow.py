@@ -4,8 +4,10 @@ from progressivis import (
     Print,
     ProgressiveError,
     CSVLoader,
+    Histogram1D,
     Min,
     Max,
+    Quantiles,
     RandomPTable,
     Sink,
     Scheduler,
@@ -488,6 +490,36 @@ class TestDataflow(ProgressiveTest):
         aio.run(s.start())
         self.assertFalse("scatterplot_1" in s)
         self.assertFalse("print" in s)
+
+    def test_dataflow_10_two_inputs(self) -> None:
+        async def stop_after(scheduler: Scheduler, run_number: int) -> None:
+            print("Stopping")
+            await scheduler.stop()
+
+        async def modify_1(scheduler: Scheduler, run_number: int) -> None:
+            with scheduler as dataflow:
+                prt = Print(name="print", proc=self.terse, scheduler=scheduler)
+                prt.input.df = table.output.result
+                deps = dataflow.collateral_damage("histo")
+                print(f"collateral_damage('histo') = '{sorted(deps)}'")
+                dataflow.delete_modules(*deps)
+
+        s = self.scheduler()
+        table = RandomPTable(
+            name="table", columns=["a"], throttle=1000, scheduler=s
+        )
+        quantiles = Quantiles(scheduler=s)
+        quantiles.input.table = table.output.result
+        histo = Histogram1D(name="histo", column="a", scheduler=s)
+        histo.input.min = quantiles.output.result[0.03]
+        histo.input.max = quantiles.output.result[0.97]
+        histo.input.table = table.output.result
+        sink = Sink(name="sink_histo", scheduler=s)
+        sink.input.inp = histo.output.result
+        s.commit()
+        s.on_loop(stop_after, 5)
+        s.on_loop(modify_1, 3)
+        aio.run(s.start())
 
 
 if __name__ == "__main__":
