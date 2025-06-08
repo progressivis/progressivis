@@ -50,10 +50,8 @@ class LinearTimePredictor(TimePredictor):
         if trace_df is None:
             return
 
-        # TODO optimize to search backward to avoid scanning the whole table
         expr_ = (trace_df["type"] == "step") & (trace_df["duration"] != 0)
         if expr_ is False:
-            # Avoiding "DeprecationWarning: Calling nonzero on 0d arrays is deprecated,"
             step_traces = np.array([], dtype="int64")
         else:
             (step_traces,) = np.where(expr_)
@@ -62,22 +60,20 @@ class LinearTimePredictor(TimePredictor):
             return
         if n > 7:
             step_traces = step_traces[-7:]
+        # (operations, durations) = tracer.last_steps_durations(7)
         durations = trace_df["duration"][step_traces]
         operations = trace_df["steps_run"][step_traces]
-        logger.debug(
-            "LinearPredictor %s: Fitting %s/%s", self.name, operations, durations
-        )
-        num = operations.sum()
-        time = durations.sum()
+        num = np.sum(operations)
+        time = np.sum(durations)
         if num == 0:
             return
         a = num / time
-        logger.info("LinearPredictor %s Fit: %f operations per second", self.name, a)
         if a > 0:
             self.a = a
         else:
             logger.debug(
-                "LinearPredictor %s: predictor fit found" " a negative slope, ignoring",
+                "LinearPredictor %s: predictor fit found"
+                " a negative slope, ignoring",
                 self.name,
             )
 

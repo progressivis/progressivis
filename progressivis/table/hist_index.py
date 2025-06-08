@@ -189,9 +189,9 @@ class _HistogramIndexImpl(object):
             values = self.column.loc[to_add]
             bins = np.digitize(values, self.bins)  # type: ignore
             counts = np.bincount(bins)
-            for i in np.nonzero(counts)[0]:
-                bm = self.pintsets[i]
-                selection = bins == i  # boolean mask of values in bin i
+            for j in np.nonzero(counts)[0]:
+                bm = self.pintsets[j]
+                selection = bins == j  # boolean mask of values in bin i
                 bm.update(ids[selection])  # add them to the PIntSet
 
     def query(

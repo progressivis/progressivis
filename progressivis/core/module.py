@@ -15,7 +15,8 @@ import numpy as np
 import inspect as ins  # https://github.com/python/cpython/issues/122858
 from typeguard import check_type
 from .scheduler import Scheduler
-from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
+from progressivis.utils.errors import (ProgressiveError,
+                                       ProgressiveStopIteration)
 from progressivis.storage import Group
 import progressivis.core.aio as aio
 from progressivis.table.table_base import BasePTable
@@ -413,7 +414,7 @@ class Module(metaclass=ABCMeta):
         from jinja2 import Template
 
         tmpl = Template(raw_doc)
-        from progressivis_doc_params import napoleon_type_aliases  # type: ignore
+        from progressivis_doc_params import napoleon_type_aliases
 
         assert isinstance(napoleon_type_aliases, dict)
         cls.__doc__ = tmpl.render(**napoleon_type_aliases)
@@ -1241,7 +1242,8 @@ class Module(metaclass=ABCMeta):
                 )
                 # if self.debug:
                 #     run_step_ret["debug"] = True
-                tracer.after_run_step(now, run_number, **run_step_ret._asdict())
+                tracer.after_run_step(now, run_number,
+                                      **run_step_ret._asdict())
                 self.state = next_state
 
             if self._start_time == 0 or self.state != Module.state_ready:

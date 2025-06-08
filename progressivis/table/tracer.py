@@ -4,7 +4,7 @@ from ..core.tracer_base import Tracer
 from .table import PTable
 import numpy as np
 
-from typing import Optional, List, Dict, Union, cast, Any
+from typing import Optional, List, Dict, Union, cast, Any, Tuple
 
 
 class PTableTracer(Tracer):
@@ -60,13 +60,55 @@ class PTableTracer(Tracer):
     def trace_stats(self, max_runs: Optional[int] = None) -> PTable:
         return self.table
 
-    def start_run(self, ts: float, run_number: int, **kwds: Any) -> None:
+    def start_run(self, ts: float, run_number: int) -> None:
         self.last_run_start = dict(PTableTracer.TRACER_INIT)  # type: ignore
         self.last_run_start["start"] = ts
         self.last_run_start["run"] = run_number
         self.step_count = 0
 
-    def end_run(self, ts: float, run_number: int, **kwds: Any) -> None:
+    def before_run_step(self, ts: float, run_number: int) -> None:
+        self.last_run_step_start = {
+            "start": ts,
+            "run": run_number,
+            "steps": self.step_count,
+        }
+
+    def after_run_step(
+            self,
+            ts: float,
+            run_number: int,
+            next_state: int,
+            steps_run: int,
+            debug: bool
+    ) -> None:
+        assert self.last_run_step_start
+        row = self.last_run_step_start
+        row["next_state"] = next_state
+        row["steps_run"] = steps_run
+        row["end"] = ts
+        row["duration"] = ts - cast(float, row["start"])
+        row["detail"] = self.last_run_step_details
+        assert self.last_run_start
+        last_run_start = self.last_run_start
+        last_run_start["steps_run"] = (cast(int, last_run_start["steps_run"])
+                                       + cast(int, row["steps_run"]))
+        row["type"] = "debug_step" if debug else "step"
+        for (name, dflt) in PTableTracer.TRACER_INIT.items():
+            if name not in row:
+                row[name] = cast(int, dflt)
+        self.table.add(row)
+        self.step_count += 1
+        self.last_run_details = ""
+        self.last_run_step_start = None
+
+    def end_run(
+            self,
+            ts: float,
+            run_number: int,
+            progress_current: float,
+            progress_max: float,
+            quality: float
+    ) -> None:
         if self.last_run_start is None:
             return
         row = self.last_run_start
@@ -74,44 +116,16 @@ class PTableTracer(Tracer):
         row["duration"] = ts - cast(float, row["start"])
         row["detail"] = self.last_run_details if self.last_run_details else ""
         row["steps"] = self.step_count
-        #        row['loadavg'] = os.getloadavg()[0]
         row["type"] = "run"
-        row["progress_current"] = kwds.get("progress_current", 0.0)
-        row["progress_max"] = kwds.get("progress_max", 0.0)
-        row["quality"] = kwds.get("quality", 0.0)
+        row["progress_current"] = progress_current
+        row["progress_max"] = progress_max
+        row["quality"] = quality
         self.table.add(row)
         self.last_run_details = ""
         self.last_run_start = None
 
-    def run_stopped(self, ts: float, run_number: int, **kwds: Any) -> None:
+    def run_stopped(self, ts: float, run_number: int) -> None:
         self.last_run_details += "stopped"
-
-    def before_run_step(self, ts: float, run_number: int, **kwds: Any) -> None:
-        self.last_run_step_start = {
-            "start": ts,
-            "run": run_number,
-            "steps": self.step_count,
-        }
-
-    def after_run_step(self, ts: float, run_number: int, **kwds: Any) -> None:
-        assert self.last_run_step_start
-        row = self.last_run_step_start
-        for (name, dflt) in PTableTracer.TRACER_INIT.items():
-            if name not in row:
-                row[name] = kwds.get(name, dflt)
-        row["end"] = ts
-        row["duration"] = ts - cast(float, row["start"])
-        row["detail"] = self.last_run_step_details
-        assert self.last_run_start
-        last_run_start = self.last_run_start
-        last_run_start["steps_run"] = cast(int, last_run_start["steps_run"]) + cast(
-            int, row["steps_run"]
-        )
-        row["type"] = "debug_step" if "debug" in kwds else "step"
-        self.table.add(row)
-        self.step_count += 1
-        self.last_run_details = ""
-        self.last_run_step_start = None
 
     def exception(self, ts: float, run_number: int, **kwds: Any) -> None:
         self.last_run_details += "exception"
@@ -136,6 +150,24 @@ class PTableTracer(Tracer):
                 elt = float(s) / d
             res.append(elt)
         return res
+
+    def last_steps_durations(
+            self, length: int = 7
+    ) -> Tuple[List[float], List[int]]:
+        # TODO optimize to search backward to avoid scanning the whole table
+        expr_ = (self.table["type"] == "step") & (self.table["duration"] != 0)
+        if expr_ is False:
+            step_traces = np.array([], dtype="int64")
+        else:
+            (step_traces,) = np.where(expr_)
+        n = len(step_traces)
+        if n < 1:
+            return ([], [])
+        if n > length:
+            step_traces = step_traces[-length:]
+        durations = self.table["duration"][step_traces]
+        operations = self.table["steps_run"][step_traces]
+        return (list(durations), list(operations))
 
 
 Tracer.default = PTableTracer

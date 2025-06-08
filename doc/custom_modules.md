@@ -175,16 +175,23 @@ The `run_step()` method can decide whether to let the module continue running or
 
 ## Difference with the `Max` Module
 
-The `Max` module uses the standard `@process_slot` and `@run_if_any` decorators or `run_step` to shorten its code. It also implements **slot hints** in its "table" input slot.
+The `SimpleMax` module is very similar to the `Max` module; the latter additionally uses decorators for the `run_step` method, and manages **slot hints**.
 
-The `hint_type` parameter specifies that this input slot can be parameterized using a sequence of strings. Concretely, all the connections made with slots of type "PTable" can be parameterized with a list of column names. We discuss these slot parameters in [slot hints](#slot_hints).
+The `Max` module uses the standard `@process_slot` and `@run_if_any` decorators of `run_step` to shorten its code.  These decorators save line 19-24 of `SimpleMax` by introducing a `Context` in the management of the input slots.
 
-The code relies on two decorators for this function: `@process_slot` and `@run_if_any`.
+```{eval-rst}
+.. literalinclude:: ./max.py
+   :linenos:
+```
+
+The `@process_slot` decorator in `Max` performs the equivalent of lines 20-24 of `SimpleMax`. It also creates an attribute in the `Context` to access the slot names "table", as shown in line 34.
 
 `@process_slot` specifies that when the input slot "table" contains updated or deleted items (not created ones), the method `reset(self) -> None` should be called.  This method is defined on line 23.
 The simplest strategy to use when an input table is modified is to restart the work from the beginning, forgetting the current "max" value.
 
-`@run_if_any` means that if any of the input slots are modified, then the method should run. This is the default behavior for modules. This decorator also prepares the `self.context` context manager that does a great deal of bookkeeping.
+The `@run_if_any` decorator specifies that the `run_step` method can be run when any if the input slots has new data. the `@run_if_all` method means that the `run_step` method can only run when all the input slots have new data. For most modules, the first is used.  A few modules who perform operations in parallel between their input slots, such as binary operators, need the latter.
+
+The `hint_type` parameter specifies that this input slot can be parameterized using a sequence of strings. Concretely, all the connections made with slots of type "PTable" can be parameterized with a list of column names. We discuss these slot parameters in [slot hints](#slot_hints).
 
 
 (slot_hints)=
@@ -192,6 +199,9 @@ The simplest strategy to use when an input table is modified is to restart the w
 
 Slot hints provide a convenient syntax to adapt the behavior of slots according to parameters that we call "slot hints".
 In PTable slots, the hints consist of a list of column names that restrict the columns received through the slot. Internally, this uses a PTable view. Creating a view can be done through a module, but the syntax is much heavier, and the performance is much worse.
+The `PTable` slot hint is so standard that its documentation string is imported in line 8 of `Max` and used in line 12.
+
+This slot hint is implemented in line 36 by calling `Module.filter_slot_columns`. The chunk returned will contain the columns specified in the slot hint (or all the columns if no slot hint is specified).
 
 In the [initial example](#quantiles-variant) of ProgressiVis, we use a `Quantiles` module where output slots can be parameterized by a quantile, such as 0.03 or 0.97.
 
