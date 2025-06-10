@@ -11,12 +11,11 @@ class PTableTracer(Tracer):
     TRACER_DSHAPE = (
         "{"
         "type: string,"
+        "run: int64,"
         "start: real,"
         "end: real,"
         "duration: real,"
         "detail: string,"
-        "run: int64,"
-        "steps: int32,"
         "steps_run: int32,"
         "next_state: int32,"
         "progress_current: real,"
@@ -24,15 +23,14 @@ class PTableTracer(Tracer):
         "quality: real"
         "}"
     )
-    TRACER_INIT = dict(
+    TRACER_INIT: Dict[str, Union[int, float, np.floating[Any], str]] = dict(
         [
             ("type", ""),
+            ("run", 0),
             ("start", np.nan),
             ("end", np.nan),
             ("duration", np.nan),
             ("detail", ""),
-            ("run", 0),
-            ("steps", 0),
             ("steps_run", 0),
             ("next_state", 0),
             ("progress_current", 0.0),
@@ -49,57 +47,18 @@ class PTableTracer(Tracer):
             chunks=256,
         )
         self.table.add(PTableTracer.TRACER_INIT)
-        self.step_count = 0
-        self.last_run_step_start: Optional[Dict[str, Union[int, float, str]]] = None
-        self.last_run_step_details = ""
-        self.last_run_start: Optional[
-            Dict[str, Union[int, float, np.floating[Any], str]]
-        ] = None
+        self.last_run_start: Dict[
+            str, Union[int, float, np.floating[Any], str]
+        ] | None = None
         self.last_run_details = ""
 
     def trace_stats(self, max_runs: Optional[int] = None) -> PTable:
         return self.table
 
     def start_run(self, ts: float, run_number: int) -> None:
-        self.last_run_start = dict(PTableTracer.TRACER_INIT)  # type: ignore
-        self.last_run_start["start"] = ts
+        self.last_run_start = dict(PTableTracer.TRACER_INIT)
         self.last_run_start["run"] = run_number
-        self.step_count = 0
-
-    def before_run_step(self, ts: float, run_number: int) -> None:
-        self.last_run_step_start = {
-            "start": ts,
-            "run": run_number,
-            "steps": self.step_count,
-        }
-
-    def after_run_step(
-            self,
-            ts: float,
-            run_number: int,
-            next_state: int,
-            steps_run: int,
-            debug: bool
-    ) -> None:
-        assert self.last_run_step_start
-        row = self.last_run_step_start
-        row["next_state"] = next_state
-        row["steps_run"] = steps_run
-        row["end"] = ts
-        row["duration"] = ts - cast(float, row["start"])
-        row["detail"] = self.last_run_step_details
-        assert self.last_run_start
-        last_run_start = self.last_run_start
-        last_run_start["steps_run"] = (cast(int, last_run_start["steps_run"])
-                                       + cast(int, row["steps_run"]))
-        row["type"] = "debug_step" if debug else "step"
-        for (name, dflt) in PTableTracer.TRACER_INIT.items():
-            if name not in row:
-                row[name] = cast(int, dflt)
-        self.table.add(row)
-        self.step_count += 1
-        self.last_run_details = ""
-        self.last_run_step_start = None
+        self.last_run_start["start"] = ts
 
     def end_run(
             self,
@@ -107,30 +66,33 @@ class PTableTracer(Tracer):
             run_number: int,
             progress_current: float,
             progress_max: float,
-            quality: float
+            quality: float,
+            next_state: int,
+            steps_run: int,
+            debug: bool
     ) -> None:
-        if self.last_run_start is None:
-            return
+        assert self.last_run_start
         row = self.last_run_start
+        row["next_state"] = next_state
+        row["steps_run"] = steps_run
         row["end"] = ts
         row["duration"] = ts - cast(float, row["start"])
-        row["detail"] = self.last_run_details if self.last_run_details else ""
-        row["steps"] = self.step_count
-        row["type"] = "run"
+        row["detail"] = self.last_run_details
+        row["type"] = "debug_step" if debug else "step"
         row["progress_current"] = progress_current
         row["progress_max"] = progress_max
         row["quality"] = quality
         self.table.add(row)
+        self.last_run_step_start = None
         self.last_run_details = ""
-        self.last_run_start = None
 
-    def run_stopped(self, ts: float, run_number: int) -> None:
+    def run_stopped(self, run_number: int) -> None:
         self.last_run_details += "stopped"
 
-    def exception(self, ts: float, run_number: int, **kwds: Any) -> None:
+    def exception(self, run_number: int) -> None:
         self.last_run_details += "exception"
 
-    def terminated(self, ts: float, run_number: int, **kwds: Any) -> None:
+    def terminated(self, run_number: int) -> None:
         self.last_run_details += "terminated"
 
     def get_speed(self, depth: int = 15) -> List[Optional[float]]:

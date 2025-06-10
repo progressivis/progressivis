@@ -1,6 +1,7 @@
 """
 Main imports from progressivis.
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,10 +35,7 @@ from progressivis.core.api import (
     run_always,
 )
 
-from progressivis.utils.api import (
-    ProgressiveError,
-    PDict
-)
+from progressivis.utils.api import ProgressiveError, PDict
 
 from progressivis.table.api import (
     BasePColumn,
@@ -368,26 +366,6 @@ __all__ = [
     "Heatmap",
     "MCScatterPlot",
     "get_dataset",
-    "Unary",
-    "Binary",
-    "ColsBinary",
-    "Reduce",
-    "func2class_name",
-    "unary_module",
-    "make_unary",
-    "binary_module",
-    "make_binary",
-    "reduce_module",
-    "make_reduce",
-    "binary_dict_int_tst",
-    "unary_dict_gen_tst",
-    "binary_dict_gen_tst",
-    "LinearMap",
-    "NumExprABC",
-    "make_local",
-    "make_local_dict",
-    "get_ufunc_args",
-    "MixUfuncABC",
     "BitwiseNot",
     "Absolute",
     "Arccos",

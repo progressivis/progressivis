@@ -1,3 +1,8 @@
+"""
+Interface for tracing the scheduler activity.
+Mainly used by the TimePredictor to compute the module speed.
+"""
+
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
@@ -18,38 +23,28 @@ class Tracer(metaclass=ABCMeta):
 
     @abstractmethod
     def end_run(
-            self, ts: float, run_number: int,
-            progress_current: float,
-            progress_max: float,
-            quality: float
+        self,
+        ts: float,
+        run_number: int,
+        progress_current: float,
+        progress_max: float,
+        quality: float,
+        next_state: int,
+        step_run: int,
+        debug: bool,
     ) -> None:
         pass
 
     @abstractmethod
-    def run_stopped(self, ts: float, run_number: int) -> None:
+    def run_stopped(self, run_number: int) -> None:
         pass
 
     @abstractmethod
-    def before_run_step(self, ts: float, run_number: int) -> None:
+    def exception(self, run_number: int) -> None:
         pass
 
     @abstractmethod
-    def after_run_step(
-            self,
-            ts: float,
-            run_number: int,
-            next_state: int,
-            step_run: int,
-            debug: bool
-    ) -> None:
-        pass
-
-    @abstractmethod
-    def exception(self, ts: float, run_number: int) -> None:
-        pass
-
-    @abstractmethod
-    def terminated(self, ts: float, run_number: int) -> None:
+    def terminated(self, run_number: int) -> None:
         pass
 
     @abstractmethod
@@ -62,7 +57,5 @@ class Tracer(metaclass=ABCMeta):
         return []
 
     @abstractmethod
-    def last_steps_durations(
-            self, length: int = 7
-    ) -> Tuple[List[float], List[int]]:
+    def last_steps_durations(self, length: int = 7) -> Tuple[List[float], List[int]]:
         pass

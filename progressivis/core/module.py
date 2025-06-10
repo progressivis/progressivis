@@ -15,8 +15,7 @@ import numpy as np
 import inspect as ins  # https://github.com/python/cpython/issues/122858
 from typeguard import check_type
 from .scheduler import Scheduler
-from progressivis.utils.errors import (ProgressiveError,
-                                       ProgressiveStopIteration)
+from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.storage import Group
 import progressivis.core.aio as aio
 from progressivis.table.table_base import BasePTable
@@ -226,9 +225,7 @@ class Module(metaclass=ABCMeta):
         self.storage = storage
         if storagegroup is None:
             assert Group.default_internal is not None
-            storagegroup = Group.default_internal(
-                get_random_name(name + "_tracer")
-            )
+            storagegroup = Group.default_internal(get_random_name(name + "_tracer"))
         self.storagegroup: Group = storagegroup
         tracer = Tracer.default(name, storagegroup)
 
@@ -512,9 +509,7 @@ class Module(metaclass=ABCMeta):
     #         kwds[kwd] = slots
 
     @staticmethod
-    def _validate_descriptors(
-            descriptor_list: List[SlotDescriptor]
-    ) -> dict[str, Any]:
+    def _validate_descriptors(descriptor_list: List[SlotDescriptor]) -> dict[str, Any]:
         slots: dict[str, Any] = {}
         for desc in descriptor_list:
             if desc.name in slots:
@@ -584,18 +579,20 @@ class Module(metaclass=ABCMeta):
         if short:
             return json
 
-        json.update({
-            "start_time": self._start_time,
-            "end_time": self._end_time,
-            "input_slots": {
-                k: _islot_to_json(s) for (k, s) in self._input_slots.items()
-            },
-            "output_slots": {
-                k: _oslot_to_json(s) for (k, s) in self._output_slots.items()
-            },
-            "default_step_size": self.default_step_size,
-            "parameters": self.current_params().to_json(),
-        })
+        json.update(
+            {
+                "start_time": self._start_time,
+                "end_time": self._end_time,
+                "input_slots": {
+                    k: _islot_to_json(s) for (k, s) in self._input_slots.items()
+                },
+                "output_slots": {
+                    k: _oslot_to_json(s) for (k, s) in self._output_slots.items()
+                },
+                "default_step_size": self.default_step_size,
+                "parameters": self.current_params().to_json(),
+            }
+        )
         return json
 
     async def from_input(self, msg: JSon, stop_iter: bool = False) -> str:
@@ -614,9 +611,7 @@ class Module(metaclass=ABCMeta):
         "Return True if this module brings new data"
         return False
 
-    def get_image(
-            self, run_number: Optional[int] = None
-    ) -> Any:  # pragma no cover
+    def get_image(self, run_number: Optional[int] = None) -> Any:  # pragma no cover
         "Return an image created by this module or None"
         # pylint: disable=unused-argument, no-self-use
         return None
@@ -707,9 +702,11 @@ class Module(metaclass=ABCMeta):
         if not self.input_slot_multiple(name):
             return [name]  # self.get_input_slot(name)]
         prefix = name + "."
-        return sorted([  # maintains the creation order
-            iname for iname in self._input_slots if iname.startswith(prefix)
-        ])
+        return sorted(
+            [  # maintains the creation order
+                iname for iname in self._input_slots if iname.startswith(prefix)
+            ]
+        )
 
     def get_input_module(self, name: str) -> Optional[Module]:
         "Return the specified input module"
@@ -718,9 +715,7 @@ class Module(metaclass=ABCMeta):
         return slot.output_module
 
     def input_slot_values(self) -> List[Slot]:
-        return [
-            slot for slot in self._input_slots.values() if slot is not None
-        ]
+        return [slot for slot in self._input_slots.values() if slot is not None]
 
     def input_slot_descriptor(self, name: str) -> SlotDescriptor:
         return self.input_descriptors[name]
@@ -1052,7 +1047,7 @@ class Module(metaclass=ABCMeta):
         return self.tracer.trace_stats(max_runs)
 
     def predict_step_size(self, duration: float) -> int:
-        self.predictor.fit(self.trace_stats())
+        self.predictor.fit(self.tracer)
         return self.predictor.predict(duration, self.default_step_size)
 
     def starting(self) -> None:
@@ -1205,33 +1200,26 @@ class Module(metaclass=ABCMeta):
         self._update_params(run_number)
 
         run_step_ret = ReturnRunStep(Module.state_invalid, 0)
-        tracer.start_run(now, run_number)
         step_size = self.predict_step_size(quantum)
         logger.debug(f"{self.name}: step_size={step_size}")
         if step_size != 0:
             # pylint: disable=broad-except
             try:
-                tracer.before_run_step(now, run_number)
+                tracer.start_run(now, run_number)
                 if self.debug:
                     pdb.set_trace()
                 run_step_ret = self.run_step(run_number, step_size, quantum)
-                # next_state = cast(ModuleState, run_step_ret["next_state"])
                 next_state = run_step_ret.next_state
-                now = self.timer()
                 self._last_update = run_number  # fix?
             except ProgressiveStopIteration:
                 logger.debug("In Module.run(): Received a StopIteration")
                 next_state = Module.state_zombie
-                # run_step_ret["next_state"] = next_state
                 run_step_ret = ReturnRunStep(next_state, 0)
-                now = self.timer()
             except Exception as e:
                 print_exc()
                 next_state = Module.state_zombie
-                # run_step_ret["next_state"] = next_state
                 run_step_ret = ReturnRunStep(next_state, 0)
-                now = self.timer()
-                tracer.exception(now, run_number)
+                tracer.exception(run_number)
                 exception = e
                 self._had_error = True
                 self._start_time = now
@@ -1242,20 +1230,20 @@ class Module(metaclass=ABCMeta):
                 )
                 # if self.debug:
                 #     run_step_ret["debug"] = True
-                tracer.after_run_step(now, run_number,
-                                      **run_step_ret._asdict())
+                now = self.timer()
                 self.state = next_state
 
             if self._start_time == 0 or self.state != Module.state_ready:
-                tracer.run_stopped(now, run_number)
+                tracer.run_stopped(run_number)
             self._start_time = now
         self.state = next_state
         if self.state == Module.state_zombie:
-            tracer.terminated(now, run_number)
+            tracer.terminated(run_number)
         progress = self.get_progress()
         tracer.end_run(
             now,
             run_number,
+            **run_step_ret._asdict(),
             progress_current=progress[0],
             progress_max=progress[1],
             quality=self.get_quality(),
@@ -1660,17 +1648,13 @@ def _create_table(tname: str, columns: Parameters) -> PTable:
         data[name] = val
     dshape = "{" + dshape + "}"
     assert Group.default_internal
-    table = PTable(
-        tname, dshape=dshape, storagegroup=Group.default_internal(tname)
-    )
+    table = PTable(tname, dshape=dshape, storagegroup=Group.default_internal(tname))
     table.add(data)
     return table
 
 
 class ModuleFactory(dict[str, Module]):
-    def __init__(
-            self, data_module: Module, output_slot: str = "result"
-    ) -> None:
+    def __init__(self, data_module: Module, output_slot: str = "result") -> None:
         self.data_module = data_module
         self.output_slot = output_slot
         self.registry: dict[str, Type[Module]] = {}
