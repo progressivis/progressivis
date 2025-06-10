@@ -51,6 +51,7 @@ class PTableTracer(Tracer):
             str, Union[int, float, np.floating[Any], str]
         ] | None = None
         self.last_run_details = ""
+        self.has_debug = False
 
     def trace_stats(self, max_runs: Optional[int] = None) -> PTable:
         return self.table
@@ -78,7 +79,11 @@ class PTableTracer(Tracer):
         row["end"] = ts
         row["duration"] = ts - cast(float, row["start"])
         row["detail"] = self.last_run_details
-        row["type"] = "debug_step" if debug else "step"
+        if debug:
+            row["type"] = "debug_step"
+            self.has_debug = True
+        else:
+            row["type"] = "step"
         row["progress_current"] = progress_current
         row["progress_max"] = progress_max
         row["quality"] = quality
@@ -117,13 +122,23 @@ class PTableTracer(Tracer):
             self, length: int = 7
     ) -> Tuple[List[float], List[int]]:
         # TODO optimize to search backward to avoid scanning the whole table
-        expr_ = (self.table["type"] == "step") & (self.table["duration"] != 0)
-        if expr_ is False:
+        if len(self.table) < 2:
+            return ([], [])
+        if self.has_debug:
+            expr_ = (
+                (self.table["type"].values == "step") &
+                (self.table["duration"].values != 0)
+            )
+        else:
+            expr_ = (self.table["duration"].values != 0)
+
+        if len(expr_) == 0:
             step_traces = np.array([], dtype="int64")
         else:
             (step_traces,) = np.where(expr_)
+
         n = len(step_traces)
-        if n < 1:
+        if n == 0:
             return ([], [])
         if n > length:
             step_traces = step_traces[-length:]

@@ -411,7 +411,7 @@ class Module(metaclass=ABCMeta):
         from jinja2 import Template
 
         tmpl = Template(raw_doc)
-        from progressivis_doc_params import napoleon_type_aliases
+        from progressivis_doc_params import napoleon_type_aliases  # type: ignore
 
         assert isinstance(napoleon_type_aliases, dict)
         cls.__doc__ = tmpl.render(**napoleon_type_aliases)
