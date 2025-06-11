@@ -14,10 +14,10 @@ Firstly, to meet the display requirements of progressive notebooks, it is essent
 The `ipyprogressivis` package provides a pre-save hook for:
 
 * improved rendering when a previously developed scenario is reopened
-* backup of the markdown cells beiing part of the scenario
+* backup of the markdown cells being part of the scenario
 
 
-Its use is not mandatory, but is recommended if you wish to use the notebooks developed in a documentation (for example, to produce a gallery of examples). To use it, simply launch Jupyterlab in this way:
+Its use is not mandatory, but it is recommended if you wish to use the notebooks developed in a documentation (for example, to produce a gallery of examples). To use it, simply launch JupyterLab in this way:
 
 ```sh
 $ jupyter lab --FileContentsManager.pre_save_hook=ipyprogressivis.pre_save
@@ -30,11 +30,11 @@ import ipyprogressivis
 c.FileContentsManager.pre_save_hook = ipyprogressivis.pre_save
 ```
 
-to your `jupyter_lab_config.py` file and run jupyterlab as usual.
+to your `jupyter_lab_config.py` file and run JupyterLab as usual.
 
 ```{eval-rst}
 .. note::
-   If you don't have a `jupyter_lab_config.py` yet you can generate one with::
+   If you don't have a `jupyter_lab_config.py` yet, you can generate one with:
 
        jupyter lab --generate-config
 ```
@@ -50,7 +50,7 @@ Notebooks hosting a progressive scenario need to be initialized in a particular 
 
 Once created, a `Run ProgressiVis` button will appear in the first `ProgressiBook` cell.
 
-By clicking this button, `ProgressiVis` is launched and the starting box will appear. A new scenario always begins by defining a data source. Currently, it proposes three data loading options. Two of them are predefined (`CSV loader` and `PARQUET loader`) and the third is the possibility to define (i.e. to code in Python) a customized loader. The starting box also offers the option of saving the session for later use by checking the `record this scenario` box. These actions, like all other actions in the scenario, are implemented via a set of `chaining widgets`.
+By clicking this button, `ProgressiVis` is launched, and the starting box will appear. A new scenario always begins by defining a data source. Currently, it proposes three data loading options. Two of them are predefined (`CSV loader` and `PARQUET loader`), and the third is the possibility to define (i.e., to code in Python) a customized loader. The starting box also offers the option of saving the session for later use by checking the `record this scenario` box. These actions, like all other actions in the scenario, are implemented via a set of `chaining widgets`.
 
 ![](viz_images/constructor_cw.png)
 
@@ -59,7 +59,7 @@ By clicking this button, `ProgressiVis` is launched and the starting box will ap
 
 To replay a previously recorded scenario, you need to open the `ProgressiBook` like an ordinary notebook, which will contain a snapshot of the previous execution.
 
-By pressing the `Run ProgressiVis` button, the snapshot will disappear and the following box will appear instead :
+By pressing the `Run ProgressiVis` button, the snapshot will disappear, and the following box will appear instead :
 
 ![](viz_images/replay_progressibook_ro.png)
 
@@ -70,7 +70,7 @@ On the other hand, if you check the `Allow overwriting record` box, the `Step by
 
 ![](viz_images/replay_progressibook_rw.png)
 
-and you can choose between two modes:
+You can choose between two modes:
 
 * `Replay all`: the recorded scenario will be launched as before, but you'll be able to enrich it with new widgets.
 * `Step by step`: the various nodes will be displayed in the order in which they were created in the initial scenario, and you can:
@@ -96,28 +96,27 @@ Chaining widgets encapsulate and connect a subgraph of ProgressiVis modules that
 
 ## Navigation with the DAG Widget
 
-The DAG widget, shown in the top right of a progressive notebook, as shown above, represents all the cell as a dependency graph. It show a navigation structure complementary to the sequential list of cells in the notebook. It stays on the right side of your notebook and you can navigate to any cell by clicking on a node.
+The DAG widget, shown in the top right of a progressive notebook, as shown above, represents all the cells as a dependency graph. It shows a navigation structure complementary to the sequential list of cells in the notebook. It stays on the right side of your notebook, and you can navigate to any cell by clicking on a node.
 
 
-Progressive programs need to support non-linear navigation. In a traditional notebook, when you run a cell, it is completed and you can move to the next. With a progressive program, the initial cell can continue to live for a long time, and visualize new data over time. Therefore, when moving to a new step of an analysis, it is often useful to navigate back to a previous one to monitor the progression or fork a new progressive analysis. In the end, several cells will remain active until you decide which ones to stop because they already gave you the answer you wanted, or because you realized they would not give you what you expected.
+Progressive programs need to support non-linear navigation. In a traditional notebook, when you run a cell, it is completed, and you can move to the next. With a progressive program, the initial cell can continue to live for a long time and visualize new data over time. Therefore, when moving to a new step of an analysis, it is often useful to navigate back to a previous one to monitor the progression or fork a new progressive analysis. In the end, several cells will remain active until you decide which ones to stop because they have already given you the answer you wanted, or because you realized they would not give you what you expected.
 
 
-The chaining widgets automatically give a meaningful name to each cell/node to populate the graph and
-keep it readable.
-In addition, the graph also shows you when a widget needs attention or is finished so you can keep an overview of the progression of the analysis.
+The chaining widgets automatically give a meaningful name to each cell/node to populate the graph, and keep it readable.
+In addition, the graph also shows you when a widget needs attention or is finished, so you can keep an overview of the progression of the analysis.
 
-All the sections of this documentation use the DAG Widget to provide a high-level overview of progressive pipelines. The detailed graph visualization used in the [user guide](userguide) could be used as well, but it would give too much details on the topology of the progressive dataflow for a high-level overview.
+All the sections of this documentation use the DAG Widget to provide a high-level overview of progressive pipelines. The detailed graph visualization used in the [user guide](userguide) could be used as well, but it would give too many details on the topology of the progressive dataflow for a high-level overview.
 
 ## A `ProgressiBook` user guide
 
-Let's return to the scenario developed in the userguide, starting with the [basic variant](basic-variant).
+Let's return to the scenario developed in the user guide, starting with the [basic variant](basic-variant).
 
-By combining two _CWs_: `CSVLoader` and `Heatmap`, we'll reproduce the same behaviour (i.e. which doesn't deal with the bounds issue).
+By combining two _CWs_: `CSVLoader` and `Heatmap`, we'll reproduce the same behaviour (i.e., which doesn't deal with the bounds issue).
 
 
 ```{eval-rst}
 .. note::
-   The CSVLoader features advanced configuration mechanisms (column selection, retyping, filtering etc.) via the CSV sniffer, which is described with more details :ref:`here<sniffer>`
+   The CSVLoader features advanced configuration mechanisms (column selection, retyping, filtering, etc.) via the CSV sniffer, which is described in more details :ref:`here<sniffer>`
 ```
 
 The notebook below is available and ready to run in the ipyprogressivis repository in [notebooks/userguide-widgets1.0.ipynb](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.0.ipynb):
@@ -135,11 +134,11 @@ To go further and take into account the (assumed known) bounds like [the second 
 
 ![](viz_images/filtered_csv_heatmap.png)
 
-then renew the operation for `pickup_latitude`, click **Start loading csv** button, chain with a `Heatmap` widget, configure it with the appropriate columns and you get the expected result:
+Then renew the operation for `pickup_latitude`, click the **Start loading csv** button, chain with a `Heatmap` widget, configure it with the appropriate columns, and you get the expected result:
 
 ![](viz_images/single_heatmap.png)
 
-But if you don't know the bounds a priori, you can eliminate the noise using quantiles like [this python code](quantiles-variant) do because a `Quantile` chaining widget is available. The notebook below show this approach. It is available and ready to be replayed in [notebooks/userguide-widgets1.1.ipynb](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.1.ipynb)
+But if you don't know the bounds a priori, you can eliminate the noise using quantiles like [this python code](quantiles-variant) does because a `Quantile` chaining widget is available. The notebook below shows this approach. It is available and ready to be replayed in [notebooks/userguide-widgets1.1.ipynb](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/userguide-widgets1.1.ipynb)
 :
 
 
@@ -151,7 +150,7 @@ But if you don't know the bounds a priori, you can eliminate the noise using qua
 ```
 
 
-Finaly if you want to control the bounds dynamically, you can simply implement the third approach in the guide ([see the Python code here](range-query-2d)) by assembling predefined widgets.
+Finally, if you want to control the bounds dynamically, you can simply implement the third approach in the guide ([see the Python code here](range-query-2d)) by assembling predefined widgets.
 
 In concrete terms, instead of connecting Heatmap to the CSVLoader output, you need to insert a RangeQuery2D widget between the two widgets already mentioned, this way:
 
@@ -169,14 +168,13 @@ For CSV and Arrow files, we provide additional functionalities to investigate th
 
 #### CSV loader
 
-Usually, the first cell of a progressive analysis is a data loader, below the root, creating this
-possible topology:
+Usually, the first cell of a progressive analysis is a data loader, below the root, creating this possible topology:
 
 ![](viz_images/csv_loader_topology.png)
 
 ##### Function:
 
-The CSV loader, as it name implies, loads one or many CSV files progressively.
+The CSV loader, as its name implies, loads one or many CSV files progressively.
 
 After starting, the main interface looks like this:
 
@@ -184,11 +182,11 @@ After starting, the main interface looks like this:
 
 Where:
 
-* The `Bookmarks` field displays the contents (previously filled in by hand) of the `bookmarks` file in `$HOME/.progressivis`. Lines selected here represent urls ans local files to be loaded. You can select one or more lines in this field. You can also ignore it and use the following field:
-* `New URLs`: if the urls or local files present in bookmarks are not suitable, you can enter new paths here
-* `URL to sniff`: Unique  url or local file to be used by the sniffer to discover data. If empty, the sniffer uses the first line among those selected for loading
+* The `Bookmarks` field displays the contents (previously filled in by hand) of the `bookmarks` file in `$HOME/.progressivis`. Lines selected here represent URLs and local files to be loaded. You can select one or more lines in this field. You can also ignore it and use the following field:
+* `New URLs`: if the URLs or local files present in bookmarks are not suitable, you can enter new paths here
+* `URL to sniff`: Unique  URL or local file to be used by the sniffer to discover data. If empty, the sniffer uses the first line among those selected for loading
 * `Rows`: number of rows to be taken into account  by the sniffer to discover data
-* `Throttle:`force the loader to limit the number of lines loaded at each step
+* `Throttle`: force the loader to limit the number of lines loaded at each step
 * `Sniff ...` button: displays the sniffer (image below):
 
 ![](viz_images/sniffer.png)
@@ -196,7 +194,7 @@ Where:
 (sniffer)=
 ##### The Sniffer
 
-The **sniffer**, among other things, allows you to customize parsing options, select the desired subset of columns and type them.
+The **sniffer**, among other things, allows you to customize parsing options, select the desired subset of columns, and type them.
 
 Once the configuration is complete, you can save it for later use, so you don't have to refill all the options manually, and start loading.
 
@@ -282,7 +280,7 @@ It groups the indexes of rows containing the same value for the selected column:
 
 ![](viz_images/group_by.png)
 
-Given that tables can contain multi-dimensional values (in particular, the datetime type is represented as a vector with 6 elements: year, month, day, hour, minute, second), this `CW` introduces the notion of sub-columns, enabling rows to be grouped according to a subset of positions (6 sub-columns, in a datetime column). For example, indexes corresponding to the same day can be grouped together in a datetime column by selecting the first 3 sub-columns: year, month, day:
+Given that tables can contain multi-dimensional values (in particular, the datetime type is represented as a vector with 6 elements: year, month, day, hour, minute, second), this `CW` introduces the notion of sub-columns, enabling rows to be grouped according to a subset of positions (6 sub-columns, in a datetime column). For example, indexes corresponding to the same day can be grouped together in a datetime column by selecting the first 3 sub-columns: year, month, day.
 
 ![](viz_images/group_by_datetime.png)
 
@@ -317,11 +315,11 @@ Performs a join between two table outputs via one or more columns. Sub-column jo
 
 ProgressiVis currently supports `one to one` and `one to many` joins (but not `many to many`).
 
-In a `one to many` join, the table on the `one` side is called `primary` and the table on the `many` side is called `related`.
+In a `one-to-many` join, the table on the `one` side is called `primary` and the table on the `many` side is called `related`.
 
-Obviously, in a `one to one` join, the two roles are interchangeable:
+Obviously, in a `one-to-one` join, the two roles are interchangeable:
 
-The first step is to select the two inputs and define their respective roles then click `OK`:
+The first step is to select the two inputs and define their respective roles, then click `OK`:
 
 ![](viz_images/join.png)
 
@@ -371,11 +369,11 @@ giving the following result:
 
 ![](viz_images/view_numpy_log_result.png)
 
-An example involving a `ProgressiVis` vectorizable function is the creation of a column providing the (human friendly) week day from a stored `datetime` column:
+An example involving a `ProgressiVis` vectorizable function is the creation of a column providing the (human-friendly) weekday from a stored `datetime` column:
 
 ![](viz_images/view_week_day.png)
 
-which produce the following result:
+which produces the following result:
 
 ![](viz_images/view_week_day_result.png)
 
@@ -385,7 +383,7 @@ Assuming we want to replace “T” with a float value (say -1.0) to have only f
 
 ![](viz_images/if_else_expr.png)
 
-then use it to create a computed column based on the `PrecipitationIn`stored column:
+Then use it to create a computed column based on the `PrecipitationIn` stored column:
 
 ![](viz_images/if_else_expr_apply.png)
 
@@ -396,7 +394,7 @@ to produce the following result:
 
 #### Façade creator
 
-The [facade concept](#facade-concept) is particularly useful in the context of `chaining widgets`, as it enables the chaining of widgets managing complex networks of modules. Currently, chaining widgets support many input modules, but only one output module. In complex cases requiring many output modules, these will be grouped together behind a facade representing the single, module-alike, output.
+The [facade concept](#facade-concept) is particularly useful in the context of `chaining widgets`, as it enables the chaining of widgets managing complex networks of modules. Currently, chaining widgets supports many input modules, but only one output module. In complex cases requiring many output modules, these will be grouped together behind a facade representing the single, module-like output.
 
 Possible topology:
 
@@ -413,8 +411,8 @@ The `Settings` pane includes several tabs that group the columns of the input ta
 
 This first tab does two things:
 
-* designate columns to be ignored
-* designate columns to be treated as categorical, as this characteristic cannot be deduced from the physical type of the column, because it is linked to the semantics of the data.
+* Designate columns to be ignored
+* Designate columns to be treated as categorical, as this characteristic cannot be deduced from the physical type of the column, because it is linked to the semantics of the data.
 
 The other tabs allow you to associate the desired descriptive statistics and filtering operations with each column. Grouping columns by type family is motivated by the need to associate appropriate operations with each family (for example, variance computing is only justified for numerical types).
 
@@ -476,7 +474,7 @@ If a dictionary is chosen, keys must be entered for the selected columns:
 
 
 
-Two complete examples are provided [here](scenario-with_snippets). The first one is a loader (there are no input data) and the second implements an interactive range query 2D widget featuring several progressivis artifacts.
+Two complete examples are provided [here](scenario-with_snippets). The first one is a loader (there is no input data) and the second implements an interactive range query 2D widget featuring several progressive artifacts.
 
 #### CUSTOM Loader
 
@@ -485,13 +483,13 @@ This is an alias of the [Snippet](snippet-widget), useful when code is not chain
 
 #### Other custom functions
 
-Some widgets can use user-defined functions (e.g. `View`, `GroupBy` and `Aggregate`).
+Some widgets can use user-defined functions (e.g., `View`, `GroupBy`, and `Aggregate`).
 
 To be visible in the interface of the underlying widgets, these functions must respect a few conventions:
 
 * like snippets, they must be defined or imported in cells beginning with the comment `# progressivis-snippet`
 * they must be decorated with the `@register_function` decorator
-* their signature must comply with the requirements of the addressed progressivis module.
+* their signature must comply with the requirements of the addressed ProgressiVis module.
 
 A complete example is provided [here](taxis-precipitations-line-chart).
 
@@ -510,7 +508,7 @@ def rain_level(val: float) -> str:
     return "Rain"
 ```
 
-We can see that the `rain_level` function is decorated with `@register_function` to be visible for widgets. On the other hand, it's vectorization (via @numpy.vectorize) is a requirement of the underlying [progressivis feature](computed-columns).
+We can see that the `rain_level` function is decorated with `@register_function` to be visible for widgets. On the other hand, its vectorization (via @numpy.vectorize) is a requirement of the underlying [progressivis feature](computed-columns).
 
 
 ### Display tools category
@@ -584,7 +582,7 @@ Given that currently:
 * a histogram requires many entries (data, minimum, maximum)
 * a source widget can expose only one connectable output module
 
-the `Heatmap` widget must be connected to the output of a `Façade` widget, configured to produce thre required entries:
+The `Heatmap` widget must be connected to the output of a `Façade` widget, configured to produce three required entries:
 
 ![](viz_images/heatmap_facade.png)
 
@@ -616,7 +614,7 @@ Possible topology:
 ##### Function:
 
 
-Allows a user to integrate vega-based visualizations from customized schemas into a scenario. Schemas can be edited, saved and reused in a similar way to `CSV loader` settings.
+Allows a user to integrate Vega-based visualizations from customized schemas into a scenario. Schemas can be edited, saved, and reused in a similar way to `CSV loader` settings.
 
 NB: The entry for an _Any Vega_ widget is always a `Facade`.
 
@@ -636,7 +634,7 @@ The rendering is similar to previous ones:
 
 A `ProgressiBook` lets you save a scenario for later replay. The record is persistent and it is contained in the `ProgressiBook` itself, so it's a good idea to save it at the end of the recording (even if Jupyter does automatic backups periodically).
 
-The scenario is saved only if the corresponding checkbox (named "Save this scenario") in the start widget is checked and it is done by default. The choice must be made before starting.
+The scenario is saved only if the corresponding checkbox (named "Save this scenario") in the start widget is checked, and it is done by default. The choice must be made before starting.
 
 ![](viz_images/recording_start.png)
 
@@ -646,17 +644,17 @@ After that, the scenario is built as explained [above](create-scenario).
 **NB:** Scenario registration should not be confused with the [persistent settings](#persistent-settings) of certain widgets, which are saved in dedicated files and can also be used in unregistered scenarios.
 ```{eval-rst}
 .. note::
-   Scenario registration should not be confused with the  :ref:`persistent settings<persistent-settings>` of certain widgets, which are saved in dedicated files and can also be used in unregistered scenarios.
+   Scenario registration should not be confused with the :ref:`persistent settings<persistent-settings>` of certain widgets, which are saved in dedicated files and can also be used in unregistered scenarios.
 ```
 
 (replay-scenario)=
 ## Replay a scenario
 
-After opening a `ProgressiBook` containing a backup and clicking the `Run PeogressiVis` button, the dialog box below appears:
+After opening a `ProgressiBook` containing a backup and clicking the `Run ProgressiVis` button, the dialog box below appears:
 
 ![](viz_images/replay.png)
 
-Once a scenario has been recorded, there are two wais to reuse it:
+Once a scenario has been recorded, there are two ways to reuse it:
 
 * read-only mode
 * read/write mode
@@ -668,18 +666,18 @@ Both read-only and read/write modes support two alternatives:
 
 In the `replay all` variant, all nodes in the backup are executed without any further interaction with the user (apart from those required by the scenario widgets themselves).
 
-In the `step-by-step` variant, a dialog is initiated with the user and the nodes are activated one after the other when the operator presses the corresponding `Next` button.
+In the `step-by-step` variant, a dialog is initiated with the user, and the nodes are activated one after the other when the operator presses the corresponding `Next` button.
 
 ### Replay in read-only mode
 
 This is the default mode. To keep it, leave the `Allow overwriting record` box unchecked. In this mode, the scenario will be replayed identically, and the backup remains unchanged. When the scenario is replayed `step-by-step`
-only the `Next` button is active since `Edit` and `Delete` buttons are gray.
+Only the `Next` button is active since the `Edit` and `Delete` buttons are grayed out.
 
 ![](viz_images/step_by_step_ro.png)
 
 When `replay all` is chosen, chaining bars are absent on nodes, so no modification of the graph is possible.
 
-In this mode, widgets are replaced by snapshots taken at the moment of widget creation and they may not reflect the exact state of the configuration. `step-by-step` is mainly useful for observing and understanding graph generation in a decomposed way.
+In this mode, widgets are replaced by snapshots taken at the moment of widget creation, and they may not reflect the exact state of the configuration. `Step-by-step` is mainly useful for observing and understanding graph generation in a decomposed way.
 
 ### Replay in read/write mode
 
@@ -696,9 +694,9 @@ The `step-by-step` variant lets you intervene on existing nodes to modify certai
 ![](viz_images/step_by_step_rw.png)
 
 (persistent-settings)=
-## Chaining widgets persistent settings
+## Chaining widgets' persistent settings
 
-`CW`s keeps track of its states and history with a file tree located in the user's homedir with the following structure:
+CWs keeps track of its states and history with a file tree located in the user's home directory with the following structure:
 
 ```
 .progressivis/
@@ -717,6 +715,6 @@ The `step-by-step` variant lets you intervene on existing nodes to modify certai
 **NB:** Only the `.progressivis` directory needs to be created by the user. All other directories and files will be created by widgets as required.
 
 
-## How to create a chaining widget ?
+## How to create a chaining widget?
 
-Comming soon ...
+Coming soon ...
