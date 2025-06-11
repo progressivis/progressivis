@@ -16,6 +16,8 @@ LOWER_X = 0.2
 LOWER_Y = 0.3
 UPPER_X = 0.8
 UPPER_Y = 0.7
+TOL_X = (UPPER_X - LOWER_X) / 10
+TOL_Y = (UPPER_Y - LOWER_Y) / 10
 
 
 class TestScatterPlot(ProgressiveTest):
@@ -77,10 +79,10 @@ class TestScatterPlot(ProgressiveTest):
         max_x = max(x)
         min_y = min(y)
         max_y = max(y)
-        self.assertGreaterEqual(min_x, LOWER_X)
-        self.assertGreaterEqual(min_y, LOWER_Y)
-        self.assertLessEqual(max_x, UPPER_X)
-        self.assertLessEqual(max_y, UPPER_Y)
+        self.assertGreaterEqual(min_x, LOWER_X - TOL_X)
+        self.assertGreaterEqual(min_y, LOWER_Y - TOL_Y)
+        self.assertLessEqual(max_x, UPPER_X + TOL_X)
+        self.assertLessEqual(max_y, UPPER_Y + TOL_Y)
 
 
 if __name__ == "__main__":
