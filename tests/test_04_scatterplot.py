@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import numpy as np
+
 from progressivis import (
     Every,
     Print,
@@ -16,8 +18,8 @@ LOWER_X = 0.2
 LOWER_Y = 0.3
 UPPER_X = 0.8
 UPPER_Y = 0.7
-TOL_X = (UPPER_X - LOWER_X) / 10
-TOL_Y = (UPPER_Y - LOWER_Y) / 10
+TOL_X = (UPPER_X - LOWER_X) / 100
+TOL_Y = (UPPER_Y - LOWER_Y) / 100
 
 
 class TestScatterPlot(ProgressiveTest):
@@ -48,6 +50,7 @@ class TestScatterPlot(ProgressiveTest):
 
     def test_scatterplot2(self) -> None:
         s = self.scheduler(clean=True)
+        np.random.seed(42)
         with s:
             random = RandomPTable(2, rows=500_000, throttle=1000, scheduler=s)
             sp = MCScatterPlot(
