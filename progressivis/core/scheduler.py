@@ -1,6 +1,7 @@
 """
 Base Scheduler class, runs progressive modules.
 """
+
 from __future__ import annotations
 
 import logging
@@ -75,6 +76,7 @@ class Scheduler:
     """
     A Scheduler runs progressive modules
     """
+
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
     default: "Scheduler"
     """Default scheduler, used implicitly when not specified in
@@ -257,7 +259,7 @@ class Scheduler:
         async with self._lock:
             if self._task:
                 raise ProgressiveError(
-                    "Trying to start scheduler task" " inside scheduler task"
+                    "Trying to start scheduler task inside scheduler task"
                 )
             print("Starting scheduler")
             self._task = True
@@ -402,7 +404,7 @@ class Scheduler:
                     self._keep_running -= 1
                 if not self._consider_module(module):
                     logger.info(
-                        "Module %s not scheduled" " because of interactive mode",
+                        "Module %s not scheduled because of interactive mode",
                         module.name,
                     )
                     continue
@@ -411,7 +413,7 @@ class Scheduler:
                 module.prepare_run(self._run_number)
                 if not (module.is_ready() or self.has_input() or module.is_greedy()):
                     logger.info(
-                        "Module %s not scheduled" " because not ready and has no input",
+                        "Module %s not scheduled because not ready and has no input",
                         module.name,
                     )
                     blocked += 1
@@ -435,7 +437,6 @@ class Scheduler:
         Handles order recomputation and starting logic if needed.
         """
         self._run_index = 0
-        first_run = self._run_number
         input_mode = self.has_input()
         self._start_inter = 0
         while not self._stopped:
@@ -443,7 +444,6 @@ class Scheduler:
             if self.dataflow is not None and self._enter_cnt == 0:
                 self._update_modules()
                 self._run_index = 0
-                first_run = self._run_number
             if self._deleted_modules:
                 for mod in self._deleted_modules:
                     await mod.ending()
@@ -472,13 +472,11 @@ class Scheduler:
                     input_mode = True
                 # Restart from beginning
                 self._run_index = 0
-                first_run = self._run_number
             module = self._run_list[self._run_index]
             self._run_index += 1  # allow it to be reset
             yield module
             if self._run_index >= len(self._run_list):  # end of modules
-                await self._end_of_modules(first_run)
-                first_run = self._run_number
+                await self._end_of_modules()
 
     def all_blocked(self) -> bool:
         "Return True if all the modules are blocked, False otherwise"
@@ -486,16 +484,14 @@ class Scheduler:
 
         for module in self._run_list:
             if module.state not in (Module.state_blocked, Module.state_suspended):
-                # print("all_blocked: False")
                 return False
-        # print("all_blocked: True")
         return True
 
     def is_waiting_for_input(self) -> bool:
         "Return True if there is at least one input module"
         for module in self._run_list:
             if module.is_input():
-                # print("is_waiting_for_input: True")
+                print(f"is_waiting_for_input: {module.name}")
                 return True
         # print("is_waiting_for_input: False")
         return False
@@ -574,7 +570,7 @@ class Scheduler:
         if not self._run_list:
             print("# Scheduler empty, finishing")
 
-    async def _end_of_modules(self, first_run: int) -> None:
+    async def _end_of_modules(self) -> None:
         # Reset interaction mode
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
@@ -584,7 +580,8 @@ class Scheduler:
 
         self._run_list = new_list
         await self._loop_procs.fire(self, self._run_number)
-        if first_run == self._run_number:  # no module ready
+        if self.all_blocked():
+            # no module ready
             has_run = await self._idle_procs.fire(self, self._run_number)
             if not has_run:
                 logger.info("sleeping %f", 0.2)
@@ -666,7 +663,7 @@ class Scheduler:
         if self.dataflow is not None:
             self.dataflow.delete_modules(name)
         else:
-            raise ProgressiveError("Cannot delete module %s" "outside a context" % name)
+            raise ProgressiveError("Cannot delete module %soutside a context" % name)
 
     def __contains__(self, name: str) -> bool:
         if self.dataflow is not None:
@@ -757,7 +754,7 @@ class Scheduler:
         if quantum == 0:
             quantum = 0.1
             logger.info(
-                "Quantum is 0 in %s, setting it to" " a reasonable value", module.name
+                "Quantum is 0 in %s, setting it to a reasonable value", module.name
             )
         return quantum
 
@@ -894,8 +891,7 @@ class Scheduler:
                 lines.append(f"{name}_inputs -.- {name}_outputs\n")
             lines.append("end\n")  # end module subgraph
         sio = StringIO(
-            "flowchart TD\n"
-            "classDef outslot fill:#f96,stroke:#333,stroke-width:1px;\n"
+            "flowchart TD\nclassDef outslot fill:#f96,stroke:#333,stroke-width:1px;\n"
         )
         sio.seek(0, SEEK_END)
         for id_name, name in def_input_slots.items():

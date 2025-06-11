@@ -88,8 +88,7 @@ class ProgressiveTest(TestCase):
         return self._scheduler
 
     @staticmethod
-    def log(level: int = logging.NOTSET,
-            package: str = "progressivis") -> None:
+    def log(level: int = logging.NOTSET, package: str = "progressivis") -> None:
         log_level(level, package=package)
 
     @staticmethod

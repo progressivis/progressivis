@@ -10,13 +10,20 @@ from typing import Dict, Any, Optional
 
 
 @document
-@def_output("result", PDict, doc=("Returns the dictionary provided by ``from_input()`` "
-                                  "after translation (if applicable)"))
+@def_output(
+    "result",
+    PDict,
+    doc=(
+        "Returns the dictionary provided by ``from_input()`` "
+        "after translation (if applicable)"
+    ),
+)
 class Variable(Module):
     """
     This module allows external events (comming from widgets,
     commands, etc.) to be taken into account
     """
+
     def __init__(
         self,
         init_val: Optional[Dict[str, Any]] = None,
@@ -44,9 +51,6 @@ class Variable(Module):
         if not (init_val is None or isinstance(init_val, dict)):
             raise ProgressiveError("init_val must be a dictionary")
         self.result = PDict({} if init_val is None else init_val)
-
-    def is_input(self) -> bool:
-        return True
 
     def has_input(self) -> bool:
         return self._has_input
@@ -77,7 +81,7 @@ class Variable(Module):
                 for syn in self._translation[k]:
                     res[syn] = v
             values = res
-        for (k, v) in msg.items():
+        for k, v in msg.items():
             last[k] = v
         await self.scheduler().for_input(self)
         if self.result is None:

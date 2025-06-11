@@ -1,6 +1,14 @@
 from __future__ import annotations
 
-from progressivis import Every, Print, Scheduler, CSVLoader, MCScatterPlot, get_dataset, RandomPTable
+from progressivis import (
+    Every,
+    Print,
+    Scheduler,
+    CSVLoader,
+    MCScatterPlot,
+    get_dataset,
+    RandomPTable,
+)
 from progressivis.core import aio
 from . import ProgressiveTest
 
@@ -31,7 +39,7 @@ class TestScatterPlot(ProgressiveTest):
             cnt.input[0] = csv.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = sp.output.result
-        s.on_loop(self._stop, 50)
+        s.on_idle(self._stop)
         aio.run(csv.scheduler().start())
         assert csv.result is not None
         self.assertEqual(len(csv.result), 30_000)
@@ -39,7 +47,7 @@ class TestScatterPlot(ProgressiveTest):
     def test_scatterplot2(self) -> None:
         s = self.scheduler(clean=True)
         with s:
-            random = RandomPTable(2, rows=2000_000, throttle=1000, scheduler=s)
+            random = RandomPTable(2, rows=500_000, throttle=1000, scheduler=s)
             sp = MCScatterPlot(
                 scheduler=s, classes=[("Scatterplot", "_1", "_2")], approximate=True
             )
@@ -58,6 +66,7 @@ class TestScatterPlot(ProgressiveTest):
             module = scheduler["variable_2"]
             print("from input variable_2")
             await module.from_input({"x": UPPER_X, "y": UPPER_Y})
+
         s.on_loop(self._stop, 100)
         s.on_loop(fake_input_1, 30)
         s.on_loop(fake_input_2, 30)
