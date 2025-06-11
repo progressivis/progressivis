@@ -195,6 +195,7 @@ Compared to the initial non interactive program, we have added lines 12-26.  Lin
 
 Line 17 creates a `RangeQuery2D` module that creates a table filtered by a 2D range query. The outputs of this module are connected to the `Histogram2D` module on lines 30-32 instead of the min/max quantiles and the table produced by the `CSV` table in the first example. The `RangeQuery2D` module ouputs the current min/max ranges and the table filtered according to these ranges to the `Histogram2D` module that gets visualized like in the first example. The `RangeQuery2D` module takes two variables `var_min` and `var_max`, declared line 19-20m to specify the desired min-max range that the user wants to see. The variables can be controlled by a jupyter notebook range-query widget to pass the information from the notebook to the progressive program, as shown in the next listing.
 
+(widgets_for_input)=
 ```{code-block}
 :linenos:
 import ipywidgets as widgets
