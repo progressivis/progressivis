@@ -197,20 +197,47 @@ The `hint_type` parameter specifies that this input slot can be parameterized us
 (slot_hints)=
 ### Slot Hints
 
-Slot hints provide a convenient syntax to adapt the behavior of slots according to parameters that we call "slot hints".
-In PTable slots, the hints consist of a list of column names that restrict the columns received through the slot. Internally, this uses a PTable view. Creating a view can be done through a module, but the syntax is much heavier, and the performance is much worse.
+Slot hints provide a convenient syntax to adapt the behavior of slots according to parameters. These are that we call "slot hints".
+In `PTable` slots, the hints consist of a list of column names that restrict the columns received through the slot. Internally, this uses a PTable view. Creating a view can be done through a module, but the syntax is much heavier, and the performance is much worse.
 The `PTable` slot hint is so standard that its documentation string is imported in line 8 of `Max` and used in line 12.
 
-This slot hint is implemented in line 36 by calling `Module.filter_slot_columns`. The chunk returned will contain the columns specified in the slot hint (or all the columns if no slot hint is specified).
+This slot hint is implemented in line 36 by calling `Module.filter_slot_columns`. The chunk returned will contain the columns specified in the slot hint, or all the columns if no slot hint is specified.
 
 In the [initial example](#quantiles-variant) of ProgressiVis, we use a `Quantiles` module where output slots can be parameterized by a quantile, such as 0.03 or 0.97.
+
+
+## Data Change Management
+
+In the `SimpleMax` and `Max` examples, managing created items in a table is very efficient, but deleted or updated items trigger a complete recomputation through the `reset()` method.
+Is there a better solution? In general, it is difficult to be definitive, but there are cases when a better answer is possible.
+
+The `ScalarMax` module improves the `Max` module by keeping track of the items that reach the maximum value computed so far.  If, e.g., the values `1, 10, 100` hold the maximum value, then deleting any other value does not invalidate the running maximum value. `ScalarMax` uses the `PIntSet` data structure to efficiently keep track of these indices. Yet, this management adds some overhead compared to the `Max` module when data is streamed in and never modified. Other implementations could even maintain more sophisticated data structures, trading efficiency depending on the expected frequency of events change events.
+
+More work is needed to find other strategies to avoid resetting, but they will be specific to algorithms or classes of algorithms.
+
+
+(interactive_behavior)=
+## Interactive Behavior
+
+ProgressiVis programs can be interactive; they can react to interactions using mechanism based on the method `Module.from_input(msg: JSon)`.  It turns out only one module class implements this mechanism in ProgressiVis, and can turn a static program into an interactive one: the `Variable`. For example, it can be used to provide the two parameters for a range filter, the minimum value and maximum value. ProgressiVis provides such a filter that takes a table in input and outputs a filtered table. The filter can be implemented using an interactive range filter.
+
+The `Variable.from_input()` method is typically called from a notebook widget, such as a range slider. The callback function creates a dictionary with key and values that are sent to the `Variable.from_input()` method to specify, for example, the minimum value of the range filter, as a list of column names and values.
+
+When the method is called, it copies the values in its output slot and notifies the scheduler that an interactive operation has been started. It calls the `Scheduler.from_input(mod: Module)` method. The scheduler changes its behavior to become interactive.
+
+The interactive mode of the scheduler speeds up the activity of a part of the progressive dataflow. It first computes the subgraph between the input modules (the ones that called `Scheduler.from_input()` and the output modules, the ones that produce an output. Modules have properties, called `tags` that are used to mark the "input", "source", and "visualization" modules among others. Other tags can be added and removed from modules if needed by a program.  In interactive mode, the scheduler select the subgraph between the input modules and the "visualization" modules reachable from them in the dataflow graph. This subgraph is then run for in interacive mode for a short time (1.5 seconds) until it reverts to normal mode.  All the other modules are then run again, such as the data input modules.
+
+When a program does not contain an input module, the scheduler will run it until all the modules are terminated. Modules blocked waiting from input from terminated modules are also terminated when they have consumed all the changed data from their input slots. Module termination propagate in chain, and when all the modules are terminated, the scheduler stops.
+
+When a program contains an input module, it means that the external world (a widget) can alway send new data in the program. Therefore, the scheduler cannot terminate the input modules and their dependencies and the program remain alive until the method `Scheduler.stop()` is called.
+
+All this mechanism is purely automatic; the only external control is based on the `Module.from_input()` method and, as it happens, is only implemented by the `Variable` module class so far.
+
 
 
 ## Synchronization of Modules
 
 When multiple modules are computing values over the same table, they may become desynchronized; some may be lagging behind due to different processing speeds.
 
-(interactive_behavior)=
-## Interactive Behavior
 
-TODO
+
