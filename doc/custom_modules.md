@@ -12,9 +12,9 @@ As a simple example, the dataflow of the [user guide example](#quantiles-variant
 ```{eval-rst}
 .. progressivis_dot:: ./userguide1.py
 ```
-The scheduler first orders the modules linearly using [topological sorting](https://en.wikipedia.org/wiki/Topological_sorting), according to the dataflow graph made of modules linked by slots. Then, the scheduler runs them in order and starts again in the end.
+The scheduler first orders the modules linearly using [topological sorting](https://en.wikipedia.org/wiki/Topological_sorting), according to the dataflow graph made of modules linked by slots. Then, the scheduler runs them in order and starts again at the end.
 For each module, the scheduler calls the method `Module.is_ready()` and, if it returns `True`, it calls the method `Module.run()` that calls the method `Module.run_step()` described in the next section.
-When reaching the end of the module list, the Scheduler cleans-up its list by removing all the modules that have finished their work.
+When reaching the end of the module list, the Scheduler cleans up its list by removing all the modules that have finished their work.
 This means that modules have an internal state, `Module.state`, with the following possible values:
 ```Python
 state_created
@@ -31,7 +31,7 @@ Users only see these states in the process list, e.g., by looking at the value o
 
 ## The `Module.run_step()` method
 
-`Module.run_step` is called by `Module.run`, which is not meant to be redefined in subclasses of `Module`. `Module.run` is called by the scheduler and wraps `run_step`. It  prepares its arguments, calls it, and collects the return values or exception to monitor the module execution.
+`Module.run_step` is called by `Module.run`, which is not meant to be redefined in subclasses of `Module`. `Module.run` is called by the scheduler and wraps `run_step`. It  prepares its arguments, calls it, and collects the return values or the exception to monitor the module execution.
 
 The method `Module.run_step()` needs to perform several operations to get its data from the input slots, know how long it should run, run for its time quantum, post data on its output slots, and report its progression. ProgressiVis provides several Python mechanisms and decorators to avoid typing long boilerplate code. While they simplify the syntax, their role should be understood to control the execution of progressive modules correctly.
 
@@ -145,14 +145,14 @@ Line 24 checks if any item in the table has been updated or deleted since the la
 ### Managing Changes
 
 
-ProgressiVis calls `run_step` iteratively on all the modules. When entering the method, it is necessary to know what has changed since the last call. All the progressive data structures of ProgressiVis provide this information through an internal mechanism. The slot holding a `PTable` can be queried to know the table lines that have been **created**, **updated**, and **deleted**. We call these three list the change **Delta**.
+ProgressiVis calls `run_step` iteratively on all the modules. When entering the method, it is necessary to know what has changed since the last call. All the progressive data structures of ProgressiVis provide this information through an internal mechanism. The slot holding a `PTable` can be queried to know the table lines that have been **created**, **updated**, and **deleted**. We call these three lists the change **Delta**.
 The mechanism is identical for a slot containing a `PDict`; each key is given an index so the change mechanism returns the index of keys created, updated, and deleted. `PIntSet` also keeps track of its changes.
 
-In our example, we only deal with created items. If the table had been changed by removing items or updating the value of items, line 25 resets the slot. The slot starts anew, ignoring all the previous operations. The `Slot.update(run_number:int)` method will then update the slot Delta, considering all the items in the table as created.
+In our example, we only deal with created items. If the table had been changed by removing items or updating the value of items, line 25 resets the slot. The slot starts anew, ignoring all the previous operations. The `Slot.update(run_number: int)` method will then update the slot Delta, considering all the items in the table as created.
 
 Once the slot has been reset, the value of the result dictionary should also be updated to minus infinity to be recomputed correctly in the next step.
 
-This management of updated and deleted items is the simplest strategy to handle changes. It simply restarts the computation to the whole table. In many cases, better strategies are possible, but that one always works and can be used to start a Module implementation.
+This management of updated and deleted items is the simplest strategy to handle changes. It simply restarts the computation for the whole table. In many cases, better strategies are possible, but that one always works and can be used to start a Module implementation.
 
 Note that the result `PDict`  should not be created again because of the change manager: the next modules rely on the key order to correctly handle changes. Creating another PDict would break the change management.
 
@@ -170,14 +170,14 @@ The first time the module runs, the instance variable is `None`, so line 35 crea
 
 ### Updating State and Speed
 
-The `run_step()` method can decide whether to let the module continue running or to stop it. When a module continues to run, it can be **blocked** or **ready**. A blocked module needs some input data to continue, whereas a ready module can be rescheduled without further testing by the scheduler. This is checked by the method `is_ready()`; if the module state is `state_ready`, the module is ready to go, if it is `state_blocked`, it becomes ready when one of its input slots has more data available. Otherwise, the module is not ready and the scheduler will not try to run it.
+The `run_step()` method can decide whether to let the module continue running or to stop it. When a module continues to run, it can be **blocked** or **ready**. A blocked module needs some input data to continue, whereas a ready module can be rescheduled without further testing by the scheduler. This is checked by the method `is_ready()`; if the module state is `state_ready`, the module is ready to go, if it is `state_blocked`, it becomes ready when one of its input slots has more data available. Otherwise, the module is not ready, and the scheduler will not try to run it.
 
 
 ## Difference with the `Max` Module
 
 The `SimpleMax` module is very similar to the `Max` module; the latter additionally uses decorators for the `run_step` method, and manages **slot hints**.
 
-The `Max` module uses the standard `@process_slot` and `@run_if_any` decorators of `run_step` to shorten its code.  These decorators save line 19-24 of `SimpleMax` by introducing a `Context` in the management of the input slots.
+The `Max` module uses the standard `@process_slot` and `@run_if_any` decorators of `run_step` to shorten its code.  These decorators save lines 19-24 of `SimpleMax` by introducing a `Context` in the management of the input slots.
 
 ```{eval-rst}
 .. literalinclude:: ./max.py
@@ -189,7 +189,7 @@ The `@process_slot` decorator in `Max` performs the equivalent of lines 20-24 of
 `@process_slot` specifies that when the input slot "table" contains updated or deleted items (not created ones), the method `reset(self) -> None` should be called.  This method is defined on line 23.
 The simplest strategy to use when an input table is modified is to restart the work from the beginning, forgetting the current "max" value.
 
-The `@run_if_any` decorator specifies that the `run_step` method can be run when any if the input slots has new data. the `@run_if_all` method means that the `run_step` method can only run when all the input slots have new data. For most modules, the first is used.  A few modules who perform operations in parallel between their input slots, such as binary operators, need the latter.
+The `@run_if_any` decorator specifies that the `run_step` method can be run when any of the input slots have new data. The `@run_if_all` method means that the `run_step` method can only run when all the input slots have new data. For most modules, the first is used.  A few modules that perform operations in parallel between their input slots, such as binary operators, need the latter.
 
 The `hint_type` parameter specifies that this input slot can be parameterized using a sequence of strings. Concretely, all the connections made with slots of type "PTable" can be parameterized with a list of column names. We discuss these slot parameters in [slot hints](#slot_hints).
 
@@ -197,7 +197,7 @@ The `hint_type` parameter specifies that this input slot can be parameterized us
 (slot_hints)=
 ### Slot Hints
 
-Slot hints provide a convenient syntax to adapt the behavior of slots according to parameters. These are that we call "slot hints".
+Slot hints provide a convenient syntax to adapt the behavior of slots according to parameters. 
 In `PTable` slots, the hints consist of a list of column names that restrict the columns received through the slot. Internally, this uses a PTable view. Creating a view can be done through a module, but the syntax is much heavier, and the performance is much worse.
 The `PTable` slot hint is so standard that its documentation string is imported in line 8 of `Max` and used in line 12.
 
@@ -211,7 +211,7 @@ In the [initial example](#quantiles-variant) of ProgressiVis, we use a `Quantile
 In the `SimpleMax` and `Max` examples, managing created items in a table is very efficient, but deleted or updated items trigger a complete recomputation through the `reset()` method.
 Is there a better solution? In general, it is difficult to be definitive, but there are cases when a better answer is possible.
 
-The `ScalarMax` module improves the `Max` module by keeping track of the items that reach the maximum value computed so far.  If, e.g., the values `1, 10, 100` hold the maximum value, then deleting any other value does not invalidate the running maximum value. `ScalarMax` uses the `PIntSet` data structure to efficiently keep track of these indices. Yet, this management adds some overhead compared to the `Max` module when data is streamed in and never modified. Other implementations could even maintain more sophisticated data structures, trading efficiency depending on the expected frequency of events change events.
+The `ScalarMax` module improves the `Max` module by keeping track of the items that reach the maximum value computed so far.  If, e.g., the values `1, 10, 100` hold the maximum value, then deleting any other value does not invalidate the running maximum value. `ScalarMax` uses the `PIntSet` data structure to efficiently keep track of these indices. Yet, this management adds some overhead compared to the `Max` module when data is streamed in and never modified. Other implementations could even maintain more sophisticated data structures, trading efficiency depending on the expected frequency of the change events.
 
 More work is needed to find other strategies to avoid resetting, but they will be specific to algorithms or classes of algorithms.
 
@@ -219,17 +219,17 @@ More work is needed to find other strategies to avoid resetting, but they will b
 (interactive_behavior)=
 ## Interactive Behavior
 
-ProgressiVis programs can be interactive; they can react to interactions using mechanism based on the method `Module.from_input(msg: JSon)`.  It turns out only one module class implements this mechanism in ProgressiVis, and can turn a static program into an interactive one: the `Variable`. For example, it can be used to provide the two parameters for a range filter, the minimum value and maximum value. ProgressiVis provides such a filter that takes a table in input and outputs a filtered table. The filter can be implemented using an interactive range filter.
+ProgressiVis programs can be interactive; they can react to interactions using a mechanism based on the method `Module.from_input(msg: JSon)`.  It turns out that only one module class implements this mechanism in ProgressiVis, and can turn a static program into an interactive one: the `Variable`. For example, it can be used to provide the two parameters for a range filter, the minimum value and maximum value, as shown in [the user guide](#widgets_for_input). ProgressiVis provides such a filter that takes a table as input and outputs a filtered table. The filter can be implemented using an interactive range filter.
 
-The `Variable.from_input()` method is typically called from a notebook widget, such as a range slider. The callback function creates a dictionary with key and values that are sent to the `Variable.from_input()` method to specify, for example, the minimum value of the range filter, as a list of column names and values.
+The `Variable.from_input()` method is typically called from a notebook widget, such as a range slider. The callback function creates a dictionary with keys and values that are sent to the `Variable.from_input()` method to specify, for example, the minimum value of the range filter, as a list of column names and values.
 
 When the method is called, it copies the values in its output slot and notifies the scheduler that an interactive operation has been started. It calls the `Scheduler.from_input(mod: Module)` method. The scheduler changes its behavior to become interactive.
 
-The interactive mode of the scheduler speeds up the activity of a part of the progressive dataflow. It first computes the subgraph between the input modules (the ones that called `Scheduler.from_input()` and the output modules, the ones that produce an output. Modules have properties, called `tags` that are used to mark the "input", "source", and "visualization" modules among others. Other tags can be added and removed from modules if needed by a program.  In interactive mode, the scheduler select the subgraph between the input modules and the "visualization" modules reachable from them in the dataflow graph. This subgraph is then run for in interacive mode for a short time (1.5 seconds) until it reverts to normal mode.  All the other modules are then run again, such as the data input modules.
+The interactive mode of the scheduler speeds up the activity of a part of the progressive dataflow. It first computes the subgraph between the input modules (the ones that called `Scheduler.from_input()` and the output modules, the ones that produce an output. Modules have properties, called `tags`, that are used to mark the "input", "source", and "visualization" modules, among others. Other tags can be added and removed from modules if needed by a program.  In interactive mode, the scheduler selects the subgraph between the input modules and the "visualization" modules reachable from them in the dataflow graph. This subgraph is then run in interactive mode for a short time (1.5 seconds) until it reverts to normal mode.  All the other modules are then run again, such as the data input modules.
 
-When a program does not contain an input module, the scheduler will run it until all the modules are terminated. Modules blocked waiting from input from terminated modules are also terminated when they have consumed all the changed data from their input slots. Module termination propagate in chain, and when all the modules are terminated, the scheduler stops.
+When a program does not contain an input module, the scheduler will run it until all the modules are terminated. Modules blocked waiting for input from terminated modules are also terminated when they have consumed all the changed data from their input slots. Module termination propagates in a chain, and when all the modules are terminated, the scheduler stops.
 
-When a program contains an input module, it means that the external world (a widget) can alway send new data in the program. Therefore, the scheduler cannot terminate the input modules and their dependencies and the program remain alive until the method `Scheduler.stop()` is called.
+When a program contains an input module, it means that the external world (a widget) can always send new data into the program. Therefore, the scheduler cannot terminate the input modules and their dependencies, and the program remains alive until the method `Scheduler.stop()` is called.
 
 All this mechanism is purely automatic; the only external control is based on the `Module.from_input()` method and, as it happens, is only implemented by the `Variable` module class so far.
 
