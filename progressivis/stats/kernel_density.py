@@ -11,18 +11,25 @@ try:
 except Exception:
     pass
 
-from typing import Optional, Any
+from typing import Any
 
 
 @def_parameter("samples", np.dtype(object), 1)
 @def_parameter("bins", np.dtype(int), 1)
 @def_parameter("threshold", np.dtype(int), 1000)
 @def_parameter("knn", np.dtype(int), 100)
-@def_input("table", PTable)
+@def_input("table", PTable, hint_type=dict[str, str])
 # @def_output("result", PTable)
 class KernelDensity(Module):
-    def __init__(self, **kwds: Any) -> None:
-        self._kde: Optional[KNNKernelDensity] = None
+    def __init__(
+        self,
+        x_column: int | str = "",
+        y_column: int | str = "",
+        **kwds: Any
+    ) -> None:
+        self.x_column = x_column
+        self.y_column = y_column
+        self._kde: KNNKernelDensity | None = None
         self._json_cache: JSon = {}
         self._inserted: int = 0
         self._lately_inserted: int = 0
@@ -34,8 +41,15 @@ class KernelDensity(Module):
     ) -> ReturnRunStep:
         dfslot = self.get_input_slot("table")
         assert dfslot is not None
+        if self.x_column == "":
+            assert self.y_column == ""
+            assert dfslot.hint is not None
+            assert len(dfslot.hint) == 2
+            self.x_column = dfslot.hint["x"]
+            self.y_column = dfslot.hint["y"]
         if dfslot.deleted.any():
             raise ValueError("Not implemented yet")
+
         if not dfslot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
         indices = dfslot.created.next(length=step_size, as_slice=False)
@@ -43,7 +57,7 @@ class KernelDensity(Module):
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self._kde is None:
-            self._kde = KNNKernelDensity(dfslot.data(), online=True)
+            self._kde = KNNKernelDensity(dfslot.data().loc[:, [self.x_column, self.y_column]], online=True)
         res = self._kde.run_ids(indices.to_array())
         self._inserted += res["numPointsInserted"]
         self._lately_inserted += steps
@@ -56,19 +70,21 @@ class KernelDensity(Module):
             self._lately_inserted = 0
             self._json_cache = {
                 "points": np.array(
-                    dfslot.data().loc[:500, :].to_dict(orient="split")["data"]
+                    dfslot.data().loc[np.random.choice(indices, 500),  # type: ignore
+                                      [self.x_column,
+                                       self.y_column]].to_dict(orient="split")["data"]
                 ).tolist(),
                 "bins": sample_num,
                 "inserted": self._inserted,
                 "total": len(dfslot.data()),
                 "samples": [
                     (sample, score)
-                    for sample, score in zip(samples.tolist(), scores.tolist())  # type: ignore
+                    for sample, score in zip(samples, scores)  # type: ignore
                 ],
             }
         return self._return_run_step(self.state_ready, steps_run=steps)
 
-    def get_visualization(self) -> Optional[str]:
+    def get_visualization(self) -> str:
         return "knnkde"
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:

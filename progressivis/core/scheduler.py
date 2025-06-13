@@ -491,7 +491,7 @@ class Scheduler:
         "Return True if there is at least one input module"
         for module in self._run_list:
             if module.is_input():
-                print(f"is_waiting_for_input: {module.name}")
+                # print(f"is_waiting_for_input: {module.name}")
                 return True
         # print("is_waiting_for_input: False")
         return False
@@ -585,7 +585,7 @@ class Scheduler:
             has_run = await self._idle_procs.fire(self, self._run_number)
             if not has_run:
                 logger.info("sleeping %f", 0.2)
-                print("Sleeping 0.2")
+                # print("Sleeping 0.2")
                 await aio.sleep(0.2)
         self._run_index = 0
 
