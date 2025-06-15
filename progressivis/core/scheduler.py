@@ -1,5 +1,5 @@
 """
-Base Scheduler class, runs progressive modules.
+The Scheduler class runs progressive modules in an asynchronous process.
 """
 
 from __future__ import annotations

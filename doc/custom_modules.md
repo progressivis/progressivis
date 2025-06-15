@@ -197,7 +197,7 @@ The `hint_type` parameter specifies that this input slot can be parameterized us
 (slot_hints)=
 ### Slot Hints
 
-Slot hints provide a convenient syntax to adapt the behavior of slots according to parameters. 
+Slot hints provide a convenient syntax to adapt the behavior of slots according to parameters.
 In `PTable` slots, the hints consist of a list of column names that restrict the columns received through the slot. Internally, this uses a PTable view. Creating a view can be done through a module, but the syntax is much heavier, and the performance is much worse.
 The `PTable` slot hint is so standard that its documentation string is imported in line 8 of `Max` and used in line 12.
 
@@ -211,7 +211,7 @@ In the [initial example](#quantiles-variant) of ProgressiVis, we use a `Quantile
 In the `SimpleMax` and `Max` examples, managing created items in a table is very efficient, but deleted or updated items trigger a complete recomputation through the `reset()` method.
 Is there a better solution? In general, it is difficult to be definitive, but there are cases when a better answer is possible.
 
-The `ScalarMax` module improves the `Max` module by keeping track of the items that reach the maximum value computed so far.  If, e.g., the values `1, 10, 100` hold the maximum value, then deleting any other value does not invalidate the running maximum value. `ScalarMax` uses the `PIntSet` data structure to efficiently keep track of these indices. Yet, this management adds some overhead compared to the `Max` module when data is streamed in and never modified. Other implementations could even maintain more sophisticated data structures, trading efficiency depending on the expected frequency of the change events.
+The `ScalarMax` module improves the `Max` module by keeping track of the items that reach the maximum value computed so far.  If, e.g., the indices `1, 10, 100` hold the maximum value, then deleting any other value does not invalidate the running maximum value. `ScalarMax` uses the `PIntSet` data structure to efficiently keep track of these indices. Yet, this management adds some overhead compared to the `Max` module when data is streamed in and never modified. Other implementations could even maintain more sophisticated data structures, trading efficiency depending on the expected frequency of the change events.
 
 More work is needed to find other strategies to avoid resetting, but they will be specific to algorithms or classes of algorithms.
 
@@ -231,7 +231,7 @@ When a program does not contain an input module, the scheduler will run it until
 
 When a program contains an input module, it means that the external world (a widget) can always send new data into the program. Therefore, the scheduler cannot terminate the input modules and their dependencies, and the program remains alive until the method `Scheduler.stop()` is called.
 
-All this mechanism is purely automatic; the only external control is based on the `Module.from_input()` method and, as it happens, is only implemented by the `Variable` module class so far.
+This mechanism is purely automatic; the only external control is based on the `Module.from_input()` method and is only implemented by the `Variable` module class so far, which has been sufficient to implement all the interactions needed.
 
 
 
