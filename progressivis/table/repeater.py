@@ -4,16 +4,27 @@ import logging
 from ..core.module import Module, ReturnRunStep, def_input, def_output
 from .api import PTable, PTableSelectedView
 from ..core.pintset import PIntSet
-from progressivis.table.compute import SingleColFunc
+from progressivis.table.compute import ColFunc, SingleColFunc, MultiColFunc
 from typing import Optional, Any, Callable, Tuple, Sequence
 
 logger = logging.getLogger(__name__)
 Shape = Tuple[int, ...]
 
+def multi_col_adapter(to_decorate: Callable[..., Any], col_var_map: dict[str, str]) -> Callable[..., Any]:
+    def _wrapper(index: Any, local_dict: dict[str, str]) -> Any:
+        """
+        """
+        kwargs = {}
+        for var, col in col_var_map.items():
+            
+            kwargs[var] = local_dict[col]
+        return to_decorate(**kwargs)
+
+    return _wrapper
 
 class Computed:
-    def __init__(self, computed: dict[str, SingleColFunc] | None = None) -> None:
-        self.computed = {} if computed is None else computed
+    def __init__(self, computed: dict[str, ColFunc] | None = None) -> None:
+        self.computed: dict[str, ColFunc] = {} if computed is None else computed
 
     def add_ufunc_column(
         self,
@@ -25,6 +36,20 @@ class Computed:
     ) -> None:
         self.computed[name] = SingleColFunc(
             func=ufunc, base=col, dtype=dtype, xshape=xshape
+        )
+
+    def add_multi_col_func(
+        self,
+        name: str,
+        cols: list[str],
+        func: Callable[..., Any],
+        col_var_map: dict[str, str],
+        dtype: Optional[np.dtype[Any]] = None,
+        xshape: Shape = (),
+    ) -> None:
+        adapted = multi_col_adapter(func, col_var_map)
+        self.computed[name] = MultiColFunc(
+            func=adapted, base=list(cols), dtype=dtype, xshape=xshape
         )
 
 

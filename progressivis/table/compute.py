@@ -50,6 +50,20 @@ def day(vec: Tuple[int, ...]) -> int:
 def hour(vec: Tuple[int, ...]) -> int:
     return vec[3]
 
+def mul_(x: int | float, y: int | float) -> float:
+    return x * y
+
+def add_(x: int | float, y: int | float) -> float:
+    return x + y
+
+def true_div(num: int | float, den: int | float) -> float:
+    return num / den
+
+def floor_div(num: int | float, den: int | float) -> int:
+    return num // den  # type: ignore
+
+
+
 """
 import numpy as np
 @custom_function
