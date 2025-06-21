@@ -44,6 +44,28 @@ class OnlineFunctor:
 
 aggr_registry: dict[str, Type[OnlineFunctor]] = {}
 
+class OnlineCount(OnlineFunctor):  # Keep this functor first!
+    """
+    """
+
+    name = "count"
+
+    def __init__(self) -> None:
+        self.count: int
+        self.reset()
+
+    def reset(self) -> None:
+        self.count = 0
+
+    def add(self, iterable: Iterable[Any]) -> None:
+        if iterable is not None:
+            self.count += len(iterable)  # type: ignore
+
+    def get_value(self) -> float:
+        return self.count
+
+
+aggr_registry[OnlineCount.name] = OnlineCount
 
 class OnlineSum(OnlineFunctor):
     """ """
@@ -66,29 +88,6 @@ class OnlineSum(OnlineFunctor):
 
 
 aggr_registry[OnlineSum.name] = OnlineSum
-
-
-class OnlineCount(OnlineFunctor):
-    """ """
-
-    name = "count"
-
-    def __init__(self) -> None:
-        self.count: int
-        self.reset()
-
-    def reset(self) -> None:
-        self.count = 0
-
-    def add(self, iterable: Iterable[Any]) -> None:
-        if iterable is not None:
-            self.count += len(iterable)  # type: ignore
-
-    def get_value(self) -> float:
-        return self.count
-
-
-aggr_registry[OnlineCount.name] = OnlineCount
 
 
 class OnlineSet(OnlineFunctor):

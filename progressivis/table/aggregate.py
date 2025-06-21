@@ -48,7 +48,7 @@ class Aggregate(Module):
             row_dict = self._local_index[grp]
         for nm, computer in row_dict.items():
             col = self._aggr_cols[nm][0]
-            computer.add(input_df[col].loc[grp_ids])
+            computer.add(input_df[0 if not col else col].loc[grp_ids])
         by = self._by_cols
         by_stuff = (
             [(by[0], grp)] if len(by) == 1 else [(b, g) for (b, g) in zip(by, grp)]
