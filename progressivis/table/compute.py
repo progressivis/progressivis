@@ -60,7 +60,7 @@ def true_div(num: int | float, den: int | float) -> float:
     return num / den
 
 def div_percent(num: int | float, den: int | float = 1) -> int:
-    return num * 100 / den
+    return num * 100 // den  # type: ignore
 
 def floor_div(num: int | float, den: int | float) -> int:
     return num // den  # type: ignore
