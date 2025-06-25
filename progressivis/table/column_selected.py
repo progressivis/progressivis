@@ -101,6 +101,8 @@ class PColumnComputedView(PColumnSelectedView):
         raw_index = index
         index = [index] if isinstance(index, integer_types) else index
         values = super().__getitem__(index)
+        if not sum(values.shape):
+            return np.array([])
         if self._is_ufunc:
             ret = self.func(values)
         else:

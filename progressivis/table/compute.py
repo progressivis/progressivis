@@ -56,12 +56,15 @@ def mul_(x: int | float, y: int | float) -> float:
 def add_(x: int | float, y: int | float) -> float:
     return x + y
 
+@np.vectorize
 def true_div(num: int | float, den: int | float) -> float:
     return num / den
 
+@np.vectorize
 def div_percent(num: int | float, den: int | float = 1) -> int:
     return num * 100 // den  # type: ignore
 
+@np.vectorize
 def floor_div(num: int | float, den: int | float) -> int:
     return num // den  # type: ignore
 
