@@ -14,7 +14,11 @@ from ..utils.inspect import filter_kwds, extract_params_docstring
 from ..core.module import Module
 from ..core.module import ReturnRunStep, def_input, def_output, document
 from ..table.table import PTable
-from ..table.dshape import dshape_from_dataframe
+from ..table.dshape import (
+    dshape_from_dataframe,
+    array_dshape,
+    dshape_from_dict,
+)
 from ..core.utils import (
     filepath_to_buffer,
     _infer_compression,
@@ -31,9 +35,6 @@ from typing import (
     Any,
     Type,
     Callable,
-    Optional,
-    Tuple,
-    Union,
     Sequence,
     TYPE_CHECKING,
     cast,
@@ -44,6 +45,7 @@ from pandas._typing import ReadCsvBuffer
 if TYPE_CHECKING:
     from ..core.module import ModuleState
     from ..stats.utils import SimpleImputer
+    from progressivis.table.dshape import DataShape
 
 logger = logging.getLogger(__name__)
 
@@ -77,12 +79,13 @@ class SimpleCSVLoader(Module):
 
     def __init__(
         self,
-        filepath_or_buffer: Optional[Any] = None,
-        filter_: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
+        filepath_or_buffer: Any | None = None,
+        filter_: Callable[[pd.DataFrame], pd.DataFrame] | None = None,
         force_valid_ids: bool = True,
-        fillvalues: Optional[Dict[str, Any]] = None,
-        throttle: Union[bool, int, float] = False,
-        imputer: Optional[SimpleImputer] = None,
+        fillvalues: dict[str, Any] | None = None,
+        as_array: str | dict[str, list[str]] | Callable[[list[str]], dict[str, list[str]]] | None = None,
+        throttle: bool | int | float = False,
+        imputer: SimpleImputer | None = None,
         **kwds: Any,
     ) -> None:
         r"""
@@ -122,7 +125,7 @@ class SimpleCSVLoader(Module):
             self.throttle = throttle
         else:
             self.throttle = False
-        self.parser: Optional[pd.io.parsers.readers.TextFileReader] = None
+        self.parser: pd.io.parsers.readers.TextFileReader | None = None
         self.csv_kwds = csv_kwds
         self._compression: Any = csv_kwds.get("compression", "infer")
         csv_kwds["compression"] = None
@@ -136,8 +139,8 @@ class SimpleCSVLoader(Module):
             raise ProgressiveError("filter parameter should be callable or None")
         self._filter: Callable[[pd.DataFrame], pd.DataFrame] | None = filter_
         self._input_stream: io.IOBase | None = None
-        self._input_encoding: Optional[str] = None
-        self._input_compression: Optional[str] = None
+        self._input_encoding: str | None = None
+        self._input_compression: str | None = None
         self._input_size = 0  # length of the file or input stream when available
         self._total_input_size = 0
         self._total_size = 0
@@ -145,8 +148,39 @@ class SimpleCSVLoader(Module):
         self._n_files = 0
         self._file_mode = False
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
+        self._as_array = as_array
         self._imputer = imputer
         self._last_opened: Any = None
+
+    def _data_as_array(self, df: pd.DataFrame) -> tuple[Any, DataShape]:
+        if not self._as_array:
+            return (df, dshape_from_dataframe(df))
+        if callable(self._as_array):
+            self._as_array = self._as_array(list(df.columns))  # FIXME
+        if isinstance(self._as_array, str):
+            data = df.values
+            dshape = array_dshape(data, self._as_array)
+            return ({self._as_array: data}, dshape)
+        if not isinstance(self._as_array, dict):
+            raise ValueError(
+                f"Unexpected parameter specified to as_array: {self._as_array}"
+            )
+        columns = set(df.columns)
+        ret: Dict[str, pd.api.extensions.ExtensionArray | np.ndarray[Any, Any]] = {}
+        for colname, cols in self._as_array.items():
+            if colname in ret:
+                raise KeyError(f"Duplicate column {colname} in as_array")
+            colset = set(cols)
+            assert colset.issubset(columns)
+            columns -= colset
+            view = df[cols]
+            values = view.values
+            ret[colname] = values
+        for colname in columns:
+            if colname in ret:
+                raise KeyError(f"Duplicate column {colname} in as_array")
+            ret[colname] = df[colname].values
+        return ret, dshape_from_dict(ret)
 
     def rows_read(self) -> int:
         return self._rows_read
@@ -196,9 +230,9 @@ class SimpleCSVLoader(Module):
     def open(self, filepath: Any) -> io.IOBase:
         if nn(self._input_stream):
             self.close()
-        compression: Optional[str] = _infer_compression(filepath, self._compression)
+        compression: str | None = _infer_compression(filepath, self._compression)
         istream: io.IOBase
-        encoding: Optional[str]
+        encoding: str | None
         size: int
         (istream, encoding, compression, size) = filepath_to_buffer(
             filepath, encoding=self._encoding, compression=compression
@@ -228,7 +262,7 @@ class SimpleCSVLoader(Module):
         self._total_input_size += self._input_size
         self._input_size = 0
 
-    def get_progress(self) -> Tuple[int, int]:
+    def get_progress(self) -> tuple[int, int]:
         if (
             self._total_size == 0
             or self.result is None
@@ -355,8 +389,8 @@ class SimpleCSVLoader(Module):
                 continue
             except ValueError:
                 pass
-            na_: Union[int, float]
-            conv_: Union[Type[int], Type[float]]
+            na_: int | float
+            conv_: Type[int] | Type[float]
             imp = self._imputer
             if np.issubdtype(dtt, np.integer):
                 na_ = imp.getvalue(col) if imp is not None else np.iinfo(dtt).max
@@ -453,20 +487,21 @@ class SimpleCSVLoader(Module):
             logger.info("Loaded %d lines", self._rows_read)
             if self.force_valid_ids:
                 force_valid_id_columns(df)
+            data, dshape = self._data_as_array(df)
             if self.result is None:
                 self._table_params["name"] = self.generate_table_name("table")
-                self._table_params["dshape"] = dshape_from_dataframe(df)
-                self._table_params["data"] = df
+                self._table_params["dshape"] = dshape
+                self._table_params["data"] = data
                 self._table_params["create"] = True
                 self.result = PTable(**self._table_params)
                 if self._imputer is not None:
                     self._imputer.init(df.dtypes)
             else:
-                self.result.append(df)
+                self.result.append(data)
             if not self._file_mode:
                 self.refresh_total_size()
             if self._imputer is not None:
-                self._imputer.add_df(df)
+                self._imputer.add_df(data)
         return self._return_run_step(self.state_ready, steps_run=creates)
 
 
