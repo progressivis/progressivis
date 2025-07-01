@@ -90,7 +90,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             intruders = [(r, 1, intruder + str(r)) for r in rows]
         else:
             intruders = [(r, 1, intruder) for r in rows]
-        bio = make_int_csv(n_rows=n_rows, n_cols=3, intruders=intruders)  # type: ignore
+        bio = make_int_csv(n_rows=n_rows, n_cols=3, intruders=intruders)
         df = pd.read_csv(bio)
         bio.seek(0)
         df = df.drop(list(rows))
@@ -146,7 +146,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             intruders = [(r, 1, intruder + str(r)) for r in rows]
         else:
             intruders = [(r, 1, intruder) for r in rows]
-        bio = make_float_csv(n_rows=n_rows, n_cols=3, intruders=intruders)  # type: ignore
+        bio = make_float_csv(n_rows=n_rows, n_cols=3, intruders=intruders)
         df = pd.read_csv(bio)
         bio.seek(0)
         df = df.drop(list(rows))
