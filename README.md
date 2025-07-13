@@ -6,9 +6,16 @@
 [![types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
-ProgressiVis is a Python toolkit and scientific workflow system that implements a new [programming paradigm](https://en.wikipedia.org/wiki/Programming_paradigm) that we call _Progressive Data Analysis_, aimed at performing exploratory data analysis and visualization in a progressive way.  It allows analysts to visualize the progress of their analysis and to steer it while the computation is being done. See our book on [Progressive Data Analysis](https://www.aviz.fr/Progressive/PDABook).
+ProgressiVis is a Python toolkit and scientific workflow system that implements a new [programming paradigm](https://en.wikipedia.org/wiki/Programming_paradigm) that we call _Progressive Data Analysis_  (PDA), aimed at performing exploratory data analysis and visualization in a progressive way.  It allows analysts to visualize the progress of their analysis and to steer it while the computation is being done. See our book on [Progressive Data Analysis](https://www.aviz.fr/Progressive/PDABook).
 
 Instead of running a pipeline of algorithms to completion, one after the other, as done in all existing scientific analysis systems, ProgressiVis modules run in short batches, each batch being only allowed to run for a specific quantum of time&mdash; typically 0.5 second&mdash; producing a usable result in the end, and yielding control to the next module.  To perform the whole computation, ProgressiVis loops over the modules as many times as necessary to converge to a result that the analyst considers satisfactory.
+
+In addition to running data science pipelines progressively, ProgressiVis opens the door to interactive machine learning (ML), green computing, and a certain form of algorithm explainability.
+It is a step towards green computing by stopping expensive analyses on large datasets as soon as a useful result is computed, instead of processing them completely.
+It provides algorithm transparency, a certain form of explainability, since progressive visualization reveals how algorithms transform data as they run.
+
+Unfortunately, the cost of building progressive applications is very high due to the lack of libraries or languages supporting its paradigm. 
+The ProgressiVis toolkit is designed to allow practitioners and researchers to enter the PDA world with reasonable effort.
 
 ProgressiVis relies on well-known Python libraries, such as
 [numpy](http://www.numpy.org/),[scipy](http://www.scipy.org/),
