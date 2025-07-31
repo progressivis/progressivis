@@ -31,6 +31,9 @@ class FloatProgress(DOMWidget):
     value: float
     def __init__(self, **kw: Any) -> None: ...
 
+class FileUpload(DOMWidget):
+    def __init__(self, **kw: Any) -> None: ...
+
 class IntRangeSlider(DOMWidget):
     value: Any
     def __init__(self, **kw: Any) -> None: ...

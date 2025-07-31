@@ -472,7 +472,6 @@ class SimpleCSVLoader(Module):
                 df = self.recovering(step_size)
             else:
                 raise
-
         creates = len(df)
         if creates == 0:  # should not happen
             logger.error("Received 0 elements")
@@ -487,6 +486,14 @@ class SimpleCSVLoader(Module):
             logger.info("Loaded %d lines", self._rows_read)
             if self.force_valid_ids:
                 force_valid_id_columns(df)
+            if self._nrows:
+                len_ = 0 if self.result is None else len(self.result)
+                assert len_ <= self._nrows
+                limit = self._nrows - len_
+                if df.shape[0] >= limit:
+                    df = df[:limit]
+                    self.parser = None
+                    self.close()
             data, dshape = self._data_as_array(df)
             if self.result is None:
                 self._table_params["name"] = self.generate_table_name("table")
