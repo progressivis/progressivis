@@ -11,8 +11,8 @@ import logging
 # import pprint
 
 from uuid import uuid4
-from scipy.sparse import csr_matrix  # type: ignore
-from scipy.sparse.csgraph import breadth_first_order  # type: ignore
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import breadth_first_order
 
 from progressivis.utils.toposort import toposort
 from progressivis.utils.errors import ProgressiveError

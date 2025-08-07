@@ -10,8 +10,8 @@ import io
 from enum import IntEnum
 
 import numpy as np
-import scipy as sp  # type: ignore
-from scipy.ndimage import gaussian_filter  # type: ignore
+import scipy as sp
+from scipy.ndimage import gaussian_filter
 from PIL import Image
 
 from progressivis.core.module import (

@@ -1,3 +1,4 @@
+# type: ignore
 import functools
 import importlib
 import inspect
@@ -6,7 +7,7 @@ import random
 import statistics
 from typing import (
     Callable,
-    Generator,
+    Iterator,
     Any
 )
 import numpy as np
@@ -16,7 +17,7 @@ from scipy import stats as sp_stats
 from progressivis import stats
 
 
-def load_stats() -> Generator[Any]:
+def load_stats() -> Iterator[Any]:
     for _, obj in inspect.getmembers(
             importlib.import_module("progressivis.stats"),
             inspect.isclass):
