@@ -11,7 +11,7 @@ from ..table.table_base import BasePTable
 from ..table.table import PTable
 from ..core.module import Module
 from ..utils.psdict import PDict
-from .utils import OnlineVariance, OnlineCovariance
+from .online import Var, Cov
 
 from typing import Any, Union, Literal, Dict, Optional, List, Sequence
 
@@ -32,8 +32,8 @@ class Corr(Module):
         assert mode in ("Pearson", "CovarianceOnly")
         super().__init__(**kwds)
         self._is_corr: bool = mode == "Pearson"
-        self._data: Dict[frozenset[str], OnlineCovariance] = {}
-        self._vars: Dict[str, OnlineVariance] = {}
+        self._data: Dict[frozenset[str], Cov] = {}
+        self._vars: Dict[str, Var] = {}
         self._ignore_string_cols = ignore_string_cols
         self._num_cols: Optional[List[str]] = None
         self.default_step_size = 1000
@@ -68,20 +68,20 @@ class Corr(Module):
                 continue
             data = self._data.get(key)
             if data is None:
-                data = OnlineCovariance()
+                data = Cov()
                 self._data[key] = data
-            data.add(chunk[cx], chunk[cy])
+            data.update_many(chunk[cx], chunk[cy])
             done_.add(key)
-            cov_[key] = data.cov
+            cov_[key] = data.get()
         if not self._is_corr:
             return cov_  # covariance only
         std_: Dict[str, float] = {}
         for c in cols:
             vdata = self._vars.get(c)
             if vdata is None:
-                vdata = OnlineVariance()
+                vdata = Var()
                 self._vars[c] = vdata
-            vdata.add(chunk[c])
+            vdata.update_many(chunk[c])
             std_[c] = vdata.std
         corr_: Dict[frozenset[str], float] = {}
         for k, v in cov_.items():

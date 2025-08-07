@@ -2,248 +2,22 @@ import numpy as np
 import pandas as pd
 from numbers import Number
 from typing import (
-    Iterable,
     Optional,
     Union,
     Any,
-    Set,
-    Type,
     Hashable as Key,
     cast,
     TYPE_CHECKING
 )
 from collections import defaultdict
-from abc import abstractmethod
 from datasketches import (
     kll_floats_sketch,
     kll_ints_sketch,
     frequent_strings_sketch,
     frequent_items_error_type,
 )
-from ..table.column_base import BasePColumn
-from ..core.utils import nn, is_str, is_dict
-
-Num = Union[float, int]
-
-
-class OnlineFunctor:
-    name = "functor"
-
-    @abstractmethod
-    def reset(self) -> None:
-        raise NotImplementedError("reset not defined")
-
-    @abstractmethod
-    def add(self, iterable: Iterable[Any]) -> None:
-        raise NotImplementedError("add not defined")
-
-    @abstractmethod
-    def get_value(self) -> Any:
-        raise NotImplementedError("add not defined")
-
-
-aggr_registry: dict[str, Type[OnlineFunctor]] = {}
-
-class OnlineCount(OnlineFunctor):  # Keep this functor first!
-    """
-    """
-
-    name = "count"
-
-    def __init__(self) -> None:
-        self.count: int
-        self.reset()
-
-    def reset(self) -> None:
-        self.count = 0
-
-    def add(self, iterable: Iterable[Any]) -> None:
-        if iterable is not None:
-            self.count += len(iterable)  # type: ignore
-
-    def get_value(self) -> float:
-        return self.count
-
-
-aggr_registry[OnlineCount.name] = OnlineCount
-
-class OnlineSum(OnlineFunctor):
-    """ """
-
-    name = "sum"
-
-    def __init__(self) -> None:
-        self._sum: Num
-        self.reset()
-
-    def reset(self) -> None:
-        self._sum = 0
-
-    def add(self, iterable: Iterable[Num]) -> None:
-        if iterable is not None:
-            self._sum += sum(iterable)
-
-    def get_value(self) -> Num:
-        return self._sum
-
-
-aggr_registry[OnlineSum.name] = OnlineSum
-
-
-class OnlineSet(OnlineFunctor):
-    """ """
-
-    name = "set"
-
-    def __init__(self) -> None:
-        self.reset()
-
-    def reset(self) -> None:
-        self._set: Set[Any] = set()
-
-    def add(self, iterable: Iterable[Any]) -> None:
-        if iterable is not None:
-            self._set.update(set(iterable))
-
-    def get_value(self) -> Any:
-        return self._set
-
-
-aggr_registry[OnlineSet.name] = OnlineSet
-
-
-class OnlineUnique(OnlineSet):
-    """ """
-
-    name = "uniq"
-
-    def get_value(self) -> Any:
-        # assert len(self._set) == 1
-        return len(self._set)
-
-
-aggr_registry[OnlineUnique.name] = OnlineUnique
-
-
-class OnlineMean(OnlineFunctor):
-    """ """
-
-    name = "mean"
-
-    def __init__(self) -> None:
-        self.reset()
-
-    def reset(self) -> None:
-        self.n: int = 0
-        self.mean: float = 0.0
-        self.delta: float = 0
-
-    def add(self, iterable: Iterable[float]) -> None:
-        if iterable is not None:
-            for datum in iterable:
-                self.include(datum)
-
-    def include(self, datum: float) -> None:
-        if np.isnan(datum):
-            return
-        self.n += 1
-        self.delta = datum - self.mean
-        self.mean += self.delta / self.n
-
-    def get_value(self) -> float:
-        return self.mean
-
-
-aggr_registry[OnlineMean.name] = OnlineMean
-
-
-# Should translate that to Cython eventually
-class OnlineVariance(OnlineFunctor):
-    """
-    Welford's algorithm computes the sample variance incrementally.
-    """
-
-    name = "variance"
-
-    def __init__(self, ddof: int = 1) -> None:
-        self.reset()
-        self.ddof: int = ddof
-
-    def reset(self) -> None:
-        self.n: int = 0
-        self.mean: float = 0.0
-        self.M2: float = 0.0
-        self.delta: float = 0
-
-    def add(self, iterable: Iterable[float]) -> None:
-        if iterable is not None:
-            for datum in iterable:
-                self.include(datum)
-
-    def include(self, datum: float) -> None:
-        if np.isnan(datum):
-            return
-        self.n += 1
-        self.delta = datum - self.mean
-        self.mean += self.delta / self.n
-        self.M2 += self.delta * (datum - self.mean)
-
-    @property
-    def variance(self) -> float:
-        n_ddof = self.n - self.ddof
-        return self.M2 / n_ddof if n_ddof else np.nan
-
-    @property
-    def std(self) -> float:
-        return np.sqrt(self.variance)  # type: ignore
-
-    def get_value(self) -> float:
-        return self.variance
-
-
-aggr_registry[OnlineVariance.name] = OnlineVariance
-
-
-class OnlineStd(OnlineVariance):
-    name = "stddev"
-
-    def get_value(self) -> float:
-        return self.std
-
-
-aggr_registry[OnlineStd.name] = OnlineStd
-
-
-class OnlineCovariance:  # not an OnlineFuctor
-    def __init__(self, ddof: int = 1) -> None:
-        self.reset()
-        self.ddof = ddof
-
-    def reset(self) -> None:
-        self.n: float = 0
-        self.mean_x: float = 0
-        self.sum_x: float = 0
-        self.mean_y: float = 0
-        self.sum_y: float = 0
-        self.cm: float = 0
-
-    def include(self, x: float, y: float) -> None:
-        self.n += 1
-        dx = x - self.mean_x
-        self.sum_x += x
-        self.sum_y += y
-        self.mean_x = self.sum_x / self.n
-        self.mean_y = self.sum_y / self.n
-        self.cm += dx * (y - self.mean_y)
-
-    def add(self, array_x: BasePColumn, array_y: BasePColumn) -> None:
-        for x, y in zip(array_x, array_y):
-            self.include(x, y)
-
-    @property
-    def cov(self) -> float:
-        div_ = self.n - self.ddof
-        return self.cm / div_ if div_ else np.nan
+from progressivis.core.utils import nn, is_str, is_dict
+from .online import Mean
 
 
 if TYPE_CHECKING:
@@ -285,7 +59,7 @@ class SimpleImputer:
                 if is_dict(fill_values)
                 else defaultdict(lambda: fill_values)
             )
-        self._means: dict[Key, OnlineMean] = {}
+        self._means: dict[Key, Mean] = {}
         self._medians: dict[Key, Union[kll_ints_sketch, kll_floats_sketch]] = {}
         self._frequent: dict[Key, frequent_strings_sketch] = {}
         self._dtypes: DTypes = {}
@@ -303,7 +77,7 @@ class SimpleImputer:
             if strategy == "mean":
                 if not np.issubdtype(ty, np.number):
                     raise ValueError(f"{strategy = } not compatible with {ty}")
-                self._means[col] = OnlineMean()
+                self._means[col] = Mean()
             elif strategy == "median":
                 if np.issubdtype(ty, np.floating):
                     self._medians[col] = kll_floats_sketch(self._k)
@@ -328,7 +102,7 @@ class SimpleImputer:
             add_strategy(col, df[cast(str, col)], dt)
 
     def add_mean(self, col: str, val: Any, dt: np.dtype[Any]) -> None:
-        self._means[col].add(val)
+        self._means[col].update(val)
 
     def add_median(self, col: str, val: Any, dt: np.dtype[Any]) -> None:
         sk: Union[kll_ints_sketch, kll_floats_sketch]

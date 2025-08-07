@@ -20,7 +20,7 @@ from ..table.table_base import BasePTable
 from ..table.table import PTable
 from ..table.dshape import dshape_all_dtype
 from ..utils.psdict import PDict
-from .utils import OnlineVariance
+from .online import Var as OnlineVar
 from typing import Dict, Any, Optional, Sequence
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class VarH(Module):
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         super().__init__(dataframe_slot="table", **kwds)
-        self._data: Dict[str, OnlineVariance] = {}
+        self._data: Dict[str, OnlineVar] = {}
         self.default_step_size = 1000
 
     def is_ready(self) -> bool:
@@ -62,9 +62,9 @@ class VarH(Module):
         for c in cols:
             data = self._data.get(c)
             if data is None:
-                data = OnlineVariance()
+                data = OnlineVar()
                 self._data[c] = data
-            data.add(chunk[c])
+            data.update_many(chunk[c])
             ret[c] = data.variance
         return ret
 
@@ -121,7 +121,7 @@ class Var(Module):
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         super().__init__(dataframe_slot="table", **kwds)
-        self._data: Dict[str, OnlineVariance] = {}
+        self._data: Dict[str, OnlineVar] = {}
         self._ignore_string_cols: bool = ignore_string_cols
         self._num_cols: PCols = None
         self.default_step_size = 1000
@@ -152,9 +152,9 @@ class Var(Module):
         for c in cols:
             data = self._data.get(c)
             if data is None:
-                data = OnlineVariance()
+                data = OnlineVar()
                 self._data[c] = data
-            data.add(chunk[c])
+            data.update_many(chunk[c])
             ret[c] = data.variance
         return ret
 

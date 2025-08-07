@@ -35,7 +35,7 @@ LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
                    "yellow_tripdata_2015-01.csv.bz2")
 RESOLUTION=512
 
-csv = CSVLoader(LARGE_TAXI_FILE, index_col=False,
+csv = CSVLoader(LARGE_TAXI_FILE,
                 usecols=['pickup_longitude', 'pickup_latitude'])
 
 quantiles = Quantiles()
@@ -162,7 +162,7 @@ from progressivis import (CSVLoader, Histogram2D, Heatmap, PDict,
 col_x = "pickup_longitude"
 col_y = "pickup_latitude"
 
-csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=[col_x, col_y])
+csv = CSVLoader(LARGE_TAXI_FILE, usecols=[col_x, col_y])
 index = BinningIndexND()
 index.input.table = csv.output.result[col_x, col_y]
 query = RangeQuery2D(column_x=col_x, column_y=col_y)
@@ -269,7 +269,7 @@ LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
                    "yellow_tripdata_2015-01.csv.bz2")
 RESOLUTION=512
 
-csv = CSVLoader(LARGE_TAXI_FILE, index_col=False,
+csv = CSVLoader(LARGE_TAXI_FILE,
                 usecols=['pickup_longitude', 'pickup_latitude'])
 
 min = Min()
@@ -318,7 +318,7 @@ bounds = Bounds()
 col_x = "pickup_longitude"
 col_y = "pickup_latitude"
 
-csv = CSVLoader(LARGE_TAXI_FILE, index_col=False,
+csv = CSVLoader(LARGE_TAXI_FILE,
                 usecols=[col_x, col_y])
 
 min = ConstDict(PDict({col_x: bounds.left, col_y: bounds.bottom}))

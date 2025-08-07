@@ -4,11 +4,10 @@ from __future__ import annotations
 from ..core.module import Module, ReturnRunStep, def_input, def_output
 from ..core.slot import Slot
 from .api import PTable
-from ..stats.utils import aggr_registry
 from ..core.decorators import process_slot, run_if_any
 from .dshape import dshape_from_dict
 from .group_by import GroupBy, SubPColumnABC
-from ..stats.utils import OnlineFunctor
+from ..stats.online import Univariate, aggr_registry
 from ..core.pintset import PIntSet
 from typing import List, Union, Any, Dict, Tuple, Type
 
@@ -21,7 +20,7 @@ class Aggregate(Module):
     registry = aggr_registry
 
     def __init__(
-        self, compute: List[Tuple[str, Union[str, Type[OnlineFunctor]]]], **kwds: Any
+        self, compute: List[Tuple[str, Union[str, Type[Univariate]]]], **kwds: Any
     ) -> None:
         super().__init__(**kwds)
         self._compute = [
@@ -50,14 +49,14 @@ class Aggregate(Module):
             col = self._aggr_cols[nm][0]
             if not grp_ids:
                 continue
-            computer.add(input_df[0 if not col else col].loc[grp_ids])
+            computer.update_many(input_df[0 if not col else col].loc[grp_ids])
         by = self._by_cols
         by_stuff = (
             [(by[0], grp)] if len(by) == 1 else [(b, g) for (b, g) in zip(by, grp)]
         )
         row = dict(
             by_stuff
-            + [(col, computer.get_value()) for (col, computer) in row_dict.items()]
+            + [(col, computer.get()) for (col, computer) in row_dict.items()]
         )
         if self.result is None:
             self.result = PTable(
