@@ -388,11 +388,11 @@ class Dataflow:
                 inp_reachability = reachability[inp]
                 if vis_index in inp_reachability:
                     inter = vis_reachability.intersection(inp_reachability)
-                    inter = {k[i] for i in inter}
+                    inters = {k[i] for i in inter}
                     if inp in self.reachability:
-                        self.reachability[inp].update(inter)
+                        self.reachability[inp].update(inters)
                     else:
-                        self.reachability[inp] = inter
+                        self.reachability[inp] = inters
 
     def collateral_damage(self, *names: str) -> Set[str]:
         """Return the list of modules deleted when the specified one is deleted.

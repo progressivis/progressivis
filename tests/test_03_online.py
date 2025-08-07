@@ -4,7 +4,11 @@ import inspect
 import math
 import random
 import statistics
-
+from typing import (
+    Callable,
+    Generator,
+    Any
+)
 import numpy as np
 import pytest
 from scipy import stats as sp_stats
@@ -12,8 +16,10 @@ from scipy import stats as sp_stats
 from progressivis import stats
 
 
-def load_stats():
-    for _, obj in inspect.getmembers(importlib.import_module("progressivis.stats"), inspect.isclass):
+def load_stats() -> Generator[Any]:
+    for _, obj in inspect.getmembers(
+            importlib.import_module("progressivis.stats"),
+            inspect.isclass):
         try:
             if inspect.isabstract(obj):
                 continue
@@ -37,7 +43,8 @@ def load_stats():
         (stats.Var(), functools.partial(np.var, ddof=1)),
     ],
 )
-def test_univariate(stat, func):
+def test_univariate(stat: stats.Univariate,
+                    func: Callable[[np.typing.ArrayLike], float]) -> None:
     X = [random.random() for _ in range(30)]
 
     for i, x in enumerate(X):
@@ -53,7 +60,8 @@ def test_univariate(stat, func):
         (stats.Corr(), lambda x, y: sp_stats.pearsonr(x, y)[0]),
     ],
 )
-def test_bivariate(stat, func):
+def test_bivariate(stat: stats.Bivariate,
+                   func: Callable[[np.typing.ArrayLike, np.typing.ArrayLike], float]) -> None:
     X = [random.random() for _ in range(30)]
     Y = [random.random() * x for x in X]
 
@@ -72,7 +80,7 @@ def test_bivariate(stat, func):
     ),
     ids=lambda stat: stat.__class__.__name__,
 )
-def test_update_many_univariate(stat):
+def test_update_many_univariate(stat: stats.Univariate) -> None:
     batch_stat = stat.clone()
 
     for _ in range(5):
@@ -93,7 +101,7 @@ def test_update_many_univariate(stat):
     ),
     ids=lambda stat: stat.__class__.__name__,
 )
-def test_update_many_bivariate(stat):
+def test_update_many_bivariate(stat: stats.Bivariate) -> None:
     batch_stat = stat.clone()
 
     for _ in range(5):

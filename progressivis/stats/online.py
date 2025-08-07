@@ -17,6 +17,7 @@ from ..table.column_base import BasePColumn
 
 
 Num = Union[float, int]
+# Column = np.typing.ArrayLike  # Union[Collection[Num], BasePColumn]
 Column = Union[Collection[Num], BasePColumn]
 
 
@@ -41,7 +42,7 @@ class Univariate(Statistic):
     name = "Univariate"
 
     @abstractmethod
-    def update_many(self, X: Collection[Any]) -> None:
+    def update_many(self, X: Column) -> None:
         """Update the called instance."""
         raise NotImplementedError
 
@@ -78,7 +79,7 @@ class Count(Univariate):  # Keep this functor first!
     def reset(self) -> None:
         self.count = 0
 
-    def update_many(self, X: Collection[Any]) -> None:
+    def update_many(self, X: Column) -> None:
         if X is not None:
             self.count += len(X)
 
@@ -100,7 +101,7 @@ class NUnique(Univariate):
     def reset(self) -> None:
         self._set = set()
 
-    def update_many(self, X: Collection[Any]) -> None:
+    def update_many(self, X: Column) -> None:
         if X is not None:
             self._set.update(set(X))
 
@@ -128,7 +129,7 @@ class Sum(Univariate):
 
     def update_many(self, X: Column) -> None:
         if X is not None:
-            self.sum += np.sum(X)
+            self.sum += np.sum(X)  # type: ignore
 
     def get(self) -> float:
         return self.sum
@@ -211,7 +212,7 @@ class Var(Univariate):
 
     @property
     def std(self) -> float:
-        return np.sqrt(self.variance)
+        return float(self.variance ** 0.5)
 
     def get(self) -> float:
         return self.variance
@@ -271,7 +272,7 @@ class Corr(Bivariate):
         self.cov_xy = Cov(ddof=ddof)
 
     @property
-    def ddof(self):
+    def ddof(self) -> int:
         return self.cov_xy.ddof
 
     def reset(self) -> None:
@@ -279,14 +280,14 @@ class Corr(Bivariate):
         self.var_y.reset()
         self.cov_xy.reset()
 
-    def update_many(self, X: Column, Y: Column):
+    def update_many(self, X: Column, Y: Column) -> None:
         self.var_x.update_many(X)
         self.var_y.update_many(Y)
         self.cov_xy.update_many(X, Y)
 
-    def get(self):
-        var_x = self.var_x.get()
-        var_y = self.var_y.get()
+    def get(self) -> float:
+        var_x: float = self.var_x.get()
+        var_y: float = self.var_y.get()
         if var_x and var_y:
-            return self.cov_xy.get() / np.sqrt(var_x * var_y)
+            return self.cov_xy.get() / (var_x * var_y) ** 0.5  # type: ignore
         return 0.0

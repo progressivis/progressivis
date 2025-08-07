@@ -854,7 +854,7 @@ def normalize_columns(
 
 
 def force_valid_id_columns(df: pd.DataFrame) -> None:
-    df.columns = normalize_columns(df.columns)   # type: ignore
+    df.columns = normalize_columns(df.columns)
 
 
 def force_valid_id_columns_pa(rb: pa.RecordBatch) -> pa.RecordBatch:

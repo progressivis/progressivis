@@ -5,7 +5,7 @@ from progressivis.core import aio
 import numpy as np
 
 
-@skip
+@skip("Not working yet")
 class TestCorr(ProgressiveTest):
     def test_online_cov(self) -> None:
         s = self.scheduler()
