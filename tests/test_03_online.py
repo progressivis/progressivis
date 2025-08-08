@@ -62,14 +62,19 @@ def test_univariate(stat: stats.Univariate,
     ],
 )
 def test_bivariate(stat: stats.Bivariate,
-                   func: Callable[[np.typing.ArrayLike, np.typing.ArrayLike], float]) -> None:
+                   func: Callable[[np.typing.ArrayLike,
+                                   np.typing.ArrayLike], float]) -> None:
     X = [random.random() for _ in range(30)]
     Y = [random.random() * x for x in X]
 
     for i, (x, y) in enumerate(zip(X, Y)):
         stat.update(x, y)
         if i >= 1:
-            assert math.isclose(stat.get(), func(X[: i + 1], Y[: i + 1]), abs_tol=1e-10)
+            assert math.isclose(
+                stat.get(),
+                func(X[: i + 1], Y[: i + 1]),
+                abs_tol=1e-10
+            )
 
 
 @pytest.mark.parametrize(
@@ -106,10 +111,31 @@ def test_update_many_bivariate(stat: stats.Bivariate) -> None:
     batch_stat = stat.clone()
 
     for _ in range(5):
-        X = np.random.random(10)
-        Y = np.random.random(10)
+        X = np.random.random(30)
+        Y = np.random.random(30)
         batch_stat.update_many(X, Y)
         for x, y in zip(X, Y):
             stat.update(x, y)
-
     assert math.isclose(batch_stat.get(), stat.get())
+
+
+def _correlation_from_covariance(covariance):
+    v = np.sqrt(np.diag(covariance))
+    outer_v = np.outer(v, v)
+    correlation = covariance / outer_v
+    correlation[covariance == 0] = 0
+    return correlation
+
+
+def test_update_many_covariance_matrix() -> None:
+    mat = np.random.rand(3, 30)
+    chunks = [0, 10, 20, 30]
+
+    cm = stats.CovarianceMatrix()
+    for c in range(1, len(chunks)):
+        X = {col: mat[col, chunks[c-1]:chunks[c]]
+             for col in range(mat.shape[0])}
+        cm.update_many(X)
+        submat = mat[:, 0:chunks[c]]
+        assert np.allclose(cm.cov_matrix(), np.cov(submat))
+        assert np.allclose(cm.corr_matrix(), np.corrcoef(submat))

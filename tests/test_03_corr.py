@@ -1,11 +1,10 @@
-from . import ProgressiveTest, skip
+from . import ProgressiveTest
 import pandas as pd
-from progressivis import Print, RandomPTable, Corr
+from progressivis import Print, Corr, RandomPTable
 from progressivis.core import aio
 import numpy as np
 
 
-@skip("Not working yet")
 class TestCorr(ProgressiveTest):
     def test_online_cov(self) -> None:
         s = self.scheduler()
@@ -18,9 +17,6 @@ class TestCorr(ProgressiveTest):
         assert random.result is not None
         res1 = np.cov(random.result.to_array().T)
         res2 = cov.result_as_df(["_1", "_2"]).values
-        print(res1)
-        print(res2)
-        # import pdb; pdb.set_trace()
         self.assertTrue(np.allclose(res1, res2))
 
     def test_online_corr(self) -> None:
@@ -37,7 +33,4 @@ class TestCorr(ProgressiveTest):
         arr = random.result.to_array()
         res1 = pd.DataFrame(arr, columns=cols, dtype="float64").corr()
         res2 = corr.result_as_df(cols).values
-        print(res1)
-        print(res2)
-        # import pdb; pdb.set_trace()
         self.assertTrue(np.allclose(res1, res2))

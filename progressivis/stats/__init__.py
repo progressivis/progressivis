@@ -10,6 +10,7 @@ from .online import (
     Std,
     Cov,
     Corr,
+    CovarianceMatrix
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "Std",
     "Cov",
     "Corr",
+    "CovarianceMatrix",
 ]

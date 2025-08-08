@@ -5,24 +5,29 @@
 import numpy as np
 from typing import (
     Collection,
+    Dict,
     Union,
     Any,
     Set,
     Type,
+    Tuple,
 )
 
 from abc import abstractmethod, ABC
+import itertools
 
 from ..table.column_base import BasePColumn
 
 
 Num = Union[float, int]
 # Column = np.typing.ArrayLike  # Union[Collection[Num], BasePColumn]
-Column = Union[Collection[Num], BasePColumn]
+Column = Union[Collection[Num], BasePColumn, np.ndarray[Any, Any]]
 
 
 class Statistic(ABC):
     name = "statistic"
+
+    _fmt = ",.6f"  # Use commas to separate big numbers and show 6 decimals
 
     @abstractmethod
     def reset(self) -> None:
@@ -34,6 +39,17 @@ class Statistic(ABC):
 
     def clone(self) -> Any:
         return self.__class__()
+
+    def __repr__(self) -> str:
+        try:
+            value = self.get()
+        except NotImplementedError:
+            value = None
+        fmt_value = None if value is None else f"{value:{self._fmt}}".rstrip("0")
+        return f"{self.__class__.__name__}: {fmt_value}"
+
+    def __str__(self) -> str:
+        return repr(self)
 
 
 class Univariate(Statistic):
@@ -291,3 +307,88 @@ class Corr(Bivariate):
         if var_x and var_y:
             return self.cov_xy.get() / (var_x * var_y) ** 0.5  # type: ignore
         return 0.0
+
+
+class CovarianceMatrix:
+    def __init__(self, ddof: int = 1) -> None:
+        self.ddof = ddof
+        self._cov: Dict[Tuple[Any, Any], Cov] = {}
+        self._var: Dict[Any, Var] = {}
+
+    def update_many(self, X: Dict[Any, Column]) -> None:
+        for i, j in itertools.combinations(sorted(X), r=2):
+            key = (i, j)
+            try:
+                cov = self._cov[key]
+            except KeyError:
+                cov = Cov(self.ddof)
+                self._cov[key] = cov
+            cov.update_many(X[i], X[j])
+
+        for i, Xi in X.items():
+            try:
+                var = self._var[i]
+            except KeyError:
+                var = Var(self.ddof)
+                self._var[i] = var
+            var.update_many(Xi)
+
+    def reset(self) -> None:
+        for cov in self._cov.values():
+            cov.reset()
+        for var in self._var.values():
+            var.reset()
+
+    @property
+    def cov(self) -> Dict[Tuple[Any, Any], float]:
+        res: Dict[Tuple[Any, Any], float] = {}
+        for key, cov in self._cov.items():
+            res[key] = cov.get()
+        for i, var in self._var.items():
+            res[(i, i)] = var.get()
+        return res
+
+    @property
+    def corr(self) -> Dict[Tuple[Any, Any], float]:
+        res: Dict[Tuple[Any, Any], float] = {}
+        vars: Dict[Any, float] = {}
+
+        for i, var in self._var.items():
+            vars[i] = var.get()
+            res[(i, i)] = 1
+
+        for key, cov in self._cov.items():
+            (i, j) = key
+            var_x: float = vars[i]
+            var_y: float = vars[j]
+            if var_x and var_y:
+                res[key] = cov.get() / (var_x * var_y) ** 0.5
+            else:
+                res[key] = 0.0
+
+        return res
+
+    def get(self) -> Dict[Tuple[Any, Any], float]:
+        return self.cov
+
+    @staticmethod
+    def as_matrix(
+            d: Dict[Tuple[Any, Any], float]
+    ) -> np.typing.NDArray[np.float64]:
+        keys: Set[Any] = set()
+        for key in d:
+            keys.update(key)
+        res = np.ndarray((len(keys), len(keys)), dtype=np.float64)
+        index = {key: i for i, key in enumerate(sorted(keys))}
+        for key, val in d.items():
+            c1, c2 = key
+            i = index[c1]
+            j = index[c2]
+            res[i, j] = res[j, i] = val
+        return res
+
+    def cov_matrix(self) -> np.typing.NDArray[np.float64]:
+        return self.as_matrix(self.cov)
+
+    def corr_matrix(self) -> np.typing.NDArray[np.float64]:
+        return self.as_matrix(self.corr)
