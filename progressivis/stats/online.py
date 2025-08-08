@@ -18,6 +18,7 @@ import itertools
 
 from ..table.column_base import BasePColumn
 
+import pandas as pd
 
 Num = Union[float, int]
 # Column = np.typing.ArrayLike  # Union[Collection[Num], BasePColumn]
@@ -371,11 +372,33 @@ class CovarianceMatrix:
     def get(self) -> Dict[Tuple[Any, Any], float]:
         return self.cov
 
+    def get_cov(self, row: Any, col: Any) -> float:
+        key = (row, col)
+        try:
+            cov = self._cov[key]
+        except KeyError:
+            key = (col, row)
+            cov = self._cov[key]
+        return cov.get()
+
+    def get_var(self, col: Any) -> float:
+        var = self._var[col]
+        return var.get()
+
+    @staticmethod
+    def columns(
+            d: Dict[Tuple[Any, Any], float]
+    ) -> Set[Any]:
+        keys: Set[Any] = set()
+        for key in d:
+            keys.update(key)
+        return keys
+
     @staticmethod
     def as_matrix(
             d: Dict[Tuple[Any, Any], float]
     ) -> np.typing.NDArray[np.float64]:
-        keys: Set[Any] = set()
+        keys = CovarianceMatrix.columns(d)
         for key in d:
             keys.update(key)
         res = np.ndarray((len(keys), len(keys)), dtype=np.float64)
@@ -392,3 +415,11 @@ class CovarianceMatrix:
 
     def corr_matrix(self) -> np.typing.NDArray[np.float64]:
         return self.as_matrix(self.corr)
+
+    @staticmethod
+    def as_pandas(
+            d: Dict[Tuple[Any, Any], float]
+    ) -> pd.DataFrame:
+        cols = sorted(CovarianceMatrix.columns(d))
+        arr = CovarianceMatrix.as_matrix(d)
+        return pd.DataFrame(arr, columns=cols, dtype="float64")

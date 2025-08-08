@@ -114,15 +114,8 @@ class Corr(Module):
         """
         Convenience method
         """
-        if self._is_corr:
-            res = pd.DataFrame(self._cov.corr_matrix(),
-                               index=columns,
-                               columns=columns)
-        else:
-            res = pd.DataFrame(self._cov.cov_matrix(),
-                               index=columns,
-                               columns=columns)
-        return res
+        d = self._cov.corr if self._is_corr else self._cov.cov
+        return self._cov.as_pandas(d)
 
     @property
     def columns(self) -> Sequence[str]:
