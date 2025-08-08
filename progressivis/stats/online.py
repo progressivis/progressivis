@@ -344,9 +344,9 @@ class CovarianceMatrix:
     def cov(self) -> Dict[Tuple[Any, Any], float]:
         res: Dict[Tuple[Any, Any], float] = {}
         for key, cov in self._cov.items():
-            res[key] = cov.get()
+            res[key] = float(cov.get())
         for i, var in self._var.items():
-            res[(i, i)] = var.get()
+            res[(i, i)] = float(var.get())
         return res
 
     @property
@@ -363,7 +363,7 @@ class CovarianceMatrix:
             var_x: float = vars[i]
             var_y: float = vars[j]
             if var_x and var_y:
-                res[key] = cov.get() / (var_x * var_y) ** 0.5
+                res[key] = float(cov.get() / (var_x * var_y) ** 0.5)
             else:
                 res[key] = 0.0
 
@@ -418,8 +418,17 @@ class CovarianceMatrix:
 
     @staticmethod
     def as_pandas(
-            d: Dict[Tuple[Any, Any], float]
+            d: Dict[Tuple[Any, Any], float],
+            columns: Collection[str] | None = None
     ) -> pd.DataFrame:
-        cols = sorted(CovarianceMatrix.columns(d))
+        keys = CovarianceMatrix.columns(d)
+        if columns is not None:
+            keys &= set(columns)
+        cols = sorted(keys)
         arr = CovarianceMatrix.as_matrix(d)
-        return pd.DataFrame(arr, columns=cols, dtype="float64")
+        return pd.DataFrame(
+            arr,
+            index=cols,
+            columns=cols,
+            dtype="float64"
+        )

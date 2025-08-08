@@ -110,12 +110,12 @@ class Corr(Module):
         #         ov.reset()
         self._cov.reset()
 
-    def result_as_df(self, columns: List[str]) -> pd.DataFrame:
+    def result_as_df(self, columns: List[str] | None = None) -> pd.DataFrame:
         """
         Convenience method
         """
         d = self._cov.corr if self._is_corr else self._cov.cov
-        return self._cov.as_pandas(d)
+        return self._cov.as_pandas(d, columns)
 
     @property
     def columns(self) -> Sequence[str]:
