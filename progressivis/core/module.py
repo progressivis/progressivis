@@ -170,6 +170,8 @@ class Module(metaclass=ABCMeta):
     """ Tag attached to greedy modules """
     TAG_DEPENDENT = "dependent"
     """ Tag attached to dependent modules """
+    TAG_QUALITY = "quality"
+    """ Tag modules that report their quality with get_quality() """
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BasePTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BasePTable, required=False)]
     output_attrs: dict[str, str] = {}
@@ -288,6 +290,8 @@ class Module(metaclass=ABCMeta):
             self.output_descriptors["result"] = sd
         if "columns" in kwds:
             raise ValueError("'columns' is not a valid parameter")
+        if type(self).get_quality != Module.get_quality:
+            self.tags.add(self.TAG_QUALITY)
 
     @staticmethod
     def tagged(*tags: str) -> ModuleTag:

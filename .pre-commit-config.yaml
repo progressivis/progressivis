@@ -25,6 +25,7 @@ repos:
           - 'ipython'
           - 'jinja2'
           - 'sqlalchemy-stubs'
+          - 'scipy-stubs'
           - 'pandas-stubs'
           - 'traits-stubs'
           - 'traittypes'

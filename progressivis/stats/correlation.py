@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from itertools import product
-
 import pandas as pd
 
 from ..core.module import ReturnRunStep, def_input, def_output
@@ -11,7 +9,8 @@ from ..table.table_base import BasePTable
 from ..table.table import PTable
 from ..core.module import Module
 from ..utils.psdict import PDict
-from .utils import OnlineVariance, OnlineCovariance
+# from .online import Var as OnlineVariance, Cov as OnlineCovariance
+from .online import CovarianceMatrix, Column
 
 from typing import Any, Union, Literal, Dict, Optional, List, Sequence
 
@@ -32,8 +31,9 @@ class Corr(Module):
         assert mode in ("Pearson", "CovarianceOnly")
         super().__init__(**kwds)
         self._is_corr: bool = mode == "Pearson"
-        self._data: Dict[frozenset[str], OnlineCovariance] = {}
-        self._vars: Dict[str, OnlineVariance] = {}
+        # self._data: Dict[frozenset[str], OnlineCovariance] = {}
+        # self._vars: Dict[str, OnlineVariance] = {}
+        self._cov = CovarianceMatrix()
         self._ignore_string_cols = ignore_string_cols
         self._num_cols: Optional[List[str]] = None
         self.default_step_size = 1000
@@ -60,58 +60,23 @@ class Corr(Module):
 
     def op(self, chunk: BasePTable) -> Dict[Any, Any]:
         cols = chunk.columns
-        cov_: Dict[frozenset[str], float] = {}
-        done_ = set()
-        for cx, cy in product(cols, cols):
-            key = frozenset([cx, cy])
-            if key in done_:
-                continue
-            data = self._data.get(key)
-            if data is None:
-                data = OnlineCovariance()
-                self._data[key] = data
-            data.add(chunk[cx], chunk[cy])
-            done_.add(key)
-            cov_[key] = data.cov
+        X: Dict[Any, Column] = {col: chunk[col].value for col in cols}
+        self._cov.update_many(X)
         if not self._is_corr:
-            return cov_  # covariance only
-        std_: Dict[str, float] = {}
-        for c in cols:
-            vdata = self._vars.get(c)
-            if vdata is None:
-                vdata = OnlineVariance()
-                self._vars[c] = vdata
-            vdata.add(chunk[c])
-            std_[c] = vdata.std
-        corr_: Dict[frozenset[str], float] = {}
-        for k, v in cov_.items():
-            lk = list(k)
-            if len(lk) == 1:
-                kx = ky = lk[0]
-            else:
-                kx = lk[0]
-                ky = lk[1]
-            corr_[k] = v / (std_[kx] * std_[ky])
-        return corr_
+            return self._cov.cov
+        return self._cov.corr
 
     def reset(self) -> None:
         if self.result is not None:
             self.result.clear()
-        if self._data is not None:
-            for oc in self._data.values():
-                oc.reset()
-        if self._vars is not None:
-            for ov in self._vars.values():
-                ov.reset()
+        self._cov.reset()
 
-    def result_as_df(self, columns: List[str]) -> pd.DataFrame:
+    def result_as_df(self, columns: List[str] | None = None) -> pd.DataFrame:
         """
         Convenience method
         """
-        res = pd.DataFrame(index=columns, columns=columns, dtype="float64")
-        for kx, ky in product(columns, columns):
-            res.loc[kx, ky] = self.result[frozenset([kx, ky])]  # type: ignore
-        return res
+        d = self._cov.corr if self._is_corr else self._cov.cov
+        return self._cov.as_pandas(d, columns)
 
     @property
     def columns(self) -> Sequence[str]:
@@ -140,7 +105,13 @@ class Corr(Module):
             cols = None
             if self._ignore_string_cols:
                 cols = self.get_num_cols(input_df)
-            cov_ = self.op(self.filter_slot_columns(dfslot, fix_loc(indices), cols=cols))
+            cov_ = self.op(
+                self.filter_slot_columns(
+                    dfslot,
+                    fix_loc(indices),
+                    cols=cols
+                )
+            )
             if self.result is None:
                 self.result = PDict(other=cov_)
             else:
