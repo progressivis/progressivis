@@ -1,11 +1,9 @@
-# type: ignore
 from __future__ import annotations
 
 import pandas as pd
 from ..core.api import Slot
 from ..core.module import (Module,
                            ReturnRunStep,
-                           JSon,
                            def_input,
                            def_output,
                            document)
@@ -15,7 +13,7 @@ from ..table.dshape import dshape_from_dataframe
 from ..core.docstrings import INPUT_SEL
 from ..core.decorators import process_slot, run_always
 try:
-    from pynene import ProgressiVisTSNE
+    from pynene import ProgressiVisTSNE  # type: ignore
 except Exception:
     ProgressiVisTSNE = None
 
@@ -37,7 +35,7 @@ class TSNE(Module):
     def __init__(
             self,
             array_col: str,
-            output_cols: int | list[str],
+            output_cols: list[str],
             max_iter: int = 1000,
             qual_lim: float = .0,
             is_greedy: bool = True,
@@ -65,15 +63,15 @@ class TSNE(Module):
     def is_greedy(self) -> bool:
         return self._is_greedy
 
-    def todo_to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
-        json = super().to_json(short, with_speed)
-        if short:
-            return json
-        return self._tsne_to_json(json)
+    # def todo_to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
+    #     json = super().to_json(short, with_speed)
+    #     if short:
+    #         return json
+    #     return self._tsne_to_json(json)
 
-    def _tsne_to_json(self, json) -> JSon:
-        data = [] if self.tsne is None else self.tsne.get_y().tolist()
-        json["data"] = data
+    # def _tsne_to_json(self, json: JSon) -> None:
+    #     data = [] if self.tsne is None else self.tsne.get_y().tolist()
+    #     json["data"] = data
 
     @process_slot("table", reset_cb="reset")
     @run_always
