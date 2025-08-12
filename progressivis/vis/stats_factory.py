@@ -154,7 +154,8 @@ def _add_max_col(col: str, factory: StatsFactory) -> Max:
     with scheduler:
         m = Max(scheduler=scheduler)
         m.input.table = input_module.output.result[col,]
-        sink = Sink(scheduler=scheduler)
+        sink = factory.sink()
+        # Sink(scheduler=scheduler)
         sink.input.inp = m.output.result
         return m
 
@@ -176,7 +177,8 @@ def _add_var_col(col: str, factory: StatsFactory) -> Var:
     with scheduler:
         m = Var(scheduler=scheduler)
         m.input.table = input_module.output.result[col,]
-        sink = Sink(scheduler=scheduler)
+        sink = factory.sink()
+        # sink = Sink(scheduler=scheduler)
         sink.input.inp = m.output.result
         return m
 
@@ -187,7 +189,8 @@ def _add_distinct_col(col: str, factory: StatsFactory) -> Distinct:
     with scheduler:
         m = Distinct(scheduler=scheduler)
         m.input.table = input_module.output.result[col,]
-        sink = Sink(scheduler=scheduler)
+        sink = factory.sink()
+        # sink = Sink(scheduler=scheduler)
         sink.input.inp = m.output.result
         return m
 
@@ -210,7 +213,8 @@ def _add_correlation(col: str, factory: StatsFactory) -> Optional[Corr]:
     with scheduler:
         m = Corr(scheduler=scheduler)
         m.input.table = input_module.output.result[columns]
-        sink = Sink(scheduler=scheduler)
+        sink = factory.sink()
+        # sink = Sink(scheduler=scheduler)
         sink.input.inp = m.output.result
         factory._multi_col_modules["corr"] = m
         return m
@@ -222,7 +226,8 @@ def _add_barplot_col(col: str, factory: StatsFactory) -> Histogram1DCategorical:
     with scheduler:
         m = Histogram1DCategorical(scheduler=scheduler, column=col)
         m.input.table = input_module.output.result
-        sink = Sink(scheduler=scheduler)
+        sink = factory.sink()
+        # sink = Sink(scheduler=scheduler)
         sink.input.inp = m.output.result
         return m
 
@@ -235,8 +240,6 @@ def _add_hist_col(col: str, factory: StatsFactory) -> Module:
     scheduler = factory.scheduler()
     with scheduler:
         m = Histogram1DPattern(column=col, factory=factory, scheduler=scheduler)
-        # sink = Sink(scheduler=scheduler)
-        # sink.input.inp = m.output.result
         m.create_dependent_modules()
         return m
 
@@ -255,8 +258,6 @@ def _h2d_func(cx: str, cy: str, factory: StatsFactory) -> Histogram2DPattern:
         m = Histogram2DPattern(
             x_column=cx, y_column=cy, factory=factory, scheduler=scheduler
         )
-        # sink = Sink(scheduler=scheduler)
-        # sink.input.inp = m.output.result
         m.create_dependent_modules()
         return m
 
@@ -290,7 +291,7 @@ class StatsFactory(Module):
             distinct=_add_distinct_col,
             corr=_add_correlation,
         )
-        self._sink = None
+        self._sink: Sink | None = None
 
     def reset(self) -> None:
         pass
@@ -400,3 +401,9 @@ class StatsFactory(Module):
         s = self.scheduler()
         self.variable = Variable(name=var_name, scheduler=s)
         self.input.selection = self.variable.output.result
+
+    def sink(self) -> Sink:
+        # the method is called inside a "with scheduler" context manager
+        if self._sink is None:
+            self._sink = Sink(scheduler=self.scheduler())
+        return self._sink

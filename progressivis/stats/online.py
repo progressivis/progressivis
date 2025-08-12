@@ -97,9 +97,8 @@ class Count(Univariate):  # Keep this functor first!
     def reset(self) -> None:
         self.n = 0
 
-    def update_many(self, X: Column) -> None:
-        if X is not None:
-            self.n += len(X)
+    def update_many(self, col: Column) -> None:
+        self.n += len(col)
 
     def get(self) -> float:
         return self.n
@@ -123,9 +122,8 @@ class NUnique(Univariate):
     def n(self) -> int:
         return len(self._set)
 
-    def update_many(self, X: Column) -> None:
-        if X is not None:
-            self._set.update(set(X))
+    def update_many(self, col: Column) -> None:
+        self._set.update(set(col))
 
     def get(self) -> Any:
         return len(self._set)
@@ -151,10 +149,9 @@ class Mean(Univariate):
         self.sum += v
         self.n += 1
 
-    def update_many(self, X: Column) -> None:
-        if X is not None:
-            self.sum += np.sum(X)  # type: ignore
-            self.n += len(X)
+    def update_many(self, col: Column) -> None:
+        self.sum += np.sum(col)  # type: ignore
+        self.n += len(col)
 
     @property
     def mean(self) -> float:
@@ -198,15 +195,14 @@ class Var(Univariate):
     def clone(self) -> Any:
         return self.__class__(self.ddof)
 
-    def update_many(self, X: Column) -> None:
-        if X is not None:
-            old = self.mean.get()
-            self.mean.update_many(X)
-            new = self.mean.get()
-            self.M2 += np.sum(
-                np.multiply(np.subtract(X, old),  # type: ignore
-                            np.subtract(X, new))  # type: ignore
-            ).item()
+    def update_many(self, col: Column) -> None:
+        old = self.mean.get()
+        self.mean.update_many(col)
+        new = self.mean.get()
+        self.M2 += np.sum(
+            np.multiply(np.subtract(col, old),  # type: ignore
+                        np.subtract(col, new))  # type: ignore
+        ).item()
 
     @property
     def n(self) -> int:
@@ -270,12 +266,12 @@ class Cov(Bivariate):
     def clone(self) -> Any:
         return self.__class__(self.ddof)
 
-    def update_many(self, X: Column, Y: Column) -> None:
-        dx = np.subtract(X, self.mean_x.get())  # type: ignore
-        self.mean_x.update_many(X)
-        self.mean_y.update_many(Y)
+    def update_many(self, col_x: Column, col_y: Column) -> None:
+        dx = np.subtract(col_x, self.mean_x.get())  # type: ignore
+        self.mean_x.update_many(col_x)
+        self.mean_y.update_many(col_y)
         self.cov += np.sum(
-            dx * np.subtract(Y, self.mean_y.get())  # type: ignore
+            dx * np.subtract(col_y, self.mean_y.get())  # type: ignore
             - self.cov
         ) / max(self.n - self.ddof, 1)
 
@@ -300,10 +296,10 @@ class Corr(Bivariate):
         self.var_y.reset()
         self.cov_xy.reset()
 
-    def update_many(self, X: Column, Y: Column) -> None:
-        self.var_x.update_many(X)
-        self.var_y.update_many(Y)
-        self.cov_xy.update_many(X, Y)
+    def update_many(self, col_x: Column, col_y: Column) -> None:
+        self.var_x.update_many(col_x)
+        self.var_y.update_many(col_y)
+        self.cov_xy.update_many(col_x, col_y)
 
     def get(self) -> float:
         var_x: float = self.var_x.get()
@@ -319,23 +315,23 @@ class CovarianceMatrix:
         self._cov: Dict[Tuple[Any, Any], Cov] = {}
         self._var: Dict[Any, Var] = {}
 
-    def update_many(self, X: Dict[Any, Column]) -> None:
-        for i, j in itertools.combinations(sorted(X), r=2):
+    def update_many(self, table: Dict[Any, Column]) -> None:
+        for i, j in itertools.combinations(sorted(table), r=2):
             key = (i, j)
             try:
                 cov = self._cov[key]
             except KeyError:
                 cov = Cov(self.ddof)
                 self._cov[key] = cov
-            cov.update_many(X[i], X[j])
+            cov.update_many(table[i], table[j])
 
-        for i, Xi in X.items():
+        for i, col_i in table.items():
             try:
                 var = self._var[i]
             except KeyError:
                 var = Var(self.ddof)
                 self._var[i] = var
-            var.update_many(Xi)
+            var.update_many(col_i)
 
     def reset(self) -> None:
         for cov in self._cov.values():

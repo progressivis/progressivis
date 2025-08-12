@@ -20,11 +20,14 @@ class Aggregate(Module):
     registry = aggr_registry
 
     def __init__(
-        self, compute: List[Tuple[str, Union[str, Type[Univariate]]]], **kwds: Any
+            self,
+            compute: List[Tuple[str, Union[str, Type[Univariate]]]],
+            **kwds: Any
     ) -> None:
         super().__init__(**kwds)
         self._compute = [
-            (n, self.registry[f] if isinstance(f, str) else f) for (n, f) in compute
+            (n, self.registry[f] if isinstance(f, str) else f)
+            for (n, f) in compute
         ]
         self._aggr_cols = {f"{n}_{f.name}": (n, f) for (n, f) in self._compute}
         self._by_cols: Any = None
@@ -40,7 +43,8 @@ class Aggregate(Module):
     def update_row(self, grp: str, grp_ids: PIntSet, input_df: PTable) -> None:
         if grp not in self._local_index:
             row_dict = {
-                nm: construct[1]() for (nm, construct) in self._aggr_cols.items()
+                nm: construct[1]()
+                for (nm, construct) in self._aggr_cols.items()
             }
             self._local_index[grp] = row_dict
         else:
@@ -52,7 +56,10 @@ class Aggregate(Module):
             computer.update_many(input_df[0 if not col else col].loc[grp_ids])
         by = self._by_cols
         by_stuff = (
-            [(by[0], grp)] if len(by) == 1 else [(b, g) for (b, g) in zip(by, grp)]
+            [(by[0], grp)] if len(by) == 1 else [
+                (b, g)
+                for (b, g) in zip(by, grp)
+            ]
         )
         row = dict(
             by_stuff
