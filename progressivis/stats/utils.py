@@ -129,7 +129,7 @@ class SimpleImputer:
         return get_val_strategy(col)
 
     def get_val_mean(self, col: str) -> Any:
-        return self._means[col].mean
+        return self._means[col].get()
 
     def get_val_median(self, col: str) -> Any:
         return self._medians[col].get_quantile(0.5)

@@ -40,8 +40,8 @@ def load_stats() -> Iterator[Any]:
     "stat, func",
     [
         (stats.Mean(), statistics.mean),
-        (stats.Var(ddof=0), np.var),
-        (stats.Var(), functools.partial(np.var, ddof=1)),
+        (stats.Var(), np.var),
+        (stats.Var(ddof=1), functools.partial(np.var, ddof=1)),
     ],
 )
 def test_univariate(stat: stats.Univariate,
@@ -88,14 +88,23 @@ def test_bivariate(stat: stats.Bivariate,
 )
 def test_update_many_univariate(stat: stats.Univariate) -> None:
     batch_stat = stat.clone()
+    Y = np.random.random(50)
 
-    for _ in range(5):
-        X = np.random.random(10)
+    for X in np.split(Y, 10):
         batch_stat.update_many(X)
         for x in X:
             stat.update(x)
 
     assert math.isclose(batch_stat.get(), stat.get())
+    if hasattr(stat, "mean_ci_central_limit"):
+        assert math.isclose(
+            batch_stat.mean_ci_central_limit(),
+            stat.mean_ci_central_limit()
+        )
+        ci = 0.95 * np.std(Y) / np.sqrt(len(Y))
+        assert math.isclose(
+            stat.mean_ci_central_limit(), float(ci)
+        )
 
 
 @pytest.mark.parametrize(

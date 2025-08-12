@@ -90,18 +90,17 @@ class Count(Univariate):  # Keep this functor first!
     name = "count"
 
     def __init__(self) -> None:
-        self.count: int
-        self.reset()
+        self.n: int = 0
 
     def reset(self) -> None:
-        self.count = 0
+        self.n = 0
 
     def update_many(self, X: Column) -> None:
         if X is not None:
-            self.count += len(X)
+            self.n += len(X)
 
     def get(self) -> float:
-        return self.count
+        return self.n
 
 
 aggr_registry[Count.name] = Count
@@ -118,6 +117,10 @@ class NUnique(Univariate):
     def reset(self) -> None:
         self._set = set()
 
+    @property
+    def n(self) -> int:
+        return len(self._set)
+
     def update_many(self, X: Column) -> None:
         if X is not None:
             self._set.update(set(X))
@@ -129,55 +132,31 @@ class NUnique(Univariate):
 aggr_registry[NUnique.name] = NUnique
 
 
-class Sum(Univariate):
-    """ """
-
-    name = "sum"
-
-    def __init__(self) -> None:
-        self.sum: Num
-        self.reset()
-
-    def reset(self) -> None:
-        self.sum = 0
-
-    def update(self, v: Num) -> None:
-        self.sum += v
-
-    def update_many(self, X: Column) -> None:
-        if X is not None:
-            self.sum += np.sum(X)  # type: ignore
-
-    def get(self) -> float:
-        return self.sum
-
-
-aggr_registry[Sum.name] = Sum
-
-
-class Mean(Sum):
+class Mean(Univariate):
     """ """
 
     name = "mean"
 
     def __init__(self) -> None:
-        self.reset()
+        self.sum: float = 0.0
+        self.n: int = 0
 
     def reset(self) -> None:
-        super().reset()
-        self.n: int = 0
-        self.mean: float = 0.0
+        self.sum = 0.0
+        self.n = 0
 
     def update(self, v: Num) -> None:
-        super().update(v)
+        self.sum += v
         self.n += 1
-        self.mean = self.sum / self.n
 
     def update_many(self, X: Column) -> None:
         if X is not None:
-            super().update_many(X)
+            self.sum += np.sum(X)  # type: ignore
             self.n += len(X)
-            self.mean = self.sum / self.n
+
+    @property
+    def mean(self) -> float:
+        return 0 if self.n == 0 else self.sum / self.n
 
     def get(self) -> float:
         return self.mean
@@ -186,7 +165,18 @@ class Mean(Sum):
 aggr_registry[Mean.name] = Mean
 
 
-# Should translate that to Cython eventually
+class Sum(Mean):
+    """ """
+
+    name = "sum"
+
+    def get(self) -> float:
+        return self.sum
+
+
+aggr_registry[Sum.name] = Sum
+
+
 class Var(Univariate):
     """
     Welford's algorithm computes the sample variance incrementally.
@@ -194,11 +184,10 @@ class Var(Univariate):
 
     name = "variance"
 
-    def __init__(self, ddof: int = 1) -> None:
+    def __init__(self, ddof: int = 0) -> None:
         self.ddof: int = ddof
         self.mean = Mean()
         self.M2: float = 0.0
-        self.reset()
 
     def reset(self) -> None:
         self.mean.reset()
@@ -222,6 +211,10 @@ class Var(Univariate):
         return self.mean.n
 
     @property
+    def sum(self) -> float:
+        return self.mean.sum
+
+    @property
     def variance(self) -> float:
         if self.n <= self.ddof:
             return 0.0
@@ -232,7 +225,14 @@ class Var(Univariate):
         return float(self.variance ** 0.5)
 
     def get(self) -> float:
+        if self.n <= self.ddof:
+            return 0.0
         return self.variance
+
+    def mean_ci_central_limit(self, z: float = 0.95) -> float:
+        if self.n <= self.ddof:
+            return 0.0
+        return float(z * (self.variance / self.n) ** 0.5)
 
 
 aggr_registry[Var.name] = Var
