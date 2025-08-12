@@ -266,15 +266,20 @@ class SimpleCSVLoader(Module):
         if (
             self._total_size == 0
             or self.result is None
-            or self._input_stream is None
         ):
             return self._last_progress
-        pos = self._input_stream.tell()
         length = len(self.result)
         if length <= 0:
             return self._last_progress
-        estimated_row_size = (self._total_input_size + pos) / length
-        estimated_size = int(self._total_size / estimated_row_size)
+        if self._input_stream is None:
+            self._last_progress = length, self._last_progress[1]
+            return self._last_progress
+        pos = self._input_stream.tell()
+        if self._nrows:
+            estimated_size = self._nrows
+        else:
+            estimated_row_size = (self._total_input_size + pos) / length
+            estimated_size = int(self._total_size / estimated_row_size)
         self._last_progress = length, estimated_size
         return self._last_progress
 
