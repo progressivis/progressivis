@@ -3,6 +3,8 @@
 # https://github.com/online-ml/river/tree/main/river/stats
 
 import numpy as np
+import scipy as sp
+
 from typing import (
     Collection,
     Dict,
@@ -229,9 +231,10 @@ class Var(Univariate):
             return 0.0
         return self.variance
 
-    def mean_ci_central_limit(self, z: float = 0.95) -> float:
+    def mean_ci_central_limit(self, alpha: float = 0.05) -> float:
         if self.n <= self.ddof:
             return 0.0
+        z = sp.stats.t.ppf(1-alpha, self.n-1)
         return float(z * (self.variance / self.n) ** 0.5)
 
 

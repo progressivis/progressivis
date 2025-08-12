@@ -101,7 +101,7 @@ def test_update_many_univariate(stat: stats.Univariate) -> None:
             batch_stat.mean_ci_central_limit(),
             stat.mean_ci_central_limit()
         )
-        ci = 0.95 * np.std(Y) / np.sqrt(len(Y))
+        ci = sp_stats.t.ppf(1-0.05, len(Y)-1) * np.std(Y) / np.sqrt(len(Y))
         assert math.isclose(
             stat.mean_ci_central_limit(), float(ci)
         )
