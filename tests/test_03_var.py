@@ -18,7 +18,7 @@ class Testvar(ProgressiveTest):
         assert var.result is not None
         table = random.result
         assert table is not None
-        res1 = [float(e) for e in table.var(ddof=1).values()]
+        res1 = [float(e) for e in table.var(ddof=0).values()]
         res2 = [float(e) for e in notNone(var.result.last()).to_dict(ordered=True).values()]
         self.assertTrue(np.allclose(res1, res2))
 
@@ -32,7 +32,7 @@ class Testvar(ProgressiveTest):
         aio.run(s.start())
         assert random.result is not None
         assert var.result is not None
-        res1 = [float(e) for e in random.result.var(ddof=1).values()]
+        res1 = [float(e) for e in random.result.var(ddof=0).values()]
         res2 = [float(e) for e in var.result.values()]
         self.assertTrue(np.allclose(res1, res2))
 
