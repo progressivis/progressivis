@@ -403,6 +403,7 @@ class StatsFactory(Module):
         self.input.selection = self.variable.output.result
 
     def sink(self) -> Sink:
+        assert self.scheduler().in_context_manager()
         # the method is called inside a "with scheduler" context manager
         if self._sink is None:
             self._sink = Sink(scheduler=self.scheduler())

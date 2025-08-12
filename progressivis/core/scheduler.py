@@ -136,6 +136,7 @@ class Scheduler:
         self._run_number += 1
         return self._run_number
 
+    # Context manager for adding new modules
     def __enter__(self) -> Dataflow:
         if self.dataflow is None:
             self.dataflow = Dataflow(self)
@@ -166,6 +167,9 @@ class Scheduler:
                 self.dataflow.aborted()
                 self.dataflow = None
             raise ProgressiveError(f"Invalid dataflow: {errors}")
+
+    def in_context_manager(self) -> bool:
+        return self._enter_cnt > 0
 
     @property
     def name(self) -> str:
