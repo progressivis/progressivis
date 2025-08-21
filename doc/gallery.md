@@ -31,13 +31,13 @@ You can display this example in a <a href="_static/taxis_precipitations_line_cha
 (trip-rain-corr)=
 ## NYC Taxis / Correlation between the number of courses per day and precipitations
 
-The notebook shown below is downloadable [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/trip-rain-corr.ipynb).
-You can display this example in a <a href="_static/trip-rain-corr.html" target=_blank>new tab</a>.
+The notebook shown below is downloadable [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/trip_rain_corr.ipynb).
+You can display this example in a <a href="_static/trip_rain_corr.html" target=_blank>new tab</a>.
 
 ```{eval-rst}
 .. raw:: html
 
-   <iframe src="_static/trip-rain-corr.html" height="1000px" width="100%"></iframe>
+   <iframe src="_static/trip_rain_corr.html" height="1000px" width="100%"></iframe>
 
 ```
 
