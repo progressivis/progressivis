@@ -767,7 +767,7 @@ class BinningIndex(Module):
     def compute_percentiles(self, points: dict[str, float], accuracy: float) -> dict[str, float]:
         assert self._impl
         return self._impl.compute_percentiles(points, len(self.selection), accuracy)
-        return {}
+
 
     def create_dependent_modules(
         self, input_module: Module, input_slot: str, **kwds: Any

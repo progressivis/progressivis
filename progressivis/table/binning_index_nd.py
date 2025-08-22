@@ -345,7 +345,6 @@ class BinningIndexND(Module):
         implc = self.impl_col(column)
         assert implc
         return implc.compute_percentiles(points, len(self.selection), accuracy)
-        return {}
 
     def create_dependent_modules(
         self, input_module: Module, input_slot: str, **kwds: Any
