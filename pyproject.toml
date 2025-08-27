@@ -86,6 +86,7 @@ typing = [
     "jinja2",
     "sqlalchemy-stubs",
     "pandas-stubs",
+    "scipy-stubs",
     "traits-stubs",
     "traittypes",
     "types-pillow",
