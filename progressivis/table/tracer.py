@@ -20,7 +20,7 @@ class PTableTracer(Tracer):
         "next_state: int32,"
         "progress_current: real,"
         "progress_max: real,"
-        "quality: real"
+        # "quality: real"
         "}"
     )
     TRACER_INIT: Dict[str, Union[int, float, np.floating[Any], str]] = dict(
@@ -35,7 +35,7 @@ class PTableTracer(Tracer):
             ("next_state", 0),
             ("progress_current", 0.0),
             ("progress_max", 0.0),
-            ("quality", 0.0),
+            # ("quality", 0.0),
         ]
     )
 
@@ -67,7 +67,7 @@ class PTableTracer(Tracer):
             run_number: int,
             progress_current: float,
             progress_max: float,
-            quality: float,
+            # quality: float,
             next_state: int,
             steps_run: int,
             debug: bool
@@ -86,7 +86,7 @@ class PTableTracer(Tracer):
             row["type"] = "step"
         row["progress_current"] = progress_current
         row["progress_max"] = progress_max
-        row["quality"] = quality
+        # row["quality"] = quality
         self.table.add(row)
         self.last_run_step_start = None
         self.last_run_details = ""

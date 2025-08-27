@@ -26,7 +26,7 @@ from .pintset import PIntSet
 from .print import Print, Every
 from .wait import Wait
 from .sink import Sink
-from .types import notNone, JSon, Index
+from .pv_types import notNone, JSon, Index
 
 # pylint: disable=unused-import
 from .changemanager_pintset import PIntSetChangeManager

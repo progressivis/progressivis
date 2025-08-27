@@ -21,7 +21,7 @@ from ..core.pintset import PIntSet
 
 from typing import Any, Optional, Union, Tuple
 
-from ..core.types import Chunks, Index, Shape
+from ..core.pv_types import Chunks, Index, Shape
 
 
 logger = logging.getLogger(__name__)

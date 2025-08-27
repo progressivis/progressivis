@@ -498,10 +498,10 @@ class Module(metaclass=ABCMeta):
             size += prog[1]
         return (pos, size)
 
-    def get_quality(self) -> float:
+    def get_quality(self) -> Dict[str, float] | None:
         # pylint: disable=no-self-use
         """Quality value, should increase when the quality increases."""
-        return 0.0
+        return None
 
     # @staticmethod
     # def _add_slots(kwds: dict[str, List[Slot]],
@@ -1250,7 +1250,7 @@ class Module(metaclass=ABCMeta):
             **run_step_ret._asdict(),
             progress_current=progress[0],
             progress_max=progress[1],
-            quality=self.get_quality(),
+            # quality=self.get_quality(),
         )
         self._stop(run_number)
         if exception:

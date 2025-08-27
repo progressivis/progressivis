@@ -43,7 +43,7 @@ from .column import PColumn
 from progressivis.core.pintset import PIntSet
 
 from typing import Any, Dict, Optional, Union, cast, Tuple, Callable, List
-from ..core.types import Index, Data
+from ..core.pv_types import Index, Data
 
 Chunks = Union[None, int, Dict[str, Union[int, Tuple[int, ...]]]]
 

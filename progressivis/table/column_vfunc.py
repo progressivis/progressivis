@@ -10,7 +10,7 @@ from .table_base import IndexPTable, BasePTable
 
 from typing import Any, Optional, Sequence, Union, Tuple, List, Callable
 
-from ..core.types import Index
+from ..core.pv_types import Index
 
 Shape = Tuple[int, ...]
 

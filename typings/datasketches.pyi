@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from typing import Any, Union
-from progressivis.core.types import Floats
+from progressivis.core.pv_types import Floats
 
 class kll_ints_sketch:
     def __init__(self, val: float) -> None: ...

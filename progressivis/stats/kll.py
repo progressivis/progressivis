@@ -7,7 +7,7 @@ from ..core.module import Module, def_input, def_output, def_parameter
 from ..core.decorators import process_slot, run_if_any
 from datasketches import kll_floats_sketch
 from ..core.utils import integer_types
-from ..core.types import Floats
+from ..core.pv_types import Floats
 from collections.abc import Sequence
 import numpy as np
 import logging

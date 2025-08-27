@@ -11,7 +11,7 @@ from .table_base import IndexPTable, BasePTable
 
 from typing import Any, Tuple, List, Sequence
 
-from ..core.types import Index
+from ..core.pv_types import Index
 
 Shape = Tuple[int, ...]
 

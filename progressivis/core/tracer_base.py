@@ -28,7 +28,7 @@ class Tracer(metaclass=ABCMeta):
         run_number: int,
         progress_current: float,
         progress_max: float,
-        quality: float,
+        # quality: float,
         next_state: int,
         step_run: int,
         debug: bool,
