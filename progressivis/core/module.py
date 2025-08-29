@@ -17,7 +17,7 @@ from typeguard import check_type
 from .scheduler import Scheduler
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.storage import Group
-import progressivis.core.aio as aio
+from progressivis.core import aio
 from progressivis.table.table_base import BasePTable
 from progressivis.table.table import PTable
 from progressivis.table.row import Row
@@ -499,7 +499,6 @@ class Module(metaclass=ABCMeta):
         return (pos, size)
 
     def get_quality(self) -> Dict[str, float] | None:
-        # pylint: disable=no-self-use
         """Quality value, should increase when the quality increases."""
         return None
 
@@ -606,18 +605,15 @@ class Module(metaclass=ABCMeta):
         return ""
 
     def is_input(self) -> bool:
-        # pylint: disable=no-self-use
         "Return True if this module is an input module"
         return self.TAG_INPUT in self.tags
 
     def is_data_input(self) -> bool:
-        # pylint: disable=no-self-use
         "Return True if this module brings new data"
         return False
 
     def get_image(self, run_number: Optional[int] = None) -> Any:  # pragma no cover
         "Return an image created by this module or None"
-        # pylint: disable=unused-argument, no-self-use
         return None
 
     def describe(self) -> None:

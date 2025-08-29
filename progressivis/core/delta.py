@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Optional, Any
 
-from ..core.pintset import PIntSet
+from .pintset import PIntSet
 
 
 class Delta:

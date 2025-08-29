@@ -6,12 +6,12 @@ import numpy as np
 
 from ..core.utils import indices_len, fix_loc
 from ..core.pintset import PIntSet
-from ..core.module import ReturnRunStep, def_input, def_output, document
-from ..core.module import Module
+from ..core.module import ReturnRunStep, def_input, def_output, document, Module
 from ..table.table import PTable
 from ..core.slot import Slot
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
+from ..core.docstrings import INPUT_SEL
 
 from typing import Optional, Dict, Union, Any, Tuple, Sequence
 
@@ -25,29 +25,25 @@ def _min_func(x: Any, y: Any) -> Any:
         return min(x, y)
 
 
-
 @document
-@def_input("table", PTable, hint_type=Sequence[str], doc="the input table")
+@def_input("table", PTable, hint_type=Sequence[str], doc=INPUT_SEL)
 @def_output(
     "result",
     PDict,
-    doc=("minimum values dictionary where every key represents" " a column"),
+    doc=("minimum values dictionary where every key represents a column"),
 )
 class Min(Module):
     """
     Computes the minimum of the values for every column
     """
 
-    def __init__(
-        self,
-        **kwds: Any,
-    ) -> None:
+    def __init__(self, **kwds: Any) -> None:
         """
         Args:
-            columns: columns to be processed. When missing all input columns are processed
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         super().__init__(**kwds)
+        self.quality: Dict[str, float] = {}
         self.default_step_size = 10000
 
     def reset(self) -> None:
@@ -63,13 +59,30 @@ class Min(Module):
         with self.context as ctx:
             indices = ctx.table.created.next(length=step_size)  # returns a slice
             steps = indices_len(indices)
-            op = self.filter_slot_columns(ctx.table, fix_loc(indices)).min(keepdims=False)
+            op = self.filter_slot_columns(ctx.table, fix_loc(indices)).min(
+                keepdims=False
+            )
             if self.result is None:
                 self.result = PDict(op)
             else:
                 for k, v in self.result.items():
                     self.result[k] = _min_func(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps)
+
+    def get_quality(self) -> Dict[str, float] | None:
+        if self.result is None:
+            return None
+        for key in self.result:
+            try:
+                self.quality["min_" + key] = float(-self.result[key])
+            except ValueError:
+                pass
+        toremove = set(self.quality.keys()) - set(
+            ["min_" + key for key in self.result.keys()]
+        )
+        for key in toremove:
+            self.quality.pop(key, None)
+        return self.quality
 
 
 def minimum_val_id(

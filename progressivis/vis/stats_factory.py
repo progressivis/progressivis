@@ -13,7 +13,14 @@ from ..stats.api import (
     Distinct,
     Corr,
 )
-from ..core.api import GroupContext, def_input, def_output, Module, process_slot, run_if_any
+from ..core.api import (
+    GroupContext,
+    def_input,
+    def_output,
+    Module,
+    process_slot,
+    run_if_any,
+)
 from ..table.api import PTable
 from ..table.dshape import dshape_fields
 from ..table.pattern import Pattern
@@ -292,6 +299,7 @@ class StatsFactory(Module):
             corr=_add_correlation,
         )
         self._sink: Sink | None = None
+        self.quality: Dict[str, float] = {}
 
     def reset(self) -> None:
         pass
@@ -313,7 +321,9 @@ class StatsFactory(Module):
                 self.types = {k: str(v) for (k, v) in dshape_fields(data.dshape)}
                 cols: List[str] = [k for (k, v) in dshape_fields(data.dshape)]
                 funcs = list(self.func_dict.keys())
-                arr: np.ndarray[Any, Any] = np.zeros((len(cols), len(funcs)), dtype=object)
+                arr: np.ndarray[Any, Any] = np.zeros(
+                    (len(cols), len(funcs)), dtype=object
+                )
                 self._matrix = pd.DataFrame(data=arr, index=cols, columns=funcs)
             if self._h2d_matrix is None:
                 assert self.types
@@ -368,9 +378,7 @@ class StatsFactory(Module):
                                 )
                         else:
                             if self._matrix.at[attr, func]:
-                                self._to_delete.append(
-                                    self._matrix.at[attr, func].name
-                                )
+                                self._to_delete.append(self._matrix.at[attr, func].name)
                                 self._matrix.at[attr, func] = 0
                         steps += 1
             df = self.last_selection.get("h2d_matrix")
@@ -396,6 +404,25 @@ class StatsFactory(Module):
                     dataflow.delete_modules(*deps)
                     # pass
             return self._return_run_step(self.state_blocked, steps_run=steps)
+
+    def get_quality(self) -> Dict[str, float] | None:
+        if self.result is None:
+            return None
+        keys: set[str] = set()
+        for name, mod in self._multi_col_modules.items():
+            if mod is None:
+                continue
+            qual = mod.get_quality()
+            if qual is None:
+                continue
+            for measure in qual:
+                newkey = name + "_" + measure
+                keys.add(newkey)
+                self.quality[newkey] = qual[measure]
+        todelete = set(self.quality.keys()) - keys
+        for name in todelete:
+            self.quality.pop(name)
+        return self.quality
 
     def create_dependent_modules(self, var_name: Optional[str] = None) -> None:
         s = self.scheduler()

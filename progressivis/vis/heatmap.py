@@ -1,6 +1,7 @@
 """
 Visualization of a Histogram2D as a heaatmap
 """
+
 from __future__ import annotations
 
 import re
@@ -99,7 +100,7 @@ class Heatmap(Module):
                 data = sp.special.cbrt(histo)
             elif params.transform == HeatmapTransform.LOG:
                 data = np.log1p(histo)
-            #elif params.transform == HeatmapTransform.GAUSS:
+            # elif params.transform == HeatmapTransform.GAUSS:
             #    data = gaussian_filter(histo, sigma=5)
             else:
                 data = histo
@@ -213,21 +214,21 @@ class Heatmap(Module):
         else:
             return None
 
-    def display_notebook(self, width:int = 512, height:int = 512) -> None:
+    def display_notebook(self, width: int = 512, height: int = 512) -> None:
         import ipywidgets as ipw
         from IPython.display import display
 
-        img = ipw.Image(value=b'\x00', width=width, height=height)  # type: ignore
-        progress = ipw.IntProgress(value=0, min=0, max=1000,
-                                   description='0/0',
-                                   orientation='horizontal')
-        save = ipw.Button(description="Save",
-                          disabled=False,
-                          button_style='',
-                          icon='save')
+        img = ipw.Image(value=b"\x00", width=width, height=height)  # type: ignore
+        progress = ipw.IntProgress(
+            value=0, min=0, max=1000, description="0/0", orientation="horizontal"
+        )
+        save = ipw.Button(
+            description="Save", disabled=False, button_style="", icon="save"
+        )
         box = ipw.VBox([ipw.HBox([progress, save]), img])
 
         display(box)  # type: ignore
+
         async def _after_run(m: Module, run_number: int) -> None:
             assert isinstance(m, Heatmap)
             image = m.get_image_bin()  # get the image from the heatmap
@@ -248,6 +249,7 @@ class Heatmap(Module):
 
         def _save(button: ipw.Button) -> None:
             from datetime import datetime
+
             bytes = self.get_image_bin()
             if bytes is None:
                 return
