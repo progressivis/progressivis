@@ -74,3 +74,25 @@ You can display this example in a <a href="_static/taxis_borough.html" target=_b
 
 ```
 
+(taxis-trips-density-map)=
+
+## A multi-class density map for NYC Taxis data.
+
+There are two classes represented here:
+
+* **A**: represents the pickup points density
+* **B**: represents the dropoff points density
+
+Pickup/dropoff sample points are also represented as red/blue dots.
+
+
+The notebook shown below is downloadable [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/taxis_trips_density_map.ipynb).
+You can display this example in a <a href="_static/taxis_trips_density_map.html" target=_blank>new tab</a>.
+
+```{eval-rst}
+.. raw:: html
+
+   <iframe src="_static/taxis_trips_density_map.html" height="2000px" width="100%"></iframe>
+
+```
+
