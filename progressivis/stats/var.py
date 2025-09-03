@@ -192,3 +192,14 @@ class Var(Module):
             else:
                 self.result.update(op)
             return self._return_run_step(self.next_state(dfslot), steps)
+
+    def get_quality(self) -> Dict[str, float] | None:
+        if self.result is None:
+            return None
+        quality = {}
+        for key in self.result:
+            try:
+                quality["var_" + key] = -float(np.sqrt(self.result[key]))
+            except ValueError:
+                pass
+        return quality
