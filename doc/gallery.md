@@ -96,3 +96,22 @@ You can display this example in a <a href="_static/taxis_trips_density_map.html"
 
 ```
 
+(mb-kmeans-cluster-s1)=
+
+## Progressive KMeans
+
+
+This implémentation is based on [scikit-learn mini-batch KMeans](https://scikit-learn.org/stable/modules/clustering.html#mini-batch-kmeans)
+
+The clustering dataset came from [P. Fänti and S. Sieranoja, K-means properties on six clustering benchmark datasets](https://cs.joensuu.fi/sipu/datasets/)
+
+The notebook shown below is downloadable [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/mb_kmeans_cluster_s1.ipynb).
+You can display this example in a <a href="_static/mb_kmeans_cluster_s1.html" target=_blank>new tab</a>.
+
+```{eval-rst}
+.. raw:: html
+
+   <iframe src="_static/mb_kmeans_cluster_s1.html" height="2000px" width="100%"></iframe>
+
+```
+
