@@ -377,8 +377,9 @@ class StatsFactory(Module):
                                     attr, self
                                 )
                         else:
-                            if self._matrix.at[attr, func]:
-                                self._to_delete.append(self._matrix.at[attr, func].name)
+                            if elt := self._matrix.at[attr, func]:
+                                assert hasattr(elt, "name")
+                                self._to_delete.append(elt.name)
                                 self._matrix.at[attr, func] = 0
                         steps += 1
             df = self.last_selection.get("h2d_matrix")
@@ -390,7 +391,7 @@ class StatsFactory(Module):
                     cell = df.at[cx, cy]
                     if cell:
                         if not self._h2d_matrix.at[cx, cy]:
-                            self._h2d_matrix.at[cx, cy] = _h2d_func(cx, cy, self)
+                            self._h2d_matrix.at[cx, cy] = _h2d_func(cx, cy, self)  # type: ignore
                     else:
                         m = self._h2d_matrix.at[cx, cy]
                         if m:
