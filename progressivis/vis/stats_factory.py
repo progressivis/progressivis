@@ -391,7 +391,7 @@ class StatsFactory(Module):
                     cell = df.at[cx, cy]
                     if cell:
                         if not self._h2d_matrix.at[cx, cy]:
-                            self._h2d_matrix.at[cx, cy] = _h2d_func(cx, cy, self)  # type: ignore
+                            self._h2d_matrix.at[cx, cy] = _h2d_func(cx, cy, self)
                     else:
                         m = self._h2d_matrix.at[cx, cy]
                         if m:

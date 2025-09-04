@@ -18,12 +18,13 @@ from progressivis.core.module import (
 from progressivis.core.pintset import PIntSet
 from progressivis.core.utils import indices_len
 from ..core.module import Module
+from ..core.decorators import process_slot, run_if_any
+from ..core.quality import QualitySqrtSumSquarredDiffs
 from ..table.table_base import BasePTable
 from ..table.api import PTable, PTableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
 from ..io.api import Variable
 from ..utils.psdict import PDict
-from ..core.decorators import process_slot, run_if_any
 from ..table.filtermod import FilterMod
 from ..stats.api import Var
 
@@ -73,6 +74,7 @@ class MBKMeans(Module):
         self.params.samples = n_clusters
         self._is_greedy: bool = is_greedy
         self._arrays: Optional[Dict[int, np.ndarray[Any, Any]]] = None
+        self.quality: QualitySqrtSumSquarredDiffs | None = None
         # self.convergence_context = {}
 
     def predict_step_size(self, duration: float) -> int:
@@ -278,6 +280,12 @@ class MBKMeans(Module):
             self.dep.variance = v
             v.input.table = input_module.output[input_slot]
             self.input.var = v.output.result
+
+    def get_quality(self) -> Dict[str, float]:
+        if self.quality is None:
+            self.quality = QualitySqrtSumSquarredDiffs()
+        val = self.quality.quality(self.mbk.cluster_centers_)
+        return {"mb_k_means": -np.sqrt(val)}
 
 
 @def_input("table", PTable)
