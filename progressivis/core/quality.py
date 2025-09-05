@@ -18,7 +18,7 @@ class QualityL1(QualityLiteral):
     def quality(self, val: float) -> float:
         try:
             ret = -abs(self.previous - val)  # type: ignore
-        except TypeError:
+        except Exception:
             ret = 0
         self.previous = val
         return ret
@@ -31,7 +31,7 @@ class QualitySqrtSumSquarredDiffs:
     def quality(self, val: np.ndarray[Any, Any]) -> float:
         try:
             ret = np.sqrt(np.sum((self.previous - val) ** 2))
-        except TypeError:
+        except Exception:
             ret = 0
         self.previous = val
         return float(ret)

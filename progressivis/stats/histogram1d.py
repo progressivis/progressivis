@@ -11,6 +11,7 @@ from ..core.module import (
 from ..core.utils import indices_len, fix_loc, integer_types
 from ..core.slot import Slot
 from ..core.module import Module
+from ..core.quality import QualitySqrtSumSquarredDiffs
 from ..table.table import PTable
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
@@ -18,7 +19,7 @@ import numpy as np
 
 import logging
 
-from typing import Any, Sequence
+from typing import Any, Sequence, Dict
 
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,7 @@ class Histogram1D(Module):
         self._bounds: tuple[float, float] | None = None
         self._h_cnt = 0
         self.result = PDict()
+        self._quality: QualitySqrtSumSquarredDiffs | None = None
 
     def reset(self) -> None:
         self._histo = None
@@ -227,6 +229,17 @@ class Histogram1D(Module):
             "values": self._histo.tolist() if self._histo is not None else [],
             "min": min_,
             "max": max_,
+        }
+
+    def get_quality(self) -> Dict[str, float] | None:
+        if self._histo is None:
+            return None
+        if self._quality is None:
+            self._quality = QualitySqrtSumSquarredDiffs()
+        return {
+            "histogram1d_"+str(self.column): self._quality.quality(
+                self._histo / self._histo.sum()  # normalize
+            )
         }
 
     def get_visualization(self) -> str:

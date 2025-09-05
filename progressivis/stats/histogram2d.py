@@ -11,6 +11,7 @@ from ..core.module import (
 )
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import Slot
+from ..core.quality import QualitySqrtSumSquarredDiffs
 from ..table.api import PTable
 from ..utils.psdict import PDict
 from fast_histogram import histogram2d  # type: ignore
@@ -20,7 +21,7 @@ import numpy as np
 
 import logging
 
-from typing import Optional, Tuple, cast, Any, NamedTuple
+from typing import Optional, Tuple, cast, Any, NamedTuple, Dict
 
 
 # Bounds2D = Tuple[float, float, float, float]
@@ -127,6 +128,7 @@ class Histogram2D(Module):
         self._bounds: Optional[Bounds2D] = None
         self._with_output = with_output
         self._heatmap_cache: Optional[Tuple[JSon, Bounds2D]] = None
+        self._quality: QualitySqrtSumSquarredDiffs | None = None
         self.result = PTable(
             self.generate_table_name("Histogram2D"),
             dshape=Histogram2D.schema,
@@ -338,6 +340,17 @@ class Histogram2D(Module):
                     table.loc[last.row] = values
             self.build_heatmap(values)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
+
+    def get_quality(self) -> Dict[str, float] | None:
+        if self._histo is None:
+            return None
+        if self._quality is None:
+            self._quality = QualitySqrtSumSquarredDiffs()
+        return {
+            f"histogram2d_({str(self.x_column)},{str(self.y_column)})": self._quality.quality(
+                self._histo / self._histo.sum()  # normalize
+            )
+        }
 
     def get_visualization(self) -> str:
         return "heatmap"
