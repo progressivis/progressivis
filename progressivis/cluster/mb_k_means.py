@@ -74,7 +74,7 @@ class MBKMeans(Module):
         self.params.samples = n_clusters
         self._is_greedy: bool = is_greedy
         self._arrays: Optional[Dict[int, np.ndarray[Any, Any]]] = None
-        self.quality: QualitySqrtSumSquarredDiffs | None = None
+        self._quality: QualitySqrtSumSquarredDiffs | None = None
         # self.convergence_context = {}
 
     def predict_step_size(self, duration: float) -> int:
@@ -282,10 +282,9 @@ class MBKMeans(Module):
             self.input.var = v.output.result
 
     def get_quality(self) -> Dict[str, float]:
-        if self.quality is None:
-            self.quality = QualitySqrtSumSquarredDiffs()
-        val = self.quality.quality(self.mbk.cluster_centers_)
-        return {"mb_k_means": -np.sqrt(val)}
+        if self._quality is None:
+            self._quality = QualitySqrtSumSquarredDiffs()
+        return {"mb_k_means": self._quality.quality(self.mbk.cluster_centers_)}
 
 
 @def_input("table", PTable)

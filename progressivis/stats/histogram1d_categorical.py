@@ -4,15 +4,15 @@ import logging
 
 import pandas as pd
 
-from ..core.module import ReturnRunStep, def_input, def_output, document
+from ..core.module import ReturnRunStep, def_input, def_output, document, Module
 from ..core.utils import indices_len, fix_loc
-from ..core.module import Module
+from ..core.quality import QualitySqrtSumSquarredDiffs
 from ..table.table import PTable
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 from ..utils.errors import ProgressiveError
 
-from typing import Any, Union
+from typing import Any, Union, Dict
 
 
 logger = logging.getLogger(__name__)
@@ -41,6 +41,7 @@ class Histogram1DCategorical(Module):
         self.total_read = 0
         self.default_step_size = 1000
         self.result = PDict()
+        self._quality: QualitySqrtSumSquarredDiffs | None = None
 
     def reset(self) -> None:
         if self.result:
@@ -77,3 +78,15 @@ class Histogram1DCategorical(Module):
 
     def get_visualization(self) -> str:
         return "histogram1d_categorical"
+
+    def get_quality(self) -> Dict[str, float] | None:
+        assert self.result is not None
+        if len(self.result) == 0:
+            return None
+        array = self.result.array
+        if self._quality is None:
+            self._quality = QualitySqrtSumSquarredDiffs()
+        return {
+            "histogram1d_cat_"
+            + str(self.column): self._quality.quality(array / array.sum())  # normalize
+        }

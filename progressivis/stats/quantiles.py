@@ -3,9 +3,7 @@ from __future__ import annotations
 import logging
 
 from ..core.decorators import process_slot, run_if_any
-from ..table.api import (
-    PTableSelectedView, PTable
-)
+from ..table.api import PTableSelectedView, PTable
 from progressivis.utils.api import PDict
 from progressivis.core.api import (
     Module,
@@ -34,7 +32,9 @@ DEBUG = False
     PDict,
     doc=("Return the size processed. Use parametrized slots to access quantiles."),
 )
-@def_output("table", PTableSelectedView, required=False, doc="Return a view on the input table")
+@def_output(
+    "table", PTableSelectedView, required=False, doc="Return a view on the input table"
+)
 class Quantiles(Module):
     """
     Maintain a sketch data structure to get quantile values for every column
@@ -53,7 +53,7 @@ class Quantiles(Module):
         super().__init__(**kwds)
         self.default_step_size = 10000
         self._k = k
-        self._klls : List[kll_floats_sketch] = []
+        self._klls: List[kll_floats_sketch] = []
         self._cache: Dict[float, PDict] = {}
         self._valid: Set[float] = set()
         self._maintain_table_out = False
@@ -80,8 +80,7 @@ class Quantiles(Module):
             self._maintain_table_out = True
 
     def get_data(self, name: str, hint: Any = None) -> Any:
-        """Return the data of the named output slot.
-        """
+        """Return the data of the named output slot."""
         if name == "table":
             return self.table
         if self.result is None:
