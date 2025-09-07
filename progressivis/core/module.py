@@ -1239,6 +1239,7 @@ class Module(metaclass=ABCMeta):
         self.state = next_state
         if self.state == Module.state_zombie:
             tracer.terminated(run_number)
+        self._end_time = now
         progress = self.get_progress()
         tracer.end_run(
             now,
