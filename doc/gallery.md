@@ -115,3 +115,32 @@ You can display this example in a <a href="_static/mb_kmeans_cluster_s1.html" ta
 
 ```
 
+(mnist-tsne-2d)=
+
+## TSNE 2D
+
+
+The implementation used here is based on [PANENE](https://github.com/e-/PANENE), an algorithm for the k-nearest neighbor (KNN) problem and more specificaly on [this example](https://github.com/e-/PANENE/tree/master/examples/tsne/responsive_tsne).
+
+The algorithm is described in the paper: J. Jo, J. Seo and J. -D. Fekete, "PANENE: A Progressive Algorithm for Indexing and Querying Approximate k-Nearest Neighbors," in IEEE Transactions on Visualization and Computer Graphics, vol. 26, no. 2, pp. 1347-1360, 1 Feb. 2020, [doi: 10.1109/TVCG.2018.2869149](https://ieeexplore.ieee.org/document/8462793).
+
+The `PANENE` implementation for `python` is called `pynene`.
+
+As `pynene` is not part of progressivis you have to install it before running this example.
+
+In an environment containing `progressivis`, `ipyprogressivis` and a `C++` compiler you can install `pynene` via `pip` this way:
+
+```sh
+pip install git+https://github.com/progressivis/PANENE.git@progressivis
+```
+The notebook shown below is downloadable [here](https://github.com/progressivis/ipyprogressivis/blob/main/notebooks/mnist_tsne2d.ipynb).
+You can display this example in a <a href="_static/mnist_tsne2d.html" target=_blank>new tab</a>.
+
+
+```{eval-rst}
+.. raw:: html
+
+   <iframe src="_static/mnist_tsne2d.html" height="2000px" width="100%"></iframe>
+
+```
+
