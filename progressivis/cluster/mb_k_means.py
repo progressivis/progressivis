@@ -48,7 +48,6 @@ class MBKMeans(Module):
     def __init__(
         self,
         n_clusters: int,
-        columns: Optional[List[str]] = None,
         batch_size: int = 100,
         tol: float = 0.01,
         is_input: bool = True,
@@ -56,7 +55,7 @@ class MBKMeans(Module):
         random_state: Union[int, np.random.RandomState, None] = None,
         **kwds: Any,
     ):
-        super().__init__(columns=columns, **kwds)
+        super().__init__(**kwds)
         self.mbk = MiniBatchKMeans(
             n_clusters=n_clusters,
             batch_size=batch_size,
