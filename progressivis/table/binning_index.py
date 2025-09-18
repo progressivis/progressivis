@@ -15,6 +15,7 @@ from ..core.utils import slice_to_arange, fix_loc
 from .. import ProgressiveError
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.psdict import PDict
+from ..core.quality import QualitySqrtSumSquarredDiffs
 from ..core.module import (
     Module,
     ReturnRunStep,
@@ -65,6 +66,7 @@ class _BinningIndexImpl:
         self.origin: float = 0.0
         #: bins width. All bins have the same width
         self.bin_w: float = 0.0
+        self._quality: QualitySqrtSumSquarredDiffs | None = None
         self._initialize()
         self.update_histogram(created=table.index)
 
@@ -496,6 +498,14 @@ class _BinningIndexImpl:
                 ret_values.append(values[reminder])
         return dict(zip(points.keys(), ret_values))
 
+    def _get_quality(self) -> float:
+        histo = np.array([0 if elt is None else len(elt) for elt in self.binvect])
+        sum_ = sum(histo)
+        if not sum_:
+            return 0.
+        if self._quality is None:
+            self._quality = QualitySqrtSumSquarredDiffs()
+        return self._quality.quality(histo / sum_)  # normalize
 
 @document
 @def_parameter(
@@ -564,6 +574,12 @@ class BinningIndex(Module):
         for hit in impl.binvect_hits:  # PDict hasn't a defaultdict subclass so ...
             self.bin_timestamps[hit] = self.bin_timestamps.get(hit, 0) + 1  # type: ignore
         self.bin_timestamps[-1] = impl.origin  # type: ignore
+
+    def get_quality(self) -> dict[str, float] | None:
+        assert self._impl is not None
+        return {
+            f"binning_index_{self._column}": self._impl._get_quality()
+        }
 
     def run_step(
         self, run_number: int, step_size: int, quantum: float

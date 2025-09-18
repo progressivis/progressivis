@@ -10,6 +10,7 @@ import logging
 import numpy as np
 from ..core.pintset import PIntSet
 from ..core.utils import slice_to_arange, fix_loc
+from ..core.quality import QualitySqrtSumSquarredDiffs
 from .. import ProgressiveError
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.psdict import PDict
@@ -71,6 +72,7 @@ class BinningIndexND(Module):
         self._prev_len = 0
         self._trials = 0
         self._columns: Sequence[str] | None = None
+        self._quality: QualitySqrtSumSquarredDiffs | None = None
 
     def get_min_bin(self) -> dict[str, PIntSet | None] | None:
         if self._impl is None or self._columns is None:
@@ -355,3 +357,11 @@ class BinningIndexND(Module):
             hist_index = self
             hist_index.input.table = input_module.output[input_slot]
             return hist_index
+
+    def get_quality(self) -> dict[str, float] | None:
+        if self._impl is None:
+            return None
+        ret = dict()
+        for col, impl in self._impl.items():
+            ret[f"binning_index_{col}"] = impl._get_quality()
+        return ret
