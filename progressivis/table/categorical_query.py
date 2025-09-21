@@ -44,7 +44,7 @@ class CategoricalQuery(Module):
         input_module: Module,
         input_slot: str = "result",
     ) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         grby = GroupBy(by=self._column, scheduler=s)
         grby.input.table = input_module.output[input_slot]
         self.input.table = grby.output.result

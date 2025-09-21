@@ -63,6 +63,7 @@ class _DataClass:
         self.sample: Union[None, Literal["default"], Module] = None
         self.range_query_2d: Optional[Module] = None
 
+    @property
     def scheduler(self) -> Scheduler:
         return self._scheduler
 
@@ -76,7 +77,7 @@ class _DataClass:
     ) -> _DataClass:
         if self.input_module is not None:
             return self
-        scheduler = self.scheduler()
+        scheduler = self.scheduler
         with scheduler:
             self.input_module = input_module
             self.input_slot = input_slot
@@ -386,7 +387,7 @@ class MCScatterPlot(Module):
         self.input_module = input_module
         self.input_slot = input_slot
         with self.grouped():
-            scheduler = self.scheduler()
+            scheduler = self.scheduler
             self.dep.min_value = Variable(
                 {k: None for k in self._translated_keys},
                 translation=self._translation,

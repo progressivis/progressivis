@@ -10,7 +10,7 @@ from typing import Optional, List, Dict, Union, cast, Any, Tuple
 class PTableTracer(Tracer):
     TRACER_DSHAPE = (
         "{"
-        "type: string,"
+        # "type: string,"
         "run: int64,"
         "start: real,"
         "end: real,"
@@ -25,7 +25,7 @@ class PTableTracer(Tracer):
     )
     TRACER_INIT: Dict[str, Union[int, float, np.floating[Any], str]] = dict(
         [
-            ("type", ""),
+            # ("type", ""),
             ("run", 0),
             ("start", np.nan),
             ("end", np.nan),
@@ -51,7 +51,7 @@ class PTableTracer(Tracer):
             str, Union[int, float, np.floating[Any], str]
         ] | None = None
         self.last_run_details = ""
-        self.has_debug = False
+        # self.has_debug = False
 
     def trace_stats(self, max_runs: Optional[int] = None) -> PTable:
         return self.table
@@ -70,7 +70,7 @@ class PTableTracer(Tracer):
             # quality: float,
             next_state: int,
             steps_run: int,
-            debug: bool
+            # debug: bool
     ) -> None:
         assert self.last_run_start
         row = self.last_run_start
@@ -79,11 +79,11 @@ class PTableTracer(Tracer):
         row["end"] = ts
         row["duration"] = ts - cast(float, row["start"])
         row["detail"] = self.last_run_details
-        if debug:
-            row["type"] = "debug_step"
-            self.has_debug = True
-        else:
-            row["type"] = "step"
+        # if debug:
+        #     row["type"] = "debug_step"
+        #     self.has_debug = True
+        # else:
+        #     row["type"] = "step"
         row["progress_current"] = progress_current
         row["progress_max"] = progress_max
         # row["quality"] = quality
@@ -124,13 +124,14 @@ class PTableTracer(Tracer):
         # TODO optimize to search backward to avoid scanning the whole table
         if len(self.table) < 2:
             return ([], [])
-        if self.has_debug:
-            expr_ = (
-                (self.table["type"].values == "step") &
-                (self.table["duration"].values != 0)
-            )
-        else:
-            expr_ = (self.table["duration"].values != 0)
+        # if self.has_debug:
+        #     expr_ = (
+        #         (self.table["type"].values == "step") &
+        #         (self.table["duration"].values != 0)
+        #     )
+        # else:
+        #     expr_ = (self.table["duration"].values != 0)
+        expr_ = (self.table["duration"].values != 0)
 
         if len(expr_) == 0:
             step_traces = np.array([], dtype="int64")

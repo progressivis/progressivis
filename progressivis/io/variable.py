@@ -83,7 +83,7 @@ class Variable(Module):
             values = res
         for k, v in msg.items():
             last[k] = v
-        await self.scheduler().for_input(self)
+        await self.scheduler.for_input(self)
         if self.result is None:
             self.result = PDict(values)
         else:

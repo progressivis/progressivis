@@ -24,7 +24,7 @@ class TestDistinct(ProgressiveTest):
         dist.input[0] = csv.output.result
         prt = Print(proc=self.terse, scheduler=s)
         prt.input[0] = dist.output.result
-        aio.run(csv.scheduler().start())
+        aio.run(csv.scheduler.start())
         dist.result is not None
         res = dist.result
         assert res is not None
@@ -41,7 +41,7 @@ class TestDistinct(ProgressiveTest):
         dist.input[0] = csv.output.result
         prt = Print(proc=self.terse, scheduler=s)
         prt.input[0] = dist.output.result
-        aio.run(csv.scheduler().start())
+        aio.run(csv.scheduler.start())
         assert dist.result is not None
         res = [v for v in dist.result.values() if v is not None]
         self.assertEqual(res, [])  # too many values detected in all cols

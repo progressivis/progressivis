@@ -177,7 +177,7 @@ class Join(Module):
             suffix: ...
         """
 
-        s = self.scheduler()
+        s = self.scheduler
         on_conf = (nn(on), nn(related_on), nn(primary_on))
         if on_conf not in [(True, False, False), (False, True, True)]:
             raise ValueError(

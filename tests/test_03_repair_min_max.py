@@ -71,7 +71,7 @@ class MyStirrer(Module):
         v = input_table.loc[fix_loc(created), :]
         self.result.append(v)
         if not self.done:
-            module = self.scheduler()[self.watched]
+            module = self.scheduler[self.watched]
             sensitive_ids = PIntSet(getattr(module, "_sensitive_ids").values())
             if sensitive_ids:
                 if self.proc_sensitive:

@@ -22,6 +22,6 @@ class Pattern(Module):
         raise ProgressiveStopIteration()
 
     def create_dependent_modules(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         self.dep.sink = Sink(scheduler=s)
         self.dep.sink.input.inp = self.output.result

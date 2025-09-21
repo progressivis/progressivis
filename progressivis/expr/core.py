@@ -159,12 +159,13 @@ class Expr:
     def invalidate(self) -> None:
         self._valid = None
 
+    @property
     def scheduler(self) -> Scheduler:
-        assert self._module
-        return self._module.scheduler()
+        assert self._module is not None
+        return self._module.scheduler
 
     def repipe(self, mod_name: str, out: Optional[str] = None) -> Expr:
-        mod_ = self.scheduler()[mod_name]
+        mod_ = self.scheduler[mod_name]
         if isinstance(mod_, (Module, Module)):
             from .table import PDataExpr
 

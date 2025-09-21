@@ -98,7 +98,7 @@ class PPCA(Module):
         resetter_func: Optional[Callable[..., Any]] = None,
     ) -> None:
         with self.grouped():
-            s = self.scheduler()
+            s = self.scheduler
             self.dep.reduced = PPCATransformer(
                 scheduler=s,
                 atol=atol,
@@ -159,7 +159,7 @@ class PPCATransformer(Module):
 
     def create_dependent_modules(self, input_slot: Slot) -> None:
         with self.grouped():
-            scheduler = self.scheduler()
+            scheduler = self.scheduler
             with scheduler:
                 self.dep.sample = Sample(
                     samples=100, required="select", group=self.name, scheduler=scheduler

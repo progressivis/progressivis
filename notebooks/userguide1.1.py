@@ -77,13 +77,13 @@ heatmap.input.array = histogram2d.output.result
 # %%
 heatmap.display_notebook()
 # Start the scheduler
-csv.scheduler().task_start()
+csv.scheduler.task_start()
 
 # %%
 # Show what runs
-csv.scheduler()
+csv.scheduler
 
 # %%
-csv.scheduler().task_stop()
+csv.scheduler.task_stop()
 
 # %%

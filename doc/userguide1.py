@@ -20,4 +20,4 @@ heatmap = Heatmap()
 heatmap.input.array = histogram2d.output.result
 
 # heatmap.display_notebook()
-scheduler = csv.scheduler()  # .task_start()
+scheduler = csv.scheduler  # .task_start()

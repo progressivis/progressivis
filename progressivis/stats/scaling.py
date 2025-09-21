@@ -286,7 +286,7 @@ class MinMaxScaler(Module):
     def create_dependent_modules(
         self, input_module: Module, input_slot: str = "result", hist: bool = False
     ) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         self.input.table = input_module.output[input_slot]
         self.dep.min = Min(scheduler=s)
         self.dep.min.input.table = input_module.output[input_slot]

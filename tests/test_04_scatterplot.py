@@ -44,7 +44,7 @@ class TestScatterPlot(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = sp.output.result
         s.on_idle(self._stop)
-        aio.run(csv.scheduler().start())
+        aio.run(csv.scheduler.start())
         assert csv.result is not None
         self.assertEqual(len(csv.result), 30_000)
 

@@ -55,4 +55,4 @@ heatmap = Heatmap()
 # Connect it to the histogram2d
 heatmap.input.array = histogram2d.output.result
 
-scheduler = csv.scheduler()
+scheduler = csv.scheduler

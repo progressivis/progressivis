@@ -247,7 +247,7 @@ class RangeQuery(Module):
         """
         if self.input_module is not None:  # test if already called
             return self
-        scheduler = self.scheduler()
+        scheduler = self.scheduler
         params = self.params
         self.input_module = input_module
         self.input_slot = input_slot

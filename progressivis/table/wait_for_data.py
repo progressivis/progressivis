@@ -30,6 +30,6 @@ class WaitForData(Module):
         slot = self.get_input_slot("table")
         table = slot.data()
         if table is not None and len(table) > 0:
-            self._proc(self.scheduler(), table)
+            self._proc(self.scheduler, table)
             return self._return_terminate()
         return self._return_run_step(Module.state_blocked, 0)

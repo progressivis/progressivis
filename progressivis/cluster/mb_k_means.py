@@ -268,7 +268,7 @@ class MBKMeans(Module):
         self, input_module: Module, input_slot: str = "result"
     ) -> None:
         with self.grouped():
-            s = self.scheduler()
+            s = self.scheduler
             self.input_module = input_module
             self.input.table = input_module.output[input_slot]
             self.input_slot = input_slot
@@ -326,7 +326,7 @@ class MBKMeansFilter(Module):
         self, mbkmeans: MBKMeans, data_module: Module, data_slot: str
     ) -> None:
         with self.grouped():
-            scheduler = self.scheduler()
+            scheduler = self.scheduler
             filter_ = FilterMod(expr=f"labels=={self._sel}", scheduler=scheduler)
             filter_.input.table = mbkmeans.output.labels
             self.dep.filter = filter_

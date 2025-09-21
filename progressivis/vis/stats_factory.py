@@ -50,7 +50,7 @@ class Histogram1DPattern(Pattern):
         super().create_dependent_modules()
         input_module = self._factory._input_module
         input_slot = self._factory._input_slot
-        scheduler = self._factory.scheduler()
+        scheduler = self._factory.scheduler
         col = self._column
         with scheduler:
             # TODO replace sink with a real dependency
@@ -102,7 +102,7 @@ class Histogram2DPattern(Pattern):
         super().create_dependent_modules()
         input_module = self._factory._input_module
         input_slot = self._factory._input_slot
-        scheduler = self._factory.scheduler()
+        scheduler = self._factory.scheduler
         x_col, y_col = self._x_column, self._y_column
         with scheduler:
             # TODO: reuse min max
@@ -157,7 +157,7 @@ class DataShape(Module):
 
 def _add_max_col(col: str, factory: StatsFactory) -> Max:
     input_module = factory._input_module
-    scheduler = factory.scheduler()
+    scheduler = factory.scheduler
     with scheduler:
         m = Max(scheduler=scheduler)
         m.input.table = input_module.output.result[col,]
@@ -169,7 +169,7 @@ def _add_max_col(col: str, factory: StatsFactory) -> Max:
 
 def _add_min_col(col: str, factory: StatsFactory) -> Min:
     input_module = factory._input_module
-    scheduler = factory.scheduler()
+    scheduler = factory.scheduler
     with scheduler:
         m = Min(scheduler=scheduler)
         m.input.table = input_module.output.result[col,]
@@ -180,7 +180,7 @@ def _add_min_col(col: str, factory: StatsFactory) -> Min:
 
 def _add_var_col(col: str, factory: StatsFactory) -> Var:
     input_module = factory._input_module
-    scheduler = factory.scheduler()
+    scheduler = factory.scheduler
     with scheduler:
         m = Var(scheduler=scheduler)
         m.input.table = input_module.output.result[col,]
@@ -192,7 +192,7 @@ def _add_var_col(col: str, factory: StatsFactory) -> Var:
 
 def _add_distinct_col(col: str, factory: StatsFactory) -> Distinct:
     input_module = factory._input_module
-    scheduler = factory.scheduler()
+    scheduler = factory.scheduler
     with scheduler:
         m = Distinct(scheduler=scheduler)
         m.input.table = input_module.output.result[col,]
@@ -216,7 +216,7 @@ def _add_correlation(col: str, factory: StatsFactory) -> Optional[Corr]:
     if len(columns) < 2:
         return None
     input_module = factory._input_module
-    scheduler = factory.scheduler()
+    scheduler = factory.scheduler
     with scheduler:
         m = Corr(scheduler=scheduler)
         m.input.table = input_module.output.result[columns]
@@ -229,7 +229,7 @@ def _add_correlation(col: str, factory: StatsFactory) -> Optional[Corr]:
 
 def _add_barplot_col(col: str, factory: StatsFactory) -> Histogram1DCategorical:
     input_module = factory._input_module
-    scheduler = factory.scheduler()
+    scheduler = factory.scheduler
     with scheduler:
         m = Histogram1DCategorical(scheduler=scheduler, column=col)
         m.input.table = input_module.output.result
@@ -244,7 +244,7 @@ def _add_hist_col(col: str, factory: StatsFactory) -> Module:
     col_type = factory.types[col]
     if col_type == "string":
         return _add_barplot_col(col, factory)
-    scheduler = factory.scheduler()
+    scheduler = factory.scheduler
     with scheduler:
         m = Histogram1DPattern(column=col, factory=factory, scheduler=scheduler)
         m.create_dependent_modules()
@@ -260,7 +260,7 @@ def _hide_func(col: str, factory: StatsFactory) -> None:
 
 
 def _h2d_func(cx: str, cy: str, factory: StatsFactory) -> Histogram2DPattern:
-    scheduler = factory.scheduler()
+    scheduler = factory.scheduler
     with scheduler:
         m = Histogram2DPattern(
             x_column=cx, y_column=cy, factory=factory, scheduler=scheduler
@@ -360,7 +360,7 @@ class StatsFactory(Module):
                         assert isinstance(cell, Module)
                         self._to_delete.append(cell.name)
                 self._h2d_matrix.loc[col, :] = 0
-            scheduler = self.scheduler()
+            scheduler = self.scheduler
             steps = len(self._to_delete) // 2  # or more ?
             df = self.last_selection.get("matrix")
             if df is not None:
@@ -426,13 +426,13 @@ class StatsFactory(Module):
         return self.quality
 
     def create_dependent_modules(self, var_name: Optional[str] = None) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         self.variable = Variable(name=var_name, scheduler=s)
         self.input.selection = self.variable.output.result
 
     def sink(self) -> Sink:
-        assert self.scheduler().in_context_manager()
+        assert self.scheduler.in_context_manager()
         # the method is called inside a "with scheduler" context manager
         if self._sink is None:
-            self._sink = Sink(scheduler=self.scheduler())
+            self._sink = Sink(scheduler=self.scheduler)
         return self._sink

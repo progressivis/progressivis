@@ -134,7 +134,7 @@ class TableFacade(ModuleFacade):
     def create_slot_module(self, name: str) -> SlotProxy:
         if name in ("main", "result"):  # keeping result for module compatibility
             return SlotProxy(self.table_slot, self.module)
-        scheduler = self.module.scheduler()
+        scheduler = self.module.scheduler
         reg = self.registry[name]
         mod = reg.module_cls(name=get_random_name(name), scheduler=scheduler, **reg.module_kw)
         mod.input[mod.default_input()] = self.module.output[self.table_slot][reg.module_hints]
@@ -170,8 +170,9 @@ class TableFacade(ModuleFacade):
         name_reg.module_kw = kw
         self.registry[name] = name_reg
 
+    @property
     def scheduler(self) -> Scheduler:
-        return self.module.scheduler()
+        return self.module.scheduler
 
     @property
     def members(self) -> list[str]:

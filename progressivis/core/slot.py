@@ -150,9 +150,10 @@ class Slot:
         data = self.data()
         return data is not None and len(data) > 0
 
+    @property
     def scheduler(self) -> Scheduler:
         "Return the scheduler associated with this slot"
-        return self.output_module.scheduler()
+        return self.output_module.scheduler
 
     def input_descriptor(self) -> SlotDescriptor:
         assert self.input_module is not None and self.input_name is not None

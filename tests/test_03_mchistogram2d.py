@@ -33,7 +33,7 @@ class TestMCHistogram2D(ProgressiveTest):
         heatmap.input.array = histogram2d.output.result
         pr = Every(proc=self.terse, scheduler=s)
         pr.input[0] = heatmap.output.result
-        aio.run(csv.scheduler().start())
+        aio.run(csv.scheduler.start())
         _ = histogram2d.trace_stats()
 
     def test_histogram2d1(self) -> None:
@@ -55,7 +55,7 @@ class TestMCHistogram2D(ProgressiveTest):
         heatmap.input.array = histogram2d.output.result
         pr = Every(proc=self.terse, scheduler=s)
         pr.input[0] = heatmap.output.result
-        aio.run(csv.scheduler().start())
+        aio.run(csv.scheduler.start())
         assert histogram2d.result is not None
         last = notNone(histogram2d.result.last()).to_dict()
         h1 = last["array"]

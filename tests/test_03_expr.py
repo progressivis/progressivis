@@ -47,8 +47,8 @@ class TestExpr(ProgressiveTest):
             pv.echo(trace, proc=prtT)
             module = csv.module
             assert module is not None
-            self.assertEqual(csv.scheduler(), module.scheduler())
-        aio.run(csv.scheduler().start())
+            self.assertEqual(csv.scheduler, module.scheduler)
+        aio.run(csv.scheduler.start())
         table = csv.result
         lastm = m.result
         lastM = M.result
@@ -76,8 +76,8 @@ class TestExpr(ProgressiveTest):
             m = ret.fetch("min_1")
             M = ret.fetch("max_1")
             _ = M["_trace"] | pv.echo(proc=prtT)
-            self.assertEqual(csv.scheduler(), csv.module.scheduler())
-        aio.run(csv.scheduler().start())
+            self.assertEqual(csv.scheduler, csv.module.scheduler)
+        aio.run(csv.scheduler.start())
         table = csv.result
         lastm = m.result
         lastM = M.result
@@ -107,8 +107,8 @@ class TestExpr(ProgressiveTest):
             m = ret.fetch("min_1")
             M = ret.fetch("max_1")
             csv = ret.fetch("csv_loader_1")
-            self.assertEqual(csv.scheduler(), csv.module.scheduler())
-        aio.run(csv.scheduler().start())
+            self.assertEqual(csv.scheduler, csv.module.scheduler)
+        aio.run(csv.scheduler.start())
         table = csv.result
         lastm = m.result
         lastM = M.result

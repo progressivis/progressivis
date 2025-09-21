@@ -31,7 +31,7 @@ class Tracer(metaclass=ABCMeta):
         # quality: float,
         next_state: int,
         step_run: int,
-        debug: bool,
+        # debug: bool,
     ) -> None:
         pass
 

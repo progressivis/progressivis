@@ -14,7 +14,7 @@ class TestRangeQuery(ProgressiveTest):
     "Test Suite for RangeQuery Module"
     def test_range_query(self):
         "Run tests of the RangeQuery module"
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomTable(2, rows=100000, scheduler=s)
         t_min = Table(name=None, dshape='{_1: float64}', data={'_1':[0.3]})
         min_value = Constant(table=t_min, scheduler=s)

@@ -64,13 +64,13 @@ heatmap.display_notebook()
 
 # %%
 # Start the scheduler
-csv.scheduler().task_start()
+csv.scheduler.task_start()
 
 # %%
-csv.scheduler()
+csv.scheduler
 
 # %%
-csv.scheduler().task_stop()
+csv.scheduler.task_stop()
 
 
 # %%

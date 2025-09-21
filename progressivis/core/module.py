@@ -72,7 +72,7 @@ JSon = Dict[str, Any]
 class ReturnRunStep(NamedTuple):
     next_state: ModuleState
     steps_run: int
-    debug: bool = False
+    # debug: bool = False
 
 
 logger = logging.getLogger(__name__)
@@ -426,6 +426,7 @@ class Module(metaclass=ABCMeta):
         """
         return GroupContext(self.name)
 
+    @property
     def scheduler(self) -> Scheduler:
         """Return the scheduler associated with the module."""
         return self._scheduler
@@ -463,9 +464,9 @@ class Module(metaclass=ABCMeta):
         """
         name = name or cls.__name__
         if scheduler is None:
-            scheduler = factory.scheduler()
+            scheduler = factory.scheduler
         else:
-            if scheduler is not factory.scheduler():
+            if scheduler is not factory.scheduler:
                 raise ProgressiveError("Invalid scheduler")
         return cls(scheduler=scheduler, **kwds)
 
@@ -501,15 +502,6 @@ class Module(metaclass=ABCMeta):
     def get_quality(self) -> Dict[str, float] | None:
         """Quality value, should increase when the quality increases."""
         return None
-
-    # @staticmethod
-    # def _add_slots(kwds: dict[str, List[Slot]],
-    #                kwd: str,
-    #                slots: List[Slot]) -> None:
-    #     if kwd in kwds:
-    #         kwds[kwd] += slots
-    #     else:
-    #         kwds[kwd] = slots
 
     @staticmethod
     def _validate_descriptors(descriptor_list: List[SlotDescriptor]) -> dict[str, Any]:
@@ -551,15 +543,15 @@ class Module(metaclass=ABCMeta):
 
     def generate_table_name(self, name: str) -> str:
         "Return a uniq name for this module"
-        return f"s{self.scheduler().name}_{self.name}_{name}"
+        return f"s{self.scheduler.name}_{self.name}_{name}"
 
     def timer(self) -> float:
         "Return the timer associated with this module"
-        return self.scheduler().timer()
+        return self.scheduler.timer()
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
         "Return a dictionary describing the module"
-        s = self.scheduler()
+        s = self.scheduler
         speed_h: List[Optional[float]] = [1.0]
         if with_speed:
             speed_h = self.tracer.get_speed()
@@ -648,7 +640,7 @@ class Module(metaclass=ABCMeta):
 
     async def start(self) -> None:
         "Start the scheduler associated with this module"
-        await self.scheduler().start()
+        await self.scheduler.start()
 
     def terminate(self) -> None:
         "Set the state to terminated for this module"
@@ -887,8 +879,7 @@ class Module(metaclass=ABCMeta):
     ) -> ReturnRunStep:
         assert next_state >= Module.state_ready and next_state <= Module.state_zombie
         self.steps_acc += steps_run
-        # return {"next_state": next_state, "steps_run": steps_run}
-        return ReturnRunStep(next_state, steps_run, self.debug)
+        return ReturnRunStep(next_state, steps_run)
 
     def _return_terminate(self, steps_run: int = 0) -> ReturnRunStep:
         # return {"next_state": Module.state_zombie, "steps_run": steps_run}
@@ -1187,7 +1178,7 @@ class Module(metaclass=ABCMeta):
         next_state = self.state
         exception = None
         now = self.timer()
-        quantum = self.scheduler().fix_quantum(self, self.params.quantum)
+        quantum = self.scheduler.fix_quantum(self, self.params.quantum)
         tracer = self.tracer
         if quantum == 0:
             quantum = 0.1
@@ -1664,8 +1655,9 @@ class ModuleFactory(dict[str, Module]):
     def result(self) -> Slot:
         return self.data_module.output[self.output_slot]
 
+    @property
     def scheduler(self) -> Scheduler:
-        return self.data_module.scheduler()
+        return self.data_module.scheduler
 
     def register(self, name: str, mod_class: Type[Module]) -> None:
         if name in self.registry:
@@ -1682,6 +1674,6 @@ class ModuleFactory(dict[str, Module]):
         mod = self.modules.get(name)
         if mod is None:
             mod_cls = self.registry[name]
-            mod = mod_cls.make(scheduler=self.scheduler(), **kwds)
+            mod = mod_cls.make(scheduler=self.scheduler, **kwds)
             self.modules[name] = mod
         return mod

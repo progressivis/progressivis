@@ -25,7 +25,7 @@ class TestScheduler(ProgressiveTest):
 
         async def _is_running() -> None:
             nonlocal check_running
-            check_running = csv.scheduler().is_running()
+            check_running = csv.scheduler.is_running()
 
         aio.run_gather(s.start(), _is_running())
 

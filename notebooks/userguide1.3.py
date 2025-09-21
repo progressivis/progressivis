@@ -83,8 +83,8 @@ heatmap.input.array = histogram2d.output.result
 # %%
 try:
     import graphviz
-    src = csv.scheduler().to_graphviz()
-    gvz=graphviz.Source(src)
+    src = csv.scheduler.to_graphviz()
+    gvz = graphviz.Source(src)
     display(gvz)
 except ImportError:
     pass
@@ -93,7 +93,7 @@ except ImportError:
 # %%
 heatmap.display_notebook()
 # Start the scheduler
-csv.scheduler().task_start();
+csv.scheduler.task_start();
 await aio.sleep(1)
 await var_min.from_input(bnds_min)
 await var_max.from_input(bnds_max)
@@ -137,7 +137,7 @@ widgets.VBox([long_slider, lat_slider])
 
 # %%
 # Show what runs
-csv.scheduler()
+csv.scheduler
 
 # %%
 csv.scheduler().task_stop()

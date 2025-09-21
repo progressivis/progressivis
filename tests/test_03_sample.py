@@ -24,7 +24,7 @@ class TestSample(ProgressiveTest):
         prt.input[0] = smp.output.result
         prt2 = Print(proc=self.terse, scheduler=s)
         prt2.input[0] = smp.output.select
-        aio.run(csv.scheduler().start())
+        aio.run(csv.scheduler.start())
         assert smp.result is not None
         self.assertEqual(len(smp.result), 10)
         assert smp.pintset is not None
