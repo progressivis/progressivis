@@ -16,7 +16,7 @@ MIN_INT64 = np.iinfo(np.int64).min
 class TestDistinct(ProgressiveTest):
     @skip("skipped: TODO fix with a reliable dataset")
     def test_distinct_categorical(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = SimpleCSVLoader(
             get_dataset("nyc_taxis"), nrows=100_000, scheduler=s
         )
@@ -33,7 +33,7 @@ class TestDistinct(ProgressiveTest):
         self.assertEqual(res["payment_type"], {1, 2, 3, 4})
 
     def test_distinct_float(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = SimpleCSVLoader(
             get_dataset("bigfile"), header=None, scheduler=s
         )

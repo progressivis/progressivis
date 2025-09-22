@@ -13,7 +13,7 @@ import numpy as np
 
 class TestCombineFirst(ProgressiveTest):
     def test_combine_first_dup(self) -> None:
-        s = self.scheduler(True)
+        s = self.clean_scheduler
         cst1 = Constant(
             PTable(
                 name="tcf_xmin_xmax",
@@ -55,7 +55,7 @@ class TestCombineFirst(ProgressiveTest):
         self.assertEqual(last["ymax"], 6)
 
     def test_combine_first_nan(self) -> None:
-        s = self.scheduler(True)
+        s = self.clean_scheduler
         cst1 = Constant(
             PTable(
                 name="tcf_xmin_xmax_nan",

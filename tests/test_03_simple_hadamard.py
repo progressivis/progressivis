@@ -52,7 +52,7 @@ class Hadamard(Module):
 
 class TestHadamard(ProgressiveTest):
     def test_hadamard(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random1 = RandomPTable(3, rows=100000, scheduler=s)
         random2 = RandomPTable(3, rows=100000, scheduler=s)
         module = Hadamard(scheduler=s)

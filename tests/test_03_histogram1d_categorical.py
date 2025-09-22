@@ -8,7 +8,7 @@ from progressivis import Print, Histogram1DCategorical, SimpleCSVLoader, get_dat
 
 class TestHistogram1DCategorical(ProgressiveTest):
     def test_h1d_cat(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = SimpleCSVLoader(
             get_dataset("smallfile_multiscale"), nrows=10_000, scheduler=s
         )

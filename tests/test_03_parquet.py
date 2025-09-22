@@ -29,7 +29,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         return cnt
 
     def test_read_parquet(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = ParquetLoader(
             get_dataset("bigfile_parquet"),
             scheduler=s,
@@ -49,7 +49,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
             num_rows_list.append(bat.num_rows)
             return bat
 
-        s = self.scheduler()
+        s = self.scheduler
         module = ParquetLoader(
             get_dataset("bigfile_parquet"),
             batch_size=fixed_batch_size,
@@ -67,7 +67,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         self.assertEqual(len(module.result), 1000_000)
 
     def test_read_parquet_with_cols(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         columns = ["_1", "_5", "_15"]
         module = ParquetLoader(
             get_dataset("bigfile_parquet"),
@@ -83,7 +83,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         self.assertEqual(len(module.result), 1000_000)
 
     def test_read_multiple_parquet(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         filenames = PTable(
             name="file_names",
             dshape="{filename: string}",

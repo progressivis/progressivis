@@ -10,7 +10,7 @@ class TestHistogram1D(ProgressiveTest):
         StorageManager.default.end()
 
     def test_histogram1d(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("bigfile"),
             force_valid_ids=True,

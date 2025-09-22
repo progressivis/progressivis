@@ -32,7 +32,7 @@ class TestSimpleMax(ProgressiveTest):
         self.assertTrue(np.allclose(v1, v2))
 
     def test_max(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
@@ -46,7 +46,7 @@ class TestSimpleMax(ProgressiveTest):
         self.compare(res1, res2)
 
     def test_max_reset(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         stirrer = Stirrer(
             update_column="_2",

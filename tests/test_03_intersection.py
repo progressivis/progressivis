@@ -12,7 +12,7 @@ from typing import Any
 
 class TestIntersection(ProgressiveTest):
     def test_intersection(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(2, rows=100000, scheduler=s)
         min_value = ConstDict(pdict=PDict({"_1": 0.3}), scheduler=s)
         max_value = ConstDict(pdict=PDict({"_1": 0.8}), scheduler=s)
@@ -38,7 +38,7 @@ class TestIntersection(ProgressiveTest):
         self.assertEqual(inter.result.index, PIntSet(idx))
 
     def _impl_stirred_tst_intersection(self, **kw: Any) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(update_column="_2", fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input[0] = random.output.result

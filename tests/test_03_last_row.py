@@ -9,7 +9,7 @@ from progressivis.core import aio
 
 class TestLastRow(ProgressiveTest):
     def test_last_row(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("smallfile"), header=None, scheduler=s
         )

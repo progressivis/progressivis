@@ -11,7 +11,7 @@ from progressivis.table.changemanager_table_selected import (
 class TestPTableSelectedChangeManager(ProgressiveTest):
     def setUp(self) -> None:
         super(TestPTableSelectedChangeManager, self).setUp()
-        self.s = self.scheduler()
+        self.s = self.scheduler
 
     def test_tablechangemanager(self) -> None:
         # pylint: disable=protected-access

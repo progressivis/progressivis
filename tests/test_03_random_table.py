@@ -13,7 +13,7 @@ def print_len(x: Any) -> None:
 
 class TestRandomPTable(ProgressiveTest):
     def test_random_table(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RandomPTable(["a", "b"], rows=10000, scheduler=s)
         assert module.result is not None
         self.assertEqual(module.result.columns[0], "a")
@@ -26,7 +26,7 @@ class TestRandomPTable(ProgressiveTest):
         self.assertEqual(len(module.result), 10000)
 
     def test_random_table2(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         # produces more than 4M rows per second on my laptop
         module = RandomPTable(10, rows=1000000, force_valid_ids=True, scheduler=s)
         assert module.result is not None

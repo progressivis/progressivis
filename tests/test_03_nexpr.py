@@ -34,7 +34,7 @@ class NumExprSample2(NumExprABC):
 
 class TestNumExpr(ProgressiveTest):
     def t_num_expr_impl(self, cls: Type[NumExprABC]) -> Tuple[Any, ...]:
-        s = self.scheduler()
+        s = self.scheduler
         random1 = RandomPTable(10, rows=100000, scheduler=s)
         random2 = RandomPTable(10, rows=100000, scheduler=s)
         module = cls(

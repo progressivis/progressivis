@@ -35,7 +35,7 @@ a_c = df_.query("category=='A' or category=='C'")
 @skipIf(sys.platform == "win32", "TODO: fix it")
 class TestProgressiveCatQuery(ProgressiveTest):
     def test_cat_query(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         sio = StringIO(csv_)
         sio.seek(0)
         csv = SimpleCSVLoader(sio, scheduler=s,)

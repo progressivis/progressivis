@@ -20,7 +20,7 @@ centers = [(0.1, 0.3), (0.7, 0.5), (-0.4, -0.3)]
 
 class TestBlobsPTable(ProgressiveTest):
     def test_blobs_table(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = BlobsPTable(["a", "b"], centers=centers, rows=10000, scheduler=s)
         assert module.result is not None
         self.assertEqual(module.result.columns[0], "a")
@@ -32,7 +32,7 @@ class TestBlobsPTable(ProgressiveTest):
         self.assertEqual(len(module.result), 10000)
 
     def test_blobs_table2(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         sz = 100000
         centers = [(0.1, 0.3), (0.7, 0.5), (-0.4, -0.3)]
         blob1 = BlobsPTable(
@@ -64,7 +64,7 @@ covs = [[0.01, 0], [0, 0.09]], [[0.04, 0], [0, 0.01]], [[0.09, 0.04], [0.04, 0.0
 
 class TestMVBlobsPTable(ProgressiveTest):
     def test_mv_blobs_table(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = MVBlobsPTable(
             ["a", "b"], means=means, covs=covs, rows=10000, scheduler=s
         )
@@ -79,7 +79,7 @@ class TestMVBlobsPTable(ProgressiveTest):
         self.assertEqual(len(module.result), 10000)
 
     def test_mv_blobs_table2(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         sz = 100000
         blob1 = MVBlobsPTable(["a", "b"], means=means, covs=covs, rows=sz, scheduler=s)
         blob1.default_step_size = 1500

@@ -13,7 +13,7 @@ class TestIdxMax(ProgressiveTest):
         TestIdxMax.cleanup()
 
     def test_idxmax(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, throttle=1000, scheduler=s)
         idxmax = IdxMax(scheduler=s)
         idxmax.input[0] = random.output.result
@@ -32,7 +32,7 @@ class TestIdxMax(ProgressiveTest):
         self.compare(max1, max2)
 
     def test_idxmax2(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, throttle=1000, scheduler=s)
         stirrer = Stirrer(
             update_column="_1", delete_rows=5, fixed_step_size=100, scheduler=s
@@ -55,7 +55,7 @@ class TestIdxMax(ProgressiveTest):
         self.compare(max1, max2)
 
     def test_idxmin(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, throttle=1000, scheduler=s)
         idxmin = IdxMin(scheduler=s)
         idxmin.input[0] = random.output.result
@@ -74,7 +74,7 @@ class TestIdxMax(ProgressiveTest):
         self.compare(min1, min2)
 
     def test_idxmin2(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, throttle=1000, scheduler=s)
         stirrer = Stirrer(
             update_column="_1", delete_rows=5, fixed_step_size=100, scheduler=s

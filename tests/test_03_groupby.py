@@ -19,7 +19,7 @@ PARQUET_FILE = get_dataset("short-taxis2015-01_parquet")
 @skipIf(os.getenv("CI"), "skipped because local nyc taxi files are required")
 class TestProgressiveGroupBy(ProgressiveTest):
     def test_group_by_1_col(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE,
             columns=["passenger_count", "extra", "trip_distance"],
@@ -36,7 +36,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         self.assertEqual(set(grby.index.keys()), PASSENGERS)
 
     def test_group_by_2_cols(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE,
             columns=["passenger_count", "extra", "trip_distance"],
@@ -53,7 +53,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         self.assertEqual(len(grby.index.keys()), 36)
 
     def test_group_by_function(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE,
             columns=["passenger_count", "extra", "trip_distance"],
@@ -70,7 +70,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         self.assertEqual(len(grby.index.keys()), 10)
 
     def test_group_by_days(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE,
             columns=[
@@ -99,7 +99,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         )
 
     def test_group_by_dt_ymd(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE,
             columns=[

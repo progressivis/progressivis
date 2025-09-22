@@ -27,7 +27,7 @@ class TestScatterPlot(ProgressiveTest):
         TestScatterPlot.cleanup()
 
     def test_scatterplot(self) -> None:
-        s = self.scheduler(clean=True)
+        s = self.clean_scheduler
         with s:
             csv = CSVLoader(
                 get_dataset("smallfile"),
@@ -49,7 +49,7 @@ class TestScatterPlot(ProgressiveTest):
         self.assertEqual(len(csv.result), 30_000)
 
     def test_scatterplot2(self) -> None:
-        s = self.scheduler(clean=True)
+        s = self.clean_scheduler
         np.random.seed(42)
         with s:
             random = RandomPTable(2, rows=500_000, throttle=1000, scheduler=s)

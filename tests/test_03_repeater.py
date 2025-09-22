@@ -12,7 +12,7 @@ class TestRepeater(ProgressiveTest):
         comp = Computed()
         func = np.log
         comp.add_ufunc_column("log_1", "_1", func, np.dtype("float64"))
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10_000, scheduler=s)
         rep = Repeater(computed=comp, scheduler=s)
         rep.input.table = random.output.result["_2", "_3"]

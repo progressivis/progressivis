@@ -7,7 +7,7 @@ import numpy as np
 
 class Testvar(ProgressiveTest):
     def test_var_h(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(1, rows=1000, scheduler=s)
         var = VarH(scheduler=s)
         var.input.table = random.output.result
@@ -23,7 +23,7 @@ class Testvar(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2))
 
     def test_var(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(1, rows=1000, scheduler=s)
         var = Var(scheduler=s)
         var.input[0] = random.output.result

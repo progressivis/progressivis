@@ -31,7 +31,7 @@ def prtT(x: Any) -> None:
 class TestExpr(ProgressiveTest):
     def setUp(self) -> None:
         super(TestExpr, self).setUp()
-        Scheduler.default = self.scheduler()
+        Scheduler.default = self.scheduler
 
     def test_load_csv(self) -> None:
         """

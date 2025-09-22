@@ -57,7 +57,7 @@ def make_float_csv(
 
 class TestProgressiveLoadCSV(ProgressiveTest):
     def _read_csv(self, artifact: str = "", force_valid_ids: bool = True) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         n_rows = 100_000
         bio = make_int_csv(n_rows=n_rows, n_cols=3, artifact=artifact)
         module = PACSVLoader(
@@ -83,7 +83,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     def _func_read_int_csv_with_intruder(
         self, dtype: str, intruder: str, fixed_step_size: int = 0
     ) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         n_rows = 100_000
         rows = set(np.random.randint(10_000, n_rows - 1, size=1000))
         if intruder:
@@ -139,7 +139,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         intruder: str,
         # imputer=None,
     ) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         n_rows = 100_000
         rows = set(np.random.randint(10_000, n_rows - 1, size=1000))
         if intruder:

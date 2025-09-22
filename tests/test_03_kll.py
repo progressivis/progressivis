@@ -20,7 +20,7 @@ ArrayLike = Union[np.ndarray[Any, Any], Sequence[Any]]
 class TestKll(ProgressiveTest):
     def test_kll(self) -> None:
         np.random.seed(42)
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.input[0] = random.output.result
@@ -40,7 +40,7 @@ class TestKll(ProgressiveTest):
 
     def test_kll2(self) -> None:
         np.random.seed(42)
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.quantiles = QUANTILES
@@ -57,7 +57,7 @@ class TestKll(ProgressiveTest):
 
     def test_kll2_named(self) -> None:
         np.random.seed(42)
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.quantiles = QUANTILES
@@ -78,7 +78,7 @@ class TestKll(ProgressiveTest):
 
     def test_kll3(self) -> None:
         np.random.seed(42)
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.binning = BINS
@@ -100,7 +100,7 @@ class TestKll(ProgressiveTest):
 
     def test_kll4(self) -> None:
         np.random.seed(42)
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.binning = SPLITS_SEQ
@@ -118,7 +118,7 @@ class TestKll(ProgressiveTest):
 
     def test_kll5(self) -> None:
         np.random.seed(42)
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.binning = SPLITS_DICT

@@ -12,7 +12,7 @@ import numpy as np
 
 class TestCorr(ProgressiveTest):
     def test_online_cov(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(2, rows=100_000, scheduler=s)
         cov = Corr(mode="CovarianceOnly", scheduler=s)
         cov.input[0] = random.output.result
@@ -25,7 +25,7 @@ class TestCorr(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2))
 
     def test_online_corr(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(2, rows=100_000, scheduler=s)
         corr = Corr(scheduler=s)
         # corr.create_dependent_modules(random)
@@ -45,7 +45,7 @@ class TestCorr(ProgressiveTest):
         # def print_cov(d) -> None:
         #     print(CovarianceMatrix.as_pandas(d))
 
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(
             3,
             rows=1_000_000,

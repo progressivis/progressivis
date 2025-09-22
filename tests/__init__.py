@@ -82,9 +82,15 @@ class ProgressiveTest(TestCase):
     def tearDownClass(cls: Type[ProgressiveTest]) -> None:
         cleanup_temp_dir()
 
-    def scheduler(self, clean: bool = False) -> Scheduler:
-        if self._scheduler is None or clean:
+    @property
+    def scheduler(self) -> Scheduler:
+        if self._scheduler is None:
             self._scheduler = Scheduler()
+        return self._scheduler
+
+    @property
+    def clean_scheduler(self) -> Scheduler:
+        self._scheduler = Scheduler()
         return self._scheduler
 
     @staticmethod

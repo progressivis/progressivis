@@ -14,7 +14,7 @@ def print_repr(x: Any) -> None:
 
 class TestSample(ProgressiveTest):
     def test_sample(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("smallfile"), header=None, scheduler=s
         )
