@@ -218,7 +218,7 @@ class Heatmap(Module):
         import ipywidgets as ipw
         from IPython.display import display
 
-        img = ipw.Image(value=b"\x00", width=width, height=height)  # type: ignore
+        img = ipw.Image(value=b"\x00", width=width, height=height)
         progress = ipw.IntProgress(
             value=0, min=0, max=1000, description="0/0", orientation="horizontal"
         )
