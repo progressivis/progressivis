@@ -500,7 +500,10 @@ class Module(metaclass=ABCMeta):
         return (pos, size)
 
     def get_quality(self) -> Dict[str, float] | None:
-        """Quality value, should increase when the quality increases."""
+        """Return a dictionary associating names with quality values, or None
+        when a quality does not make sense.
+        The values should increase when the quality increases.
+        """
         return None
 
     @staticmethod

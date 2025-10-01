@@ -218,6 +218,8 @@ class Heatmap(Module):
         import ipywidgets as ipw
         from IPython.display import display
 
+        last_display_time = 0.0
+
         img = ipw.Image(value=b"\x00", width=width, height=height)  # type: ignore
         progress = ipw.IntProgress(
             value=0, min=0, max=1000, description="0/0", orientation="horizontal"
@@ -231,9 +233,12 @@ class Heatmap(Module):
 
         async def _after_run(m: Module, run_number: int) -> None:
             assert isinstance(m, Heatmap)
-            image = m.get_image_bin()  # get the image from the heatmap
-            if image is not None:
-                img.value = image  # Replace the displayed image with the new one
+            nonlocal last_display_time
+            if (m.last_time() - last_display_time) > 3:  # update every 3s
+                last_display_time = m.last_time()
+                image = m.get_image_bin()  # get the image from the heatmap
+                if image is not None:
+                    img.value = image  # Replace the displayed image with the new one
             prog = m.get_progress()
             if prog is not None:
                 value = prog[0]
