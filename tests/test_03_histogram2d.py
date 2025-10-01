@@ -15,7 +15,7 @@ from typing import Any
 
 class TestHistogram2D(ProgressiveTest):
     def test_histogram2d(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("smallfile"),
             header=None,
@@ -39,7 +39,7 @@ class TestHistogram2D(ProgressiveTest):
         _ = histogram2d.trace_stats()
 
     def test_histogram2d1(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("smallfile"),
             header=None,
@@ -74,7 +74,7 @@ class TestHistogram2D(ProgressiveTest):
         self.assertTrue(np.allclose(h1, h2))
 
     def t_histogram2d_impl(self, **kw: Any) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(3, rows=100_000, scheduler=s)
         stirrer = Stirrer(update_column="_2", fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input[0] = random.output.result
@@ -108,7 +108,7 @@ class TestHistogram2D(ProgressiveTest):
         self.assertListEqual(h1.reshape(-1).tolist(), h2.reshape(-1).tolist())
 
     def test_histogram2d4(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(3, rows=30_000, scheduler=s)
         stirrer = StirrerView(
             update_column="_2", fixed_step_size=1000, scheduler=s, delete_rows=5

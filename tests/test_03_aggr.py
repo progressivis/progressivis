@@ -45,7 +45,7 @@ if not os.getenv("CI"):
 @skipIf(os.getenv("CI"), "skipped because local nyc taxi files are required")
 class TestProgressiveAggregate(ProgressiveTest):
     def test_aggregate_1_col(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE, columns=["passenger_count", "RateCodeID"],
             scheduler=s,
@@ -76,7 +76,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         )
 
     def test_aggregate_1_col_delete(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         removed = 11142
         parquet = ParquetLoader(
             PARQUET_FILE, columns=["passenger_count", "trip_distance"],
@@ -116,7 +116,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         )
 
     def test_aggregate_1_col_update(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         upd_id = 1142
         new_val = 10.0
         parquet = ParquetLoader(
@@ -158,7 +158,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         )
 
     def test_aggregate_2_col(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE, columns=["passenger_count", "trip_distance"],
             scheduler=s,
@@ -186,7 +186,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         )
 
     def test_aggregate_2_fnc(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE, columns=["passenger_count", "trip_distance"],
             scheduler=s,
@@ -223,7 +223,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         )
 
     def test_aggregate_3_fnc(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE,
             columns=["fare_amount", "passenger_count", "trip_distance"],
@@ -275,7 +275,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         )
 
     def test_aggregate_2_groups(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE,
             columns=["passenger_count", "VendorID", "trip_distance"],
@@ -310,7 +310,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         )
 
     def test_aggregate_by_func(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE,
             columns=["tpep_pickup_datetime", "trip_distance"],
@@ -339,7 +339,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         )
 
     def _aggregate_by_subcolumn(self, subcol: ByType) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(
             PARQUET_FILE,
             columns=["tpep_pickup_datetime", "trip_distance"],

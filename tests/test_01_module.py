@@ -18,10 +18,10 @@ class SimpleModule(Module):
 
 class TestProgressiveModule(ProgressiveTest):
     def test_scheduler(self) -> None:
-        self.assertEqual(len(self.scheduler()), 0)
+        self.assertEqual(len(self.scheduler), 0)
 
     def test_tags(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         simple = SimpleModule(scheduler=s)
         self.assertEqual(simple.tags, set())  # no tags
         with Module.tagged("a", "b"):
@@ -30,7 +30,7 @@ class TestProgressiveModule(ProgressiveTest):
 
     def test_module(self) -> None:
         # pylint: disable=broad-except
-        s = self.scheduler()
+        s = self.scheduler
         with self.assertRaises(TypeError):  # abstract base class
             module = Module(name="a", scheduler=s)  # type: ignore
 

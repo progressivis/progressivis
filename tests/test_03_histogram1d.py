@@ -10,7 +10,7 @@ from typing import Any
 
 class TestHistogram1D(ProgressiveTest):
     def test_histogram1d(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("smallfile"), header=None, scheduler=s
         )
@@ -28,7 +28,7 @@ class TestHistogram1D(ProgressiveTest):
         _ = histogram1d.trace_stats()
 
     def test_histogram1d1(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("smallfile"), header=None, scheduler=s
         )
@@ -58,7 +58,7 @@ class TestHistogram1D(ProgressiveTest):
         self.assertListEqual(h1.tolist(), h2.tolist())
 
     def t_histogram1d_impl(self, **kw: Any) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("smallfile"), header=None, scheduler=s
         )

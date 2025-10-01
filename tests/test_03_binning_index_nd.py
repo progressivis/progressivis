@@ -43,7 +43,7 @@ class TestBinningIndex(ProgressiveTest):
             self.assertTrue(np.all(values < origin + (i + 1) * bin_w))
 
     def test_normal(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=100_000, scheduler=s)
         bin_index = BinningIndexND(scheduler=s)
         bin_index.input[0] = random.output.result["_1", "_2"]
@@ -64,7 +64,7 @@ class TestBinningIndex(ProgressiveTest):
         self.check_bins(bin_index._impl["_2"], random.result["_2"])
 
     def test_outliers_left(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, random=outliers_left, rows=100_000, scheduler=s)
         bin_index = BinningIndexND(scheduler=s)
         bin_index.input[0] = random.output.result["_1", "_2"]
@@ -85,7 +85,7 @@ class TestBinningIndex(ProgressiveTest):
         self.check_bins(bin_index._impl["_2"], random.result["_2"])
 
     def test_outliers_right(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, random=outliers_right, rows=100_000, scheduler=s)
         bin_index = BinningIndexND(scheduler=s)
         bin_index.input[0] = random.output.result["_1", "_2"]

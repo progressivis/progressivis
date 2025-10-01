@@ -10,7 +10,7 @@ import pandas as pd
 @skip("Not ready")  # TODO: FIX IT
 class TestMerge(ProgressiveTest):
     def test_merge(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("bigfile"), header=None, scheduler=s
         )
@@ -29,7 +29,7 @@ class TestMerge(ProgressiveTest):
         _ = merge.trace_stats(max_runs=1)
 
     def test_merge_simple(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         cst1 = Constant(
             PTable(name=None, data=pd.DataFrame({"xmin": [1], "xmax": [2]})), scheduler=s
         )

@@ -11,7 +11,7 @@ from progressivis.table.changemanager_table_selected import FakeSlot
 class TestPColumnChangeManager(ProgressiveTest):
     def setUp(self) -> None:
         super(TestPColumnChangeManager, self).setUp()
-        self.scheduler_ = self.scheduler()
+        self.scheduler_ = self.scheduler
 
     def test_columnchangemanager(self) -> None:
         # pylint: disable=protected-access

@@ -10,7 +10,7 @@ from typing import Any, Dict
 
 class TestMinMax(ProgressiveTest):
     def test_min(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
@@ -24,7 +24,7 @@ class TestMinMax(ProgressiveTest):
         self.compare(res1, res2)
 
     def test_min_cols(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input.table = random.output.result["_1", "_2", "_3"]
@@ -43,7 +43,7 @@ class TestMinMax(ProgressiveTest):
         self.assertTrue(np.allclose(v1, v2))
 
     def test_max(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
@@ -57,7 +57,7 @@ class TestMinMax(ProgressiveTest):
         self.compare(res1, res2)
 
     def test_max_cols(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result["_1", "_2", "_3"]

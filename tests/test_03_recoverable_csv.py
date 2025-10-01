@@ -56,7 +56,7 @@ def make_float_csv(
 @skipIf(os.getenv("CI"), "disabled on CI => to be improved")
 class TestProgressiveLoadCSV(ProgressiveTest):
     def test_read_csv(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         n_rows = 100_000
         sio = make_int_csv(n_rows=n_rows, n_cols=3)
         module = SimpleCSVLoader(sio, scheduler=s, dtype="int64")
@@ -75,7 +75,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         atol: float = 0,
         fixed_step_size: int = 0,
     ) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         n_rows = 100_000
         i_row = n_rows - 42
         sio = make_int_csv(n_rows=n_rows, n_cols=3, intruder=(i_row, 1, intruder))
@@ -171,7 +171,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         imputer: Optional[SimpleImputer] = None,
         atol: float = 0,
     ) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         n_rows = 100_000
         i_row = n_rows - 42
         sio = make_float_csv(n_rows=n_rows, n_cols=3, intruder=(i_row, 1, intruder))

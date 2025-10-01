@@ -24,7 +24,7 @@ df2 = pd.concat([df, df * 1.0])
 class TestScalers(ProgressiveTest):
     @skip("not ready yet")
     def test_min_max_scaler(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         _, f = tf.mkstemp()
         print(f)
         df.to_csv(f, index=False)
@@ -44,7 +44,7 @@ class TestScalers(ProgressiveTest):
 
     @skip("not ready yet")
     def test_min_max_scaler_tol(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         _, f = tf.mkstemp()
         print(f)
         df2.to_csv(f, index=False)

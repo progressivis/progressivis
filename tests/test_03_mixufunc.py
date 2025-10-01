@@ -86,7 +86,7 @@ class TestMixUfunc(ProgressiveTest):
         ufunc1: np.ufunc = np.log,
         ufunc2: np.ufunc = np.add,
     ) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random1 = RandomPTable(10, rows=100000, scheduler=s)
         random2 = RandomPTable(10, rows=100000, scheduler=s)
         module = cls(
@@ -114,7 +114,7 @@ class TestMixUfunc(ProgressiveTest):
         self.assertTrue(np.allclose(res[:, 1], ne_2, equal_nan=True))
 
     def t_mix_ufunc_table_dict_impl(self, cls: Type[MixUfuncABC]) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random1 = RandomDict(10, scheduler=s)
         random2 = RandomPTable(10, rows=100000, scheduler=s)
         module = cls(

@@ -13,7 +13,7 @@ from typing import Any
 
 class TestCmpQuery(ProgressiveTest):
     def test_cmp_query(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         cmp_ = CmpQueryLast(scheduler=s)
         cst = PTable("cmp_table", data={"_1": [0.5]})
@@ -29,7 +29,7 @@ class TestCmpQuery(ProgressiveTest):
         self.assertEqual(cmp_.select, PIntSet(df.index[dfe]))  # type: ignore
 
     def t_cmp_query_impl(self, **kw: Any) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         stirrer = Stirrer(update_column="_1", fixed_step_size=100, scheduler=s, **kw)
         stirrer.input[0] = random.output.result

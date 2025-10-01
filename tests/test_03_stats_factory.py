@@ -31,7 +31,7 @@ matrix_hist.loc["B", "hist"] = True
 class TestStatsFactory(ProgressiveTest):
     def test_datashape(self) -> None:
         np.random.seed(42)
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(3, rows=10_000, scheduler=s)
         ds = DataShape(scheduler=s)
         ds.input.table = random.output.result
@@ -42,7 +42,7 @@ class TestStatsFactory(ProgressiveTest):
 
     def test_sf(self) -> None:
         np.random.seed(42)
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(3, rows=10_000, scheduler=s)
         sf = StatsFactory(input_module=random, scheduler=s)
         sf.create_dependent_modules(var_name="my_dyn_var")
@@ -62,7 +62,7 @@ class TestStatsFactory(ProgressiveTest):
         print(s.modules())
 
     def test_pattern(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         n_samples = 1_000
         centers = [(0.1, 0.3, 0.5), (0.7, 0.5, 3.3), (-0.4, -0.3, -11.1)]
         cols = ["A", "B", "C"]

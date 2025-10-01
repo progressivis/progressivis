@@ -42,7 +42,7 @@ class TstModule(Module):
 
 class TestDataflow(ProgressiveTest):
     def test_dataflow_0(self) -> None:
-        scheduler = self.scheduler()
+        scheduler = self.scheduler
         saved_inputs = None
         saved_outputs = None
         with scheduler as dataflow:
@@ -131,7 +131,7 @@ class TestDataflow(ProgressiveTest):
         # scheduler._update_modules()  # force modules in the main loop
 
     def test_dataflow_1_dynamic(self) -> None:
-        scheduler = self.scheduler(clean=True)
+        scheduler = self.clean_scheduler
 
         table = RandomPTable(
             name="table", columns=["a"], throttle=1000, scheduler=scheduler
@@ -163,7 +163,7 @@ class TestDataflow(ProgressiveTest):
         self.assertTrue(started)
 
     def test_dataflow_2_add_remove(self) -> None:
-        scheduler = self.scheduler(clean=True)
+        scheduler = self.clean_scheduler
 
         table = RandomPTable(
             name="table", columns=["a"], throttle=1000, scheduler=scheduler
@@ -196,7 +196,7 @@ class TestDataflow(ProgressiveTest):
         self.assertTrue(started)
 
     def test_dataflow_3_dels(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         table = RandomPTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = Min(name="min", scheduler=s)
         m.input.table = table.output.result
@@ -210,7 +210,7 @@ class TestDataflow(ProgressiveTest):
             self.assertEqual(deps, set(["table", "min", "prt"]))
 
     def test_dataflow_4_dels2(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         table = RandomPTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = TstModule(name="min", scheduler=s)
         m.input.a = table.output.result
@@ -225,7 +225,7 @@ class TestDataflow(ProgressiveTest):
             self.assertEqual(deps, set(["table", "min", "prt"]))
 
     def test_dataflow_5_dels_opt(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         table = RandomPTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = TstModule(name="min", scheduler=s)
         m.input.a = table.output.result
@@ -245,7 +245,7 @@ class TestDataflow(ProgressiveTest):
             self.assertEqual(deps, set(["prt", "prt2", "min", "table"]))
 
     def test_dataflow_6_dynamic(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         table = RandomPTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = table.output.result
@@ -298,7 +298,7 @@ class TestDataflow(ProgressiveTest):
         # from nose.tools import set_trace; set_trace()
 
     def test_dataflow_7_dynamic(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         table = RandomPTable(
             name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s
         )
@@ -379,7 +379,7 @@ class TestDataflow(ProgressiveTest):
         # from nose.tools import set_trace; set_trace()
 
     def test_dataflow_8_multiple(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         table = RandomPTable(
             name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s
         )
@@ -441,7 +441,7 @@ class TestDataflow(ProgressiveTest):
         self.assertFalse("print" in s)
 
     def test_dataflow_9_errors(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         table = RandomPTable(
             name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s
         )
@@ -504,7 +504,7 @@ class TestDataflow(ProgressiveTest):
                 print(f"collateral_damage('histo') = '{sorted(deps)}'")
                 dataflow.delete_modules(*deps)
 
-        s = self.scheduler()
+        s = self.scheduler
         table = RandomPTable(
             name="table", columns=["a"], throttle=1000, scheduler=s
         )

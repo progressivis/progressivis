@@ -9,7 +9,7 @@ import numpy as np
 
 class TestStats(ProgressiveTest):
     def test_stats(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv_module = CSVLoader(
             get_dataset("smallfile"), header=None, scheduler=s
         )

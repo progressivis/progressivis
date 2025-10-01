@@ -220,7 +220,7 @@ def _2_csv_2_const_scenario(
 # @skip
 class TestDecorators(ProgressiveTest):
     def test_decorators_all(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RunIfAll(scheduler=s)
         _fun = _4_csv_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
@@ -232,7 +232,7 @@ class TestDecorators(ProgressiveTest):
         self.assertEqual(module.context._slot_expr, [["a", "b", "c", "d"]])
 
     def test_decorators_all_or_all(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RunIfAllacOrAllbd(scheduler=s)
         _fun = _4_csv_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
@@ -244,7 +244,7 @@ class TestDecorators(ProgressiveTest):
         self.assertEqual(module.context._slot_expr, [("a", "c"), ("b", "d")])
 
     def test_decorators_any(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RunIfAny(scheduler=s)
         _fun = _4_csv_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
@@ -256,7 +256,7 @@ class TestDecorators(ProgressiveTest):
         self.assertEqual(module.context._slot_expr, [["a", "b", "c", "d"]])
 
     def test_decorators_any_and_any(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RunIfAnyAndAny(scheduler=s)
         _fun = _4_csv_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
@@ -271,7 +271,7 @@ class TestDecorators(ProgressiveTest):
 # @skip
 class TestDecoratorsWith2CSV2Const(ProgressiveTest):
     def test_decorators_all(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RunIfAll(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
@@ -283,7 +283,7 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
         self.assertEqual(module.context._slot_expr, [["a", "b", "c", "d"]])
 
     def test_decorators_all_or_all(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RunIfAllacOrAllbd(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
@@ -295,7 +295,7 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
         self.assertEqual(module.context._slot_expr, [("a", "c"), ("b", "d")])
 
     def test_decorators_all_or_all2(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RunIfAllabOrAllcd(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
@@ -309,7 +309,7 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
 
 class TestDecoratorsWith2CSV2Const2(ProgressiveTest):
     def test_decorators_any(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RunIfAny(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
@@ -321,7 +321,7 @@ class TestDecoratorsWith2CSV2Const2(ProgressiveTest):
         self.assertEqual(module.context._slot_expr, [["a", "b", "c", "d"]])
 
     def test_decorators_any_and_any(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RunIfAnyAndAny(scheduler=s)
         _fun = _4_csv_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
@@ -336,7 +336,7 @@ class TestDecoratorsWith2CSV2Const2(ProgressiveTest):
 # @skip
 class TestDecoratorsWith4Const(ProgressiveTest):
     def test_decorators_any(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RunIfAny(scheduler=s)
         _fun = _4_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
@@ -348,7 +348,7 @@ class TestDecoratorsWith4Const(ProgressiveTest):
         self.assertEqual(module.context._slot_expr, [["a", "b", "c", "d"]])
 
     def test_decorators_always(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = RunAlways(scheduler=s)
         _fun = _4_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
@@ -364,7 +364,7 @@ class TestDecoratorsWith4Const(ProgressiveTest):
 class TestDecoratorsInvalid(ProgressiveTest):
     def test_invalid_process_after_run(self) -> None:
         with self.assertRaises(RuntimeError) as cm:
-            s = self.scheduler()
+            s = self.scheduler
             module = InvalidProcessAfterRun(scheduler=s)
             _fun = _4_csv_scenario(module, s)
             aio.run(s.start(tick_proc=_fun))
@@ -375,7 +375,7 @@ class TestDecoratorsInvalid(ProgressiveTest):
 
     def test_invalid_double_run(self) -> None:
         with self.assertRaises(RuntimeError) as cm:
-            s = self.scheduler()
+            s = self.scheduler
             module = InvalidDoubleRun(scheduler=s)
             _fun = _4_csv_scenario(module, s)
             aio.run(s.start(tick_proc=_fun))
@@ -385,7 +385,7 @@ class TestDecoratorsInvalid(ProgressiveTest):
 """
 +class TestDecoratorsDelModule(ProgressiveTest):
 +    def test_decorators_del_module(self):
-+        s = self.scheduler()
++        s = self.scheduler
 +        with s:
 +        #if True:
 +            module = RunIfAllabOrAllcd(scheduler=s)

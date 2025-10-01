@@ -7,7 +7,7 @@ from . import ProgressiveTest
 
 class TestSimpleFilter(ProgressiveTest):
     def test_filter(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(2, rows=100_000, scheduler=s)
         min_value = ConstDict(pdict=PDict({"value": 0.5}), scheduler=s)
         filter_ = SimpleFilter(column="_1", op=">", scheduler=s)
@@ -22,7 +22,7 @@ class TestSimpleFilter(ProgressiveTest):
         self.assertEqual(filter_.result.index, PIntSet(idx))
 
     def test_filter2(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(2, rows=100_000, scheduler=s)
         stirrer = Stirrer(
             update_column="_1",
@@ -45,7 +45,7 @@ class TestSimpleFilter(ProgressiveTest):
         self.assertEqual(filter_.result.index, PIntSet(idx))
 
     def test_filter3(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(2, rows=100_000, scheduler=s)
         stirrer = Stirrer(
             update_column="_1", update_rows=100, fixed_step_size=100, scheduler=s

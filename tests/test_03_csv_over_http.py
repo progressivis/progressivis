@@ -98,7 +98,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s = self.scheduler()
+        s = self.scheduler
         module = CSVLoader(
             make_url("bigfile"), header=None, scheduler=s
         )
@@ -115,7 +115,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s = self.scheduler()
+        s = self.scheduler
         module = CSVLoader(
             make_url("bigfile"), header=None, scheduler=s, timeout=0.01
         )
@@ -132,7 +132,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s = self.scheduler()
+        s = self.scheduler
         filenames = PTable(
             name="file_names",
             dshape="{filename: string}",
@@ -153,7 +153,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s = self.scheduler()
+        s = self.scheduler
         module = CSVLoader(
             make_url("bigfile", ext=BZ2), header=None, scheduler=s
         )
@@ -170,7 +170,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s = self.scheduler()
+        s = self.scheduler
         module = CSVLoader(
             make_url("bigfile", ext=BZ2),
             header=None,
@@ -190,7 +190,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s = self.scheduler()
+        s = self.scheduler
         filenames = PTable(
             name="file_names",
             dshape="{filename: string}",

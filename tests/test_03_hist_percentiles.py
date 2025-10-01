@@ -24,7 +24,7 @@ class TestPercentiles(ProgressiveTest):
 
     def _impl_tst_percentiles(self, accuracy: float) -> None:
         """ """
-        s = self.scheduler()
+        s = self.scheduler
         with s:
             random = RandomPTable(2, rows=20_000, scheduler=s)
             hist_index = BinningIndex(scheduler=s)
@@ -64,7 +64,7 @@ class TestPercentiles(ProgressiveTest):
 
     def _impl_stirred_tst_percentiles(self, accuracy: float, **kw: Any) -> None:
         """ """
-        s = self.scheduler()
+        s = self.scheduler
         with s:
             random = RandomPTable(2, rows=20_000, scheduler=s)
             stirrer = Stirrer(
@@ -132,7 +132,7 @@ class TestPercentiles(ProgressiveTest):
 
     def _impl_tst_percentiles_rq(self, accuracy: float) -> None:
         """ """
-        s = self.scheduler()
+        s = self.scheduler
         with s:
             random = RandomPTable(2, rows=50_000, scheduler=s)
             t_min = PDict({"_1": 0.3})
@@ -181,7 +181,7 @@ class TestPercentiles(ProgressiveTest):
 
     def _impl_stirred_tst_percentiles_rq(self, accuracy: float, **kw: Any) -> None:
         """ """
-        s = self.scheduler()
+        s = self.scheduler
         with s:
             random = RandomPTable(2, rows=20_000, scheduler=s)
             stirrer = Stirrer(

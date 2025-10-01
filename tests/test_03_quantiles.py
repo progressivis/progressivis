@@ -25,7 +25,7 @@ def uniform(n: int) -> np.ndarray[Any, Any]:
 class TestQuantiles(ProgressiveTest):
     def test_quantiles(self) -> None:
         np.random.seed(42)
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(
             3,
             rows=10_000,

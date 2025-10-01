@@ -13,7 +13,7 @@ from typing import Any, Dict, cast
 
 class TestModuleFacade(ProgressiveTest):
     def test_module_facade(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
@@ -38,7 +38,7 @@ class TestModuleFacade(ProgressiveTest):
         self.compare(res1, res2)
 
     def test_table_module(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
         sink_min = Sink(scheduler=s)
@@ -48,7 +48,7 @@ class TestModuleFacade(ProgressiveTest):
         aio.run(s.start())
 
     def test_table_module_child(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
         sink_min = Sink(scheduler=s)
@@ -58,7 +58,7 @@ class TestModuleFacade(ProgressiveTest):
         aio.run(s.start())
 
     def test_sample(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
         prt = Print(proc=self.terse, scheduler=s)
@@ -73,7 +73,7 @@ class TestModuleFacade(ProgressiveTest):
         self.assertEqual(len(tabmod.child.sample.pintset), 10)
 
     def test_table_module_cols(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
@@ -89,7 +89,7 @@ class TestModuleFacade(ProgressiveTest):
         self.compare(res1, res2)
 
     def test_table_module_log(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
@@ -105,7 +105,7 @@ class TestModuleFacade(ProgressiveTest):
         self.assertTrue(np.allclose(res1, list(res2.values())))
 
     def test_table_module_configure(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
         tabmod.configure(base="min", hints=["_1", "_2", "_3"], name="min3")
@@ -120,7 +120,7 @@ class TestModuleFacade(ProgressiveTest):
         self.compare(res1, res2)
 
     def test_table_module_configure_hist(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
         tabmod.configure(base="min", hints=["_1"], name="min_1")
@@ -144,7 +144,7 @@ class TestModuleFacade(ProgressiveTest):
         self.assertListEqual(h1.tolist(), h2.tolist())
 
     def test_table_module_configure_hist2d(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
         tabmod.configure(base="min", hints=["_1", "_2"], name="min_1_2")

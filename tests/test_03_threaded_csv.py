@@ -34,7 +34,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         return cnt
 
     def test_read_csv(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = ThreadedCSVLoader(
             get_dataset("bigfile"), header=None, scheduler=s
         )
@@ -46,7 +46,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertEqual(len(module.result), 1000000)
 
     def test_read_csv_taxis(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = ThreadedCSVLoader(
             TAXI_FILE, header=None, scheduler=s
         )

@@ -19,7 +19,7 @@ def print_len(x: Any) -> None:
 class TestJoin3(ProgressiveTest):
     @skip("Need fixing")
     def test_join(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("bigfile"), header=None, scheduler=s
         )
@@ -46,7 +46,7 @@ class TestJoin3(ProgressiveTest):
         print(res)
 
     def test_join_simple(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         cst1 = Constant(
             PTable(
                 name="test_join_simple_cst1",

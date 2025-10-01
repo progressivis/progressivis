@@ -29,7 +29,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         return cnt
 
     def test_read_csv(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = SimpleCSVLoader(
             get_dataset("bigfile"),
              header=None,
@@ -43,7 +43,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertEqual(len(module.result), 1000000)
 
     def test_read_fake_csv(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         length = 30_000
         module = SimpleCSVLoader(
             RandomBytesIO(cols=30, rows=length),
@@ -59,7 +59,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertEqual(len(module.result), length)
 
     def test_read_multiple_csv(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         filenames = PTable(
             name="file_names",
             dshape="{filename: string}",
@@ -75,7 +75,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertEqual(len(csv.result), 60000)
 
     def test_read_multiple_fake_csv(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         filenames = PTable(
             name="file_names2",
             dshape="{filename: string}",

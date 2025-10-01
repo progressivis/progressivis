@@ -10,7 +10,7 @@ from . import ProgressiveTest
 
 class TestBinJoin(ProgressiveTest):
     def test_bin_join(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         min_1 = Min(name="min_1" + str(hash(random)), scheduler=s)
         min_1.input[0] = random.output[0]["_1",]

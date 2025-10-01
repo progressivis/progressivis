@@ -24,7 +24,7 @@ from progressivis.core import aio
 @skip("Still converting to sklean > 1.0")
 class TestMBKmeans(ProgressiveTest):
     def test_mb_k_means(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         n_clusters = 3
         try:
             dataset = (get_dataset("cluster:s3"),)

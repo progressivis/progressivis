@@ -14,7 +14,7 @@ class TestPTableChangeManager(ProgressiveTest):
 
     def setUp(self) -> None:
         super(TestPTableChangeManager, self).setUp()
-        self._scheduler = self.scheduler()
+        self._scheduler = self.scheduler
 
     def test_tablechangemanager(self) -> None:
         "main test"
@@ -24,7 +24,7 @@ class TestPTableChangeManager(ProgressiveTest):
         )
         col_a = table["a"]
         col_b = table["b"]
-        s = self.scheduler()
+        s = self.scheduler
         table.changes = PTableChanges()
         s._run_number = 1
         last = s._run_number

@@ -8,7 +8,7 @@ import numpy as np
 
 class TestMinMax(ProgressiveTest):
     def test_min(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = SimpleCSVLoader(
             get_dataset("smallfile_multiscale"), nrows=10_000, scheduler=s
         )
@@ -29,7 +29,7 @@ class TestMinMax(ProgressiveTest):
         self.assertTrue(np.array_equal(v1, v2))
 
     def test_max(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = SimpleCSVLoader(
             get_dataset("smallfile_multiscale"), nrows=10_000, scheduler=s
         )

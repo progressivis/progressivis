@@ -136,7 +136,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
     def test_01_read_http_csv_with_crash(self) -> None:
         self._http_srv = _HttpSrv()
         tag = self.get_tag()
-        s = self.scheduler()
+        s = self.scheduler
         url = make_url("bigfile")
         module = CSVLoader(
             url, recovery_tag=tag, header=None, scheduler=s
@@ -147,7 +147,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         sts = sleep_then_stop(s, 2)
         aio.run_gather(s.start(), sts)
         self._http_srv.restart()
-        s = self.scheduler(clean=True)
+        s = self.clean_scheduler
         module = CSVLoader(
             url,
             recovery=True,
@@ -171,7 +171,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
     def test_01_read_http_csv_with_crash_and_counter(self) -> None:
         self._http_srv = _HttpSrv()
         tag = self.get_tag()
-        s = self.scheduler()
+        s = self.scheduler
         url = make_url("bigfile")
         module = CSVLoader(
             url, recovery_tag=tag, header=None, scheduler=s
@@ -182,7 +182,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         sts = sleep_then_stop(s, 2)
         aio.run_gather(s.start(), sts)
         self._http_srv.restart()
-        s = self.scheduler(clean=True)
+        s = self.clean_scheduler
         csv = CSVLoader(
             url,
             recovery=True,
@@ -205,7 +205,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
     def test_02_read_http_csv_bz2_with_crash(self) -> None:
         self._http_srv = _HttpSrv()
         tag = self.get_tag()
-        s = self.scheduler()
+        s = self.scheduler
         url = make_url("bigfile", ext=BZ2)
         module = CSVLoader(
             url, recovery_tag=tag, header=None, scheduler=s
@@ -216,7 +216,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         sts = sleep_then_stop(s, 5)
         aio.run_gather(s.start(), sts)
         self._http_srv.restart()
-        s = self.scheduler(clean=True)
+        s = self.clean_scheduler
         module = CSVLoader(
             url,
             recovery=True,
@@ -234,7 +234,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_03_read_http_multi_csv_no_crash(self) -> None:
         self._http_srv = _HttpSrv()
-        s = self.scheduler()
+        s = self.scheduler
         module = CSVLoader(
             [make_url("smallfile"), make_url("smallfile")],
             header=None,
@@ -250,7 +250,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_04_read_http_multi_csv_bz2_no_crash(self) -> None:
         self._http_srv = _HttpSrv()
-        s = self.scheduler()
+        s = self.scheduler
         module = CSVLoader(
             [make_url("smallfile", ext=BZ2)] * 2,
             header=None,
@@ -270,7 +270,7 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
     def test_05_read_http_multi_csv_with_crash(self) -> None:
         self._http_srv = _HttpSrv()
         tag = self.get_tag()
-        s = self.scheduler()
+        s = self.scheduler
         url_list = [make_url("bigfile"), make_url("bigfile")]
         module = CSVLoader(
             url_list, recovery_tag=tag, header=None, scheduler=s
@@ -281,7 +281,7 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
         sts = sleep_then_stop(s, 3)
         aio.run_gather(s.start(), sts)
         self._http_srv.restart()
-        s = self.scheduler(clean=True)
+        s = self.clean_scheduler
         module = CSVLoader(
             url_list,
             recovery=True,
@@ -300,7 +300,7 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
     def test_06_read_http_multi_csv_bz2_with_crash(self) -> None:
         self._http_srv = _HttpSrv()
         tag = self.get_tag()
-        s = self.scheduler()
+        s = self.scheduler
         url_list = [make_url("bigfile", ext=BZ2)] * 2
         module = CSVLoader(
             url_list, recovery_tag=tag, header=None, scheduler=s
@@ -311,7 +311,7 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
         sts = sleep_then_stop(s, 3)
         aio.run_gather(s.start(), sts)
         self._http_srv.restart()
-        s = self.scheduler(clean=True)
+        s = self.clean_scheduler
         module = CSVLoader(
             url_list,
             recovery=True,
@@ -328,7 +328,7 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_07_read_multi_csv_file_no_crash(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = CSVLoader(
             [get_dataset("smallfile"), get_dataset("smallfile")],
             header=None,
@@ -345,7 +345,7 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
 @skipIf(os.getenv("CI"), "cannot run an HTTP local server anymore on CI ...")
 class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
     def _tst_08_read_multi_csv_file_compress_no_crash(self, files: List[str]) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = CSVLoader(
             files, header=None, scheduler=s
         )  # , save_context=False)
@@ -373,7 +373,7 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_09_read_multi_csv_file_with_crash(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         tag = "t9"
         file_list = [get_dataset("bigfile"), get_dataset("bigfile")]
         module = CSVLoader(
@@ -385,7 +385,7 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
         sts = sleep_then_stop(s, 3)
         aio.run_gather(s.start(), sts)
         _close(module)
-        s = self.scheduler(clean=True)
+        s = self.clean_scheduler
         module = CSVLoader(
             file_list,
             recovery=True,
@@ -403,7 +403,7 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
     def _tst_10_read_multi_csv_file_compress_with_crash(
         self, file_list: List[str], tag: str
     ) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         module = CSVLoader(
             file_list, recovery_tag=tag, header=None, scheduler=s
         )
@@ -413,7 +413,7 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
         sts = sleep_then_stop(s, 4)
         aio.run_gather(s.start(), sts)
         _close(module)
-        s = self.scheduler(clean=True)
+        s = self.clean_scheduler
         module = CSVLoader(
             file_list,
             recovery=True,

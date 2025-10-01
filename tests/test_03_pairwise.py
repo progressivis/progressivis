@@ -31,7 +31,7 @@ async def ten_times(scheduler: Scheduler, run_number: int) -> None:
 
 class TestPairwiseDistances(ProgressiveTest):
     def NOtest_vec_distances(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         vec = VECLoader(get_dataset("warlogs"), scheduler=s)
         cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
         cnt.input[0] = vec.output.result
@@ -41,7 +41,7 @@ class TestPairwiseDistances(ProgressiveTest):
         _ = vec.result
 
     def test_csv_distances(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         vec = CSVLoader(
             get_dataset("smallfile"), header=None, scheduler=s
         )

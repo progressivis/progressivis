@@ -25,7 +25,7 @@ class TestRangeQuery(ProgressiveTest):
 
     def _range_query_impl(self, lo_x: float, lo_y: float, up_x: float, up_y: float) -> None:
         "Run tests of the RangeQuery module"
-        s = self.scheduler()
+        s = self.scheduler
         with s:
             random = RandomPTable(2, rows=20_000, scheduler=s)
             t_min = PDict({"_1": lo_x, "_2": lo_y})
@@ -62,7 +62,7 @@ class TestRangeQuery(ProgressiveTest):
 
     def test_hist_index_min_max(self) -> None:
         "Test min_out and max_out on BinningIndex"
-        s = self.scheduler()
+        s = self.scheduler
         with s:
             random = RandomPTable(2, rows=100_000, scheduler=s)
             t_min = PDict({"_1": 0.3, "_2": 0.4})
@@ -118,7 +118,7 @@ class TestRangeQuery(ProgressiveTest):
 
     def test_range_query_min_max(self) -> None:
         "Test min and max on RangeQuery output"
-        s = self.scheduler()
+        s = self.scheduler
         with s:
             random = RandomPTable(2, rows=100_000, scheduler=s)
             t_min = PDict({"_1": 0.3, "_2": 0.4})
@@ -134,7 +134,7 @@ class TestRangeQuery(ProgressiveTest):
 
     def test_range_query_min_max2(self) -> None:
         "Test min and max on RangeQuery output"
-        s = self.scheduler()
+        s = self.scheduler
         with s:
             random = RandomPTable(2, rows=100_000, scheduler=s)
             t_min = PDict({"_1": 0.0, "_2": 0.1})
@@ -152,7 +152,7 @@ class TestRangeQuery(ProgressiveTest):
 
     def test_range_query_min_max3(self) -> None:
         "Test min and max on RangeQuery output"
-        s = self.scheduler()
+        s = self.scheduler
         with s:
             random = RandomPTable(2, rows=100_000, scheduler=s)
             t_min = PDict({"_1": 0.3, "_2": 0.4})

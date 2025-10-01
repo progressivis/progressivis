@@ -15,7 +15,7 @@ def print_repr(x: Any) -> None:
 class TestSelect(ProgressiveTest):
     @skip("Too long")
     def test_select_simple(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("bigfile"), header=None, scheduler=s
         )
@@ -34,7 +34,7 @@ class TestSelect(ProgressiveTest):
 
     @skip("Need to implement select on tables")
     def test_select(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         csv = CSVLoader(
             get_dataset("bigfile"),
             header=None,

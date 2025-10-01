@@ -9,7 +9,7 @@ from . import ProgressiveTest
 
 class TestPaste(ProgressiveTest):
     def test_paste(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         min_1 = Min(name="min_1" + str(hash(random)), scheduler=s)
         min_1.input[0] = random.output.result["_1",]

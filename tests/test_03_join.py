@@ -147,7 +147,7 @@ df_outer = df_left.join(
 @skipIf(os.getenv("CI"), "skipped because local nyc taxi files are required")
 class TestProgressiveJoin(ProgressiveTest):
     def test_inner(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(PARQUET_FILE, columns=TAXI_COLS, scheduler=s,)
         csv = SimpleCSVLoader(CSV_URL, skiprows=LOOKUP_SKIP_ROWS, scheduler=s,)
         self.assertTrue(parquet.result is None)
@@ -174,7 +174,7 @@ class TestProgressiveJoin(ProgressiveTest):
             self.assertTrue(np_array_equal(df[col].values, INNER[col].values))
 
     def test_outer(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(PARQUET_FILE, columns=TAXI_COLS, scheduler=s,)
         csv = SimpleCSVLoader(CSV_URL, skiprows=LOOKUP_SKIP_ROWS, scheduler=s,)
         self.assertTrue(parquet.result is None)
@@ -213,7 +213,7 @@ class TestProgressiveJoin(ProgressiveTest):
 
     #  @skipIf(True, "Too long")
     def test_inner_pu(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(PARQUET_FILE, columns=TAXI_COLS, scheduler=s,)
         csv = SimpleCSVLoader(CSV_URL, skiprows=LOOKUP_SKIP_ROWS, scheduler=s,)
         self.assertTrue(parquet.result is None)
@@ -251,7 +251,7 @@ class TestProgressiveJoin(ProgressiveTest):
 
     # @skipIf(True, "Too long")
     def test_outer_pu(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         parquet = ParquetLoader(PARQUET_FILE, columns=TAXI_COLS, scheduler=s,)
         csv = SimpleCSVLoader(CSV_URL, skiprows=LOOKUP_SKIP_ROWS, scheduler=s,)
         self.assertTrue(parquet.result is None)
@@ -319,7 +319,7 @@ class TestProgressiveJoin(ProgressiveTest):
 
 class TestProgressiveJoin2(ProgressiveTest):
     def test_inner(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         sio_left = StringIO(csv_left)
         sio_left.seek(0)
         related = SimpleCSVLoader(sio_left, scheduler=s,)
@@ -347,7 +347,7 @@ class TestProgressiveJoin2(ProgressiveTest):
             self.assertTrue(np_array_equal(df[col].values, sorted_inner[col].values))
 
     def test_outer(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         sio_left = StringIO(csv_left)
         sio_left.seek(0)
         related = SimpleCSVLoader(sio_left, scheduler=s,)

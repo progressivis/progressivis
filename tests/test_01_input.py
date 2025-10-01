@@ -18,7 +18,7 @@ async def _do_line(inp: Input, s: Scheduler) -> None:
 
 class TestInput(ProgressiveTest):
     def test_input(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         with s:
             inp = Input(scheduler=s)
             pr = Print(proc=self.terse, scheduler=s)

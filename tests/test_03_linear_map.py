@@ -8,7 +8,7 @@ import numpy as np
 
 class TestLinearMap(ProgressiveTest):
     def test_linear_map(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         vectors = RandomPTable(3, rows=100000, scheduler=s)
         transf = RandomPTable(10, rows=3, scheduler=s)
         module = LinearMap(scheduler=s)
@@ -25,7 +25,7 @@ class TestLinearMap(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
     def test_linear_map2(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         vectors = RandomPTable(20, rows=100000, scheduler=s)
         transf = RandomPTable(20, rows=3, scheduler=s)
         module = LinearMap(scheduler=s)
@@ -42,7 +42,7 @@ class TestLinearMap(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
     def test_linear_map3(self) -> None:
-        s = self.scheduler()
+        s = self.scheduler
         vectors = RandomPTable(20, rows=100000, scheduler=s)
         transf = RandomPTable(20, rows=3, scheduler=s)
         module = LinearMap(scheduler=s)

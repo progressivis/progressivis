@@ -1,5 +1,5 @@
 from __future__ import annotations
-import duckdb
+import duckdb  # type: ignore
 import pyarrow.parquet as pq
 from . import ProgressiveTest
 from progressivis.core.api import Sink
@@ -15,7 +15,7 @@ class TestArrowBatchLoader(ProgressiveTest):
         n_rows = pq.ParquetFile(file_name).metadata.num_rows
         con.execute(f"SELECT * FROM read_parquet('{file_name}')")
         reader = con.fetch_record_batch(1000)
-        s = self.scheduler()
+        s = self.scheduler
         module = ArrowBatchLoader(
             reader=reader,
             n_rows=n_rows,
@@ -34,7 +34,7 @@ class TestArrowBatchLoader(ProgressiveTest):
         n_rows = 1_000_000
         con.execute(f"SELECT * FROM read_csv('{file_name}')")
         reader = con.fetch_record_batch(1000)
-        s = self.scheduler()
+        s = self.scheduler
         module = ArrowBatchLoader(
             reader=reader,
             n_rows=n_rows,
@@ -54,7 +54,7 @@ class TestArrowBatchLoader(ProgressiveTest):
         n_rows = 1_000_000
         con.execute(f"SELECT column01, column02 FROM read_csv('{file_name}')")
         reader = con.fetch_record_batch(1000)
-        s = self.scheduler()
+        s = self.scheduler
         module = ArrowBatchLoader(
             reader=reader,
             n_rows=n_rows,
