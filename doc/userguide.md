@@ -125,6 +125,50 @@ ProgressiVis offers two levels of programming: a low-level, as shown in the firs
 
 Alternatively, progressive programs can be run in a _headless_ environment.
 
+## Dynamic Modification of a ProgressiVis Program
+
+A running ProgressiVis program can be modified.  Running this simple program will show one dot per chunk loaded.
+
+```python
+LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
+                   "yellow_tripdata_2015-01.csv.bz2")
+
+def terse(x):
+    print(".", end="", flush=True)
+
+csv = CSVLoader(LARGE_TAXI_FILE, usecols=['pickup_longitude', 'pickup_latitude'])
+m = Min()
+prt = Print(proc=terse)
+m.input.table = csv.output.result
+prt.input.df = m.output.result
+csv.scheduler.task_start()
+```
+
+Adding a branch to this program can be done like this:
+```python
+def terse2(x):
+    print("/", end="", flush=True)
+
+with csv.scheduler as dataflow:
+    M = Max(name="max")
+    prt2 = Print(proc=terse2)
+    M.input.table = csv.output.result
+    prt2.input.df = M.output.result
+```
+
+the `with` construct is called a "context manager". When it ends, it verifies that the new program is valid and updates the scheduler.
+If not, it triggers an exception without changing the program run by the scheduler.
+
+Similarly, modules can be removed like this:
+```python
+with csv.scheduler as dataflow:
+    deps = dataflow.collateral_damage("min")
+    print("The collateral damage of deleting min is:", deps)
+    dataflow.delete_modules(*deps)
+```
+
+The method `Dataflow.collateral_damage()` computes the set of dependent modules to remove from the dataflow to remove the specified module so that the dataflow remains valid. In our case, removing the "min" module should also remove the "print" module connected, but not the "csv" module.
+You should always pass the list of dependent modues to `Dataflow.delete_modules()` so you know what you are doing, you cannot pretend ProgressiVis removed some modules without you being aware!
 
 ## Communication between ProgressiVis and the Notebook
 
