@@ -1,13 +1,13 @@
 # Introduction
 
 ProgressiVis is a Python toolkit implementing
-*Progressive Data Analysis*. A book describes the paradigm in details, see
+*Progressive Data Analysis*. A book describes the paradigm in detail, see
 [www.aviz.fr/Progressive/PDABook](https://www.aviz.fr/Progressive/PDABook).
 
 In the `ProgressiVis` toolkit, all the executions are progressive by
 design; the system is never blocked performing lengthy operations, it
-always shows visualizations quickly, even when all the data is not
-loaded yet or the algorithm execution is not finished.
+always shows visualizations quickly, even when not all the data is
+loaded yet, or the algorithm execution is not finished.
 `ProgressiVis` also comes with extensions in the notebook
 to create interactive visualizations and their user interfaces for
 controlling the progressive process.
@@ -20,23 +20,9 @@ does not converge to the expected result.
 
 ## Why?
 
-Interactive data exploration is performed by humans and therefore
-requires a controlled latency. When the latency exceeds 10s, humans
-cannot maintain their attention and their efficiency at exploring data
-drops dramatically.  Instead of loading data fully or running
-algorithms to completion one after the other, as done in all existing
-scientific analysis systems, `ProgressiVis` algorithms (called modules)
-run in short batches, each batch being only allowed to run for a
-specific quantum of time - typically 1 second - producing a usable
-result in the end, and yielding control to the next module.  To
-perform the whole computation, `ProgressiVis` loops over the modules as
-many times as necessary to converge to a result that the analyst
-considers satisfactory.
+Interactive data exploration is performed by humans and, therefore, requires a controlled latency. When the latency exceeds 10s, humans cannot maintain their attention and their efficiency in exploring data drops dramatically.  Instead of loading data fully or running algorithms to completion one after the other, as done in all existing scientific analysis systems, `ProgressiVis` algorithms (called modules) run in short batches, each batch being only allowed to run for a specific quantum of time - typically 1 second - producing a usable result in the end, and yielding control to the next module.  To perform the whole computation, `ProgressiVis` loops over the modules as many times as necessary to converge to a result that the analyst considers satisfactory.
 
-Humans can then conduct interactive data exploration using large
-datasets and powerful analysis algorithms, trading time with quality,
-staying in control of the quality they need to make decisions by
-controlling the time they will allow the algorithm to run.
+Humans can then conduct interactive data exploration using large datasets and powerful analysis algorithms, trading time for quality, staying in control of the quality they need to make decisions by controlling the time they will allow the algorithm to run.
 
 ## Benefits
 
@@ -50,23 +36,14 @@ Progressive Data Analysis provides the following benefits:
 
 ## Current State
 
-For now, `ProgressiVis` is mostly a prototype. The current
-implementation provides progressive **data structures** that can grow and
-adapt to progressive computations, an **execution model** relying on
-asynchronous programming with non-preemptive [cooperative
-multitasking](https://en.wikipedia.org/wiki/Cooperative_multitasking),
-and a number of **modules** implementing various components of the
-language: data manipulation, computations, statistics, machine
-learning, and vizualization.  ProgressiVis is also meant to be used
-from jupyter notebooks; it provides interactions and visualizations
-specially suited to progressive systems.
+For now, `ProgressiVis` is mostly a prototype. The current implementation provides progressive **data structures** that can grow and adapt to progressive computations, an **execution model** relying on asynchronous programming with non-preemptive [cooperative multitasking](https://en.wikipedia.org/wiki/Cooperative_multitasking), and a number of **modules** implementing various components of the language: data manipulation, computations, statistics, machine learning, and visualization.  ProgressiVis is also meant to be used from Jupyter notebooks; it provides interactions and visualizations specially suited to progressive systems.
 
-The authors are committed to maintain and improve `ProgressiVis` to become a mature toolkit.
+The authors are committed to maintaining and improving `ProgressiVis` to become a mature toolkit.
 
 
 ## Dependencies
 
-`ProgressiVis` relies on well known Python libraries, such as
+`ProgressiVis` relies on well-known Python libraries, such as
 [numpy](http://www.numpy.org/),[scipy](http://www.scipy.org/),
 [Pandas](http://pandas.pydata.org/),
 [pyarrow](https://arrow.apache.org/docs/python/index.html),
