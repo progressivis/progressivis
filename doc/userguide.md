@@ -2,24 +2,24 @@
 
 
 **ProgressiVis** is a language and system implementing **progressive data analysis and visualization**.
-**ProgressiVis** is designed so that it never blocks while executing functions, even if their execution time lasts for an unbounded amount of time. For example, when loading a large file from the network, until completion.
+**ProgressiVis** is designed to never block while executing functions, even if their execution time lasts an unbounded amount of time. For example, when loading a large file from the network until it is completed.
 
-In a traditional computation system, you cannot do much about the time taken when calling a function. Waiting while loading a large file over the network is the price to pay for having it loaded and starting computations over its contents. In a non-progressive system meant to be used interactively, when a function takes too long to complete, the user waits, gets bored, and her attention drops.  **ProgressiVis** is designed to avoid this attention drop.
+In a traditional computation system, you cannot do much about the time taken when calling a function. Waiting while loading a large file over the network is the price to pay for having it loaded and initiating computations based on its contents. In a non-progressive system meant to be used interactively, when a function takes too long to complete, the user waits, gets bored, and their attention wanes.  **ProgressiVis** is designed to avoid this attention drop.
 
-If you are familiar with asynchronous programming or real-time programming, you will be familiar with the need to follow strict disciplines to make sure a system is not blocking.
+If you are familiar with asynchronous programming or real-time programming, you will be aware of the need to follow strict disciplines to ensure a system does not block.
 This discipline is implemented everywhere in **progressiVis** with a specific "progressive" semantics.
 
 ## Key concepts
 
-**ProgressiVis** uses specific constructs to remain reactive and interactive all the time.
-Let's start with a simple progressive program to introduce the concepts.  Assume we want to find out what the busy places are in New York City.
-We can download the New York Taxi dataset that contains all the taxi trips in 2015 and 2016, including the pickup and drop-off positions, looking for hot spots.
+**ProgressiVis** utilizes specific constructs to remain reactive and interactive at all times.
+Let's start with a simple progressive program to introduce the concepts.  Assume we want to determine the busiest places in New York City.
+We can download the New York Taxi dataset, which contains all taxi trips from 2015 and 2016, including pickup and drop-off positions, to identify hot spots.
 
-For January 2015, the file `yellow_tripdata_2015-01.csv.bz2` is 327Mb long in compressed form and contains about 12M lines (12,748,987). Downloading the file and uncompressing it before the data is loaded in memory can take minutes. Meanwhile, the user is waiting idly with no information about the file content.
+For January 2015, the file `yellow_tripdata_2015-01.csv.bz2` is 327 MB in compressed form and contains approximately 12 million lines (12,748,987). Downloading the file and uncompressing it before the data is loaded in memory can take minutes. Meanwhile, the user is waiting idly with no information about the file content.
 
 With **ProgressiVis**, we don't need to wait for the file to be fully loaded to visualize it; we can do it on the go, as with this simple, low-level ProgressiVis program.
 
-All the programs shown here are available in the `notebook` directory of **ProgressiVis** as `userguide1.ipynb`, `userguide1.2.ipynb` and `userguide1.3.ipynb` so you don't have to copy/paste them from this documentation.  To run the examples, connect to the `progressivis` directory you downloaded from `github.com` and launch the Jupyter lab notebook by typing, in a command line:
+All the programs shown here are available in the `notebook` directory of **ProgressiVis** as `userguide1.ipynb`, `userguide1.2.ipynb` and `userguide1.3.ipynb` so you don't have to copy/paste them from this documentation.  To run the examples, connect to the `progressivis` directory you downloaded from `github.com` and launch the Jupyter Lab notebook by typing, in a command line:
 ```sh
 jupyter lab
 ```
@@ -54,28 +54,28 @@ heatmap.display_notebook()
 csv.scheduler.task_start()
 ```
 
-The image of all the taxi pickup positions appears immediately. All taxi pickup positions are overlaid at each pixel to produce a density map that becomes more detailed progressively, revealing the shape of Manhattan and the two New York City airports, La Guardia in the center top, and JFK at the bottom right.  Yellow taxis in NYC are only authorized to pick up clients in Manhattan and in the airports, or when returning from their drop-off location; this is visible in the visualized patterns.
+The image of all the taxi pickup positions appears immediately. All taxi pickup positions are overlaid at each pixel to produce a density map that becomes progressively more detailed, revealing the shape of Manhattan and the two New York City airports: LaGuardia, located in the center top, and JFK, at the bottom right.  Yellow taxis in NYC are only authorized to pick up clients in Manhattan and at the airports, or when returning from their drop-off location; this is visible in the visualized patterns.
 
 ![](images/pv-userguide1.gif) ![](images/NYC_map_osm.png)
 
-With a standard visualization system, or using Pandas from Python, you would have to wait several minutes to see the visualization due to the load time of the file.
-**ProgressiVis** shows the results in a few seconds, improving over time, irrespective of the file size and network speed.
+With a standard visualization system or using Pandas from Python, you would have to wait several minutes to see the visualization due to the file's load time.
+**ProgressiVis** displays results in a few seconds, improving over time, regardless of file size and network speed.
 
-Let's explain the program. Line 7 creates a `CSV` loader module, providing the url of the taxi datasets and limiting the table to two columns: `pickup_longitude` and `pickup_latitude` that will be used in the example.
-When created, the module does not start right away, but after line 23, in that case, when the whole program is started.
+Let's explain the program. Line 7 creates a `CSV` loader module, providing the URL of the taxi datasets and limiting the table to two columns: `pickup_longitude` and `pickup_latitude` that will be used in the example.
+When created, the module does not start immediately, but rather after line 23, when the entire program is initiated.
 
-Then, on line 10, a `Quantiles` module is created and connected to the `CSV` loader in line 11.  Modules can have input and output slots to connect them and let data flow between them. The slots are usually typed, so the `CSV` output slot produces a data table, and the `Quantiles` module expects a data table in its input.
+Then, on line 10, a `Quantiles` module is created and connected to the `CSV` loader in line 11.  Modules can have input and output slots to connect them, allowing data to flow between them. The slots are usually typed, so the `CSV` output slot produces a data table, and the `Quantiles` module expects a data table in its input.
 
 The `Quantiles` module will maintain an internal data structure to quickly (but approximately) compute quantiles over all the loaded numerical columns (it is called a data sketch). This is because the minimum and maximum of the dataset are noisy.
 ProgressiVis is designed for scalability and managing big data. Big data is never clean; the taxi dataset is no exception. Using the absolute minimum and maximum values of the data column would produce weird results. Instead, we are using the 3% and 97% quantiles, maintained progressively, to avoid outliers.
 
-On line 13, a `Histogram2D` module is created to count all the pickup locations on a grid of 512x512. It is connected to the table produced by the `CSV` module on line 15, and to the 3% and 97% quantiles computed by the Quantiles module in lines 16-17 for its minimum and maximum values. Note that, when connecting slots, ProgressiVis allows specifying arguments, providing details about the connection; they are called "slot hints". For the output slot "result" of the `Quantiles` module on lines 16-17, the argument is simply the desired quantile between 0 and 1.
+On line 13, a `Histogram2D` module is created to count all the pickup locations on a 512x512 grid. It is connected to the table produced by the `CSV` module on line 15, and to the 3% and 97% quantiles computed by the Quantiles module in lines 16-17 for its minimum and maximum values. Note that when connecting slots, ProgressiVis allows specifying arguments to provide details about the connection; these are called "slot hints". For the output slot "result" of the `Quantiles` module on lines 16-17, the argument is simply the desired quantile between 0 and 1.
 
-Finally, a `Heatmap` module is created in line 19 and connected to the output of the `Histogram2D` module. It will convert the 2D histogram into an image ready to be displayed in the notebook, line 22.
+Finally, a `Heatmap` module is created in line 19 and connected to the output of the `Histogram2D` module. It will convert the 2D histogram into an image ready to be displayed in the notebook, as shown in line 22.
 
-The progressive program is started on line 23, and the image will appear almost immediately, improving over time. The bounds may move a bit when more points are loaded. In that case, the image will be redisplayed progressively with the new bounds at the same page, about one image every 2-3 seconds.
+The progressive program is started on line 23, and the image will appear almost immediately, improving over time. The bounds may shift slightly when more points are loaded. In that case, the image will be redisplayed progressively with the new bounds on the same page, approximately every 2-3 seconds.
 
-At this stage, ProgressiVis is used in a streaming mode, loading the data and visualizing the results as it goes. We will introduce interaction later, after introducing the concepts first.
+At this stage, ProgressiVis is used in a streaming mode, loading data and visualizing the results as it is processed. We will introduce interaction later, after introducing the concepts first.
 
 Variations of this program are discussed in [a follow-up section](#dealing-with-noisy-data), if you are interested in more details about loading a large CSV file.
 
@@ -121,7 +121,7 @@ Programming a module is explained in the advanced section of this documentation.
 
 The easiest environment to run progressive programs is Jupyter Lab notebooks.
 **ProgressiVis** comes with widgets, visualizations, and mechanisms to navigate notebooks in a non-linear way to follow the progression of modules.
-ProgressiVis offers two levels of programming, a low-level, as shown in the first example above, and a high-level designed for Jupyter Lab notebooks, more convenient, hiding boilerplate code and providing convenient widgets and navigation mechanisms to manage the non-sequential style of ProgressiVis programs.
+ProgressiVis offers two levels of programming: a low-level, as shown in the first example above, and a high-level designed for Jupyter Lab notebooks, more convenient, hiding boilerplate code and providing convenient widgets and navigation mechanisms to manage the non-sequential style of ProgressiVis programs.
 
 Alternatively, progressive programs can be run in a _headless_ environment.
 
