@@ -1,14 +1,14 @@
 # Introduction
 
-ProgressiVis is a system and language implementing
-*Progressive Data Analysis and
-Visualization*. A book describes the paradigm in details, see
+ProgressiVis is a Python toolkit implementing
+*Progressive Data Analysis*. A book describes the paradigm in details, see
 [www.aviz.fr/Progressive/PDABook](https://www.aviz.fr/Progressive/PDABook).
 
-In the `ProgressiVis` language, all the executions are progressive by
+In the `ProgressiVis` toolkit, all the executions are progressive by
 design; the system is never blocked performing lengthy operations, it
 always shows visualizations quickly, even when all the data is not
-loaded yet. `ProgressiVis` also comes with extensions in the notebook
+loaded yet or the algorithm execution is not finished.
+`ProgressiVis` also comes with extensions in the notebook
 to create interactive visualizations and their user interfaces for
 controlling the progressive process.
 
@@ -38,15 +38,19 @@ datasets and powerful analysis algorithms, trading time with quality,
 staying in control of the quality they need to make decisions by
 controlling the time they will allow the algorithm to run.
 
+## Benefits
 
-`ProgressiVis` relies on well known Python libraries, such as
-[numpy](http://www.numpy.org/),[scipy](http://www.scipy.org/),
-[Pandas](http://pandas.pydata.org/),
-[pyarrow](https://arrow.apache.org/docs/python/index.html),
-and
-[Scikit-Learn](http://scikit-learn.org/).
+Progressive Data Analysis provides the following benefits:
 
-For now, `ProgressiVis` is mostly a proof of concept. The current
+- **Scalability for visualization** in terms of data size and download time
+- **Scalability for interactive analysis** including machine learning
+- **Instant data**, no need to wait for data and visualization to arrive
+- **Green computing**, processing only the required data to get a result
+- **Algorithmic transparency**, the possibility to monitor and visualize data processing as it runs.
+
+## Current State
+
+For now, `ProgressiVis` is mostly a prototype. The current
 implementation provides progressive **data structures** that can grow and
 adapt to progressive computations, an **execution model** relying on
 asynchronous programming with non-preemptive [cooperative
@@ -56,3 +60,16 @@ language: data manipulation, computations, statistics, machine
 learning, and vizualization.  ProgressiVis is also meant to be used
 from jupyter notebooks; it provides interactions and visualizations
 specially suited to progressive systems.
+
+The authors are committed to maintain and improve `ProgressiVis` to become a mature toolkit.
+
+
+## Dependencies
+
+`ProgressiVis` relies on well known Python libraries, such as
+[numpy](http://www.numpy.org/),[scipy](http://www.scipy.org/),
+[Pandas](http://pandas.pydata.org/),
+[pyarrow](https://arrow.apache.org/docs/python/index.html),
+and
+[Scikit-Learn](http://scikit-learn.org/).
+

@@ -51,7 +51,7 @@ heatmap = Heatmap()
 heatmap.input.array = histogram2d.output.result
 
 heatmap.display_notebook()
-csv.scheduler().task_start()
+csv.scheduler.task_start()
 ```
 
 The image of all the taxi pickup positions appears immediately. All taxi pickup positions are overlaid at each pixel to produce a density map that becomes more detailed progressively, revealing the shape of Manhattan and the two New York City airports, La Guardia in the center top, and JFK at the bottom right.  Yellow taxis in NYC are only authorized to pick up clients in Manhattan and in the airports, or when returning from their drop-off location; this is visible in the visualized patterns.
@@ -105,7 +105,7 @@ max_.input[0] = random.output.result["_1", "_2", "_3"]
 # slot hints to restrict the columns to ("_1", "_2", "_3")
 pr = Print(proc=self.terse)
 pr.input[0] = max_.output.result
-random.scheduler().task_start()
+random.scheduler.task_start()
 ```
 Here, the hint tells the `Max` module to compute the maximum only for columns "_1", "_2", "_3".
 Otherwise, when no hint is provided, the maximum is computed for all the columns.
@@ -182,7 +182,7 @@ histogram2d.input.max = query.output.max
 heatmap = Heatmap()
 heatmap.input.array = histogram2d.output.result
 heatmap.display_notebook()
-csv.scheduler().task_start();
+csv.scheduler.task_start();
 ```
 
 Visualizing the dataflow graph shows a cleaner view of the structure of the program.
