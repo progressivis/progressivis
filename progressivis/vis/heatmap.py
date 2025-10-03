@@ -214,9 +214,11 @@ class Heatmap(Module):
         else:
             return None
 
-    def display_notebook(self, width: int = 512, height: int = 512) -> None:
+    def display_notebook(self, width: int = 512, height: int = 512, timeout: float = 1) -> None:
         import ipywidgets as ipw
         from IPython.display import display
+
+        last_display_time = 0.0
 
         img = ipw.Image(value=b"\x00", width=width, height=height)
         progress = ipw.IntProgress(
@@ -231,9 +233,12 @@ class Heatmap(Module):
 
         async def _after_run(m: Module, run_number: int) -> None:
             assert isinstance(m, Heatmap)
-            image = m.get_image_bin()  # get the image from the heatmap
-            if image is not None:
-                img.value = image  # Replace the displayed image with the new one
+            nonlocal last_display_time
+            if (m.last_time() - last_display_time) > timeout:  # update every second
+                last_display_time = m.last_time()
+                image = m.get_image_bin()  # get the image from the heatmap
+                if image is not None:
+                    img.value = image  # Replace the displayed image with the new one
             prog = m.get_progress()
             if prog is not None:
                 value = prog[0]
