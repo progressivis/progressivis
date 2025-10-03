@@ -140,6 +140,6 @@ widgets.VBox([long_slider, lat_slider])
 csv.scheduler
 
 # %%
-csv.scheduler().task_stop()
+csv.scheduler.task_stop()
 
 # %%

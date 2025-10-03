@@ -151,7 +151,8 @@ class MBKMeans(Module):
                 msg = moved_center.data()
                 for c in msg:
                     self.set_centroid(c, msg[c][:2])
-                init_centers = self.mbk.cluster_centers_
+                if hasattr(self.mbk, "cluster_centers_"):  # attr does not exist before a fit
+                    init_centers = self.mbk.cluster_centers_
                 self.reset(init=init_centers)
                 dfslot.clear_buffers()  # No need to re-reset next
                 varslot.clear_buffers()
@@ -283,7 +284,9 @@ class MBKMeans(Module):
     def get_quality(self) -> Dict[str, float]:
         if self._quality is None:
             self._quality = QualitySqrtSumSquarredDiffs()
-        return {"mb_k_means": self._quality.quality(self.mbk.cluster_centers_)}
+        if hasattr(self.mbk, "cluster_centers_"):  # attr does not exist before a fit
+            return {"mb_k_means": self._quality.quality(self.mbk.cluster_centers_)}
+        return {"mb_k_means": 0}
 
 
 @def_input("table", PTable)
