@@ -7,11 +7,15 @@ from progressivis.core.utils import indices_len, fix_loc
 
 @document
 @def_input("table", PTable, doc="The input PTable to process")
-@def_output("result", PDict, doc=("PDict with max value of each column"))
+@def_output("result", PDict, doc=("Max value of each column"))
 class SimpleMax(Module):
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         self.default_step_size = 10000
+
+    def reset(self) -> None:
+        if self.result is not None:
+            self.result.fill(-np.inf)
 
     def run_step(
         self, run_number: int, step_size: int, quantum: float
@@ -40,7 +44,3 @@ class SimpleMax(Module):
         else:
             next_state = Module.state_blocked
         return self._return_run_step(next_state, steps)
-
-    def reset(self) -> None:
-        if self.result is not None:
-            self.result.fill(-np.inf)
