@@ -73,6 +73,7 @@ class ParquetLoader(BaseLoader):
         self.iter_batches_kwds: Dict[str, Any] = filter_kwds(
             kwds, pq.ParquetFile.iter_batches
         )
+        self._parquet_file: pq.ParquetFile | None = None
         if columns is not None:
             self.iter_batches_kwds['columns'] = columns
         # When called with a specified chunksize, it returns a parser
@@ -90,22 +91,43 @@ class ParquetLoader(BaseLoader):
         self._input_stream: Optional[
             io.IOBase
         ] = None  # stream that returns a position through the 'tell()' method
-
+        self._input_size = 0  # length of the file or input stream when available
+        self._total_input_size = 0
+        self._total_size = 0
+        self._last_progress = (0, 0)
+        self._n_files = 0
         self._file_mode = False
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
         # self._imputer = imputer
         # self._drop_na = drop_na
         self._columns: Optional[List[str]] = None
 
+    def get_progress(self) -> tuple[int, int]:  # TODO: impl. the multifile case
+        if (
+            self._total_size == 0
+            or self.result is None
+        ):
+            return self._last_progress
+        length = len(self.result)
+        if length <= 0:
+            return self._last_progress
+        if self._parquet_file is None:
+            return self._last_progress
+        return length, self._total_size
+
     def validate_parser(self, run_number: int) -> ModuleState:
         if self.parser is None:
             if nn(self.filepath_or_buffer):
                 try:
-                    self.parser = pq.ParquetFile(
+                    self._parquet_file = pq.ParquetFile(
                         self.open(self.filepath_or_buffer), **self.pqfile_kwds
-                    ).iter_batches(**self.iter_batches_kwds)
+                    )
+                    if not self._total_size:
+                        self._total_size = self._parquet_file.metadata.num_rows
+                    self.parser = self._parquet_file.iter_batches(**self.iter_batches_kwds)
                 except IOError as e:
                     logger.error("Cannot open file %s: %s", self.filepath_or_buffer, e)
+                    self._parquet_file = None
                     self.parser = None
                     return self.state_terminated
                 self.filepath_or_buffer = None
@@ -127,11 +149,15 @@ class ParquetLoader(BaseLoader):
                         return self.state_blocked
                     filename = df.at[indices.start, "filename"]
                     try:
-                        self.parser = pq.ParquetFile(
+                        self._parquet_file = pq.ParquetFile(
                             self.open(filename), **self.pqfile_kwds
-                        ).iter_batches(**self.iter_batches_kwds)
+                        )
+                        if not self._total_size:
+                            self._total_size = self._parquet_file.metadata.num_rows
+                        self.parser = self._parquet_file.iter_batches(**self.iter_batches_kwds)
                     except IOError as e:
                         logger.error("Cannot open file %s: %s", filename, e)
+                        self._parquet_file = None
                         self.parser = None
                         # fall through
         return self.state_ready
