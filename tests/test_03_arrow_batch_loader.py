@@ -1,5 +1,5 @@
 from __future__ import annotations
-import duckdb  # type: ignore
+import duckdb
 import pyarrow.parquet as pq
 from . import ProgressiveTest
 from progressivis.core.api import Sink
