@@ -6,6 +6,7 @@ import numpy as np
 from collections import defaultdict
 import os
 import io
+import gzip
 import fsspec  # type: ignore
 from .. import ProgressiveError
 from ..core.docstrings import FILENAMES_DOC, RESULT_DOC
@@ -237,14 +238,21 @@ class SimpleCSVLoader(Module):
         (istream, encoding, compression, size) = filepath_to_buffer(
             filepath, encoding=self._encoding, compression=compression
         )
-        self._input_stream = istream
+
         self._input_encoding = encoding
         self._input_compression = compression
+        if compression == "gzip":
+            bio = io.BytesIO(istream.read())
+            bio.seek(0)
+            self._input_stream = gzip.open(bio)
+            self._input_compression = None  # already uncompressed here
+        else:
+            self._input_stream = istream
         self._input_size = size
         if not self._total_size:
             self._total_size = size
         self.csv_kwds["encoding"] = encoding
-        self.csv_kwds["compression"] = compression
+        self.csv_kwds["compression"] = self._input_compression
         self._last_opened = filepath
         return self._input_stream
 

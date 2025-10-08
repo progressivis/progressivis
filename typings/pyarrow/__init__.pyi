@@ -76,6 +76,7 @@ class TimestampArray:
 
 class lib:
     class RecordBatchReader:
+        def __init__(self, *args: Any, **kw: Any) -> None: ...
         def read_next_batch(self) -> RecordBatch: ...
 
 
