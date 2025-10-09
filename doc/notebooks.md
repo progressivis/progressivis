@@ -85,6 +85,13 @@ You can choose between two modes:
 ```
 
 
+## Do not cut and paste from a ProgressiBook to a standard Notebook
+
+ProgressiBooks are managed in a different way than normal notebooks. Copying a cell from a ProgressiBooks to a normal notebook will not work in general, not even to another ProgressiBook.
+
+You can use ipyprogressivis widgets inside regular notebooks by importing the `ipyprogressivis.view` package.
+
+TODO
 
 ## Chaining widgets
 

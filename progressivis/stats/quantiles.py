@@ -26,7 +26,7 @@ DEBUG = False
 
 
 @document
-@def_input("table", PTable, doc="the input table")
+@def_input("table", PTable, doc="An input table")
 @def_output(
     "result",
     PDict,

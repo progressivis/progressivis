@@ -209,7 +209,12 @@ class Module(metaclass=ABCMeta):
             scheduler = Scheduler.default
         self._scheduler: Scheduler = scheduler
         if scheduler.dataflow is None:
-            raise ProgressiveError("No valid context in scheduler")
+            raise ProgressiveError(
+                """No valid context in scheduler.
+You may have added the module in a running scheduler without using the syntax:
+with scheduler as dataflow:
+                """
+            )
         dataflow: Dataflow = scheduler.dataflow
         if name is None:
             name = dataflow.generate_name(self.pretty_typename())
@@ -1401,7 +1406,8 @@ class InputSlots:
                 ck = check_type(hint, desc_.hint_type)
                 assert ck == hint
             elif hint is not None:
-                logger.warning(f"Unexpected slot hint {hint} for {slot}")
+                import warnings
+                warnings.warn(f"Unexpected slot hint {hint} for {slot}")
             slot._hint = hint
         slot.connect()
 
