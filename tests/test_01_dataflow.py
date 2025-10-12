@@ -477,7 +477,7 @@ class TestDataflow(ProgressiveTest):
             self.assertFalse("scatterplot_1" in scheduler)
             with scheduler as dataflow:
                 print("Checking sink+table modules deletion")
-                deps = dataflow.collateral_damage("sink", "print")
+                deps = dataflow.collateral_damage("sink")
                 print(f"collateral_damage('sink') = '{sorted(deps)}'")
                 dataflow.delete_modules(*deps)
 
