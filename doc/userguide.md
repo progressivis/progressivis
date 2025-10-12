@@ -35,22 +35,25 @@ LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
                    "yellow_tripdata_2015-01.csv.bz2")
 RESOLUTION=512
 
+# Create the modules
 csv = CSVLoader(LARGE_TAXI_FILE,
                 usecols=['pickup_longitude', 'pickup_latitude'])
-
 quantiles = Quantiles()
-quantiles.input.table = csv.output.result
-
 histogram2d = Histogram2D('pickup_longitude', 'pickup_latitude',
                           xbins=RESOLUTION, ybins=RESOLUTION)
+heatmap = Heatmap()
+
+# Connect the modules
+quantiles.input.table = csv.output.result
 histogram2d.input.table = quantiles.output.table
 histogram2d.input.min = quantiles.output.result[0.03]
 histogram2d.input.max = quantiles.output.result[0.97]
-
-heatmap = Heatmap()
 heatmap.input.array = histogram2d.output.result
 
+# Display the Heatmap
 heatmap.display_notebook()
+
+# Run the program
 csv.scheduler.task_start()
 ```
 
@@ -61,21 +64,32 @@ The image of all the taxi pickup positions appears immediately. All taxi pickup 
 With a standard visualization system or using Pandas from Python, you would have to wait several minutes to see the visualization due to the file's load time.
 **ProgressiVis** displays results in a few seconds, improving over time, regardless of file size and network speed.
 
-Let's explain the program. Line 7 creates a `CSV` loader module, providing the URL of the taxi datasets and limiting the table to two columns: `pickup_longitude` and `pickup_latitude` that will be used in the example.
-When created, the module does not start immediately, but rather after line 23, when the entire program is initiated.
+Let's explain the program. Line 8 creates a `CSVLoader` module, providing the URL of the taxi datasets and limiting the table to two columns: `pickup_longitude` and `pickup_latitude` that will be used in the example.
+When created, the module does not start immediately, but rather after line 26, when the entire program is initiated.
 
-Then, on line 10, a `Quantiles` module is created and connected to the `CSV` loader in line 11.  Modules can have input and output slots to connect them, allowing data to flow between them. The slots are usually typed, so the `CSV` output slot produces a data table, and the `Quantiles` module expects a data table in its input.
-
+Then, on line 10, a `Quantiles` module is created to compute quantiles of the two columns, so you can get the median value (0.5 quantile) or any other quantile value.
 The `Quantiles` module will maintain an internal data structure to quickly (but approximately) compute quantiles over all the loaded numerical columns (it is called a data sketch). This is because the minimum and maximum of the dataset are noisy.
-ProgressiVis is designed for scalability and managing big data. Big data is never clean; the taxi dataset is no exception. Using the absolute minimum and maximum values of the data column would produce weird results. Instead, we are using the 3% and 97% quantiles, maintained progressively, to avoid outliers.
+ProgressiVis is designed for scalability and managing big data, which is never clean; the taxi dataset is no exception. Using the absolute minimum and maximum values of the data column would produce weird results. Instead, we are using the 3% and 97% percentiles (0.03 and 0.93 quantiles), maintained progressively, to filter out the outliers.
 
-On line 13, a `Histogram2D` module is created to count all the pickup locations on a 512x512 grid. It is connected to the table produced by the `CSV` module on line 15, and to the 3% and 97% quantiles computed by the Quantiles module in lines 16-17 for its minimum and maximum values. Note that when connecting slots, ProgressiVis allows specifying arguments to provide details about the connection; these are called "slot hints". For the output slot "result" of the `Quantiles` module on lines 16-17, the argument is simply the desired quantile between 0 and 1.
+On line 11, a `Histogram2D` module is created to count all the pickup locations (longitudes and latitudes) on a 512x512 array/grid.
 
-Finally, a `Heatmap` module is created in line 19 and connected to the output of the `Histogram2D` module. It will convert the 2D histogram into an image ready to be displayed in the notebook, as shown in line 22.
+The last module, a `Heatmap`, is created on line 13. It will convert the histogram array into a displayable image.
 
-The progressive program is started on line 23, and the image will appear almost immediately, improving over time. The bounds may shift slightly when more points are loaded. In that case, the image will be redisplayed progressively with the new bounds on the same page, approximately every 2-3 seconds.
+Then, the modules are connected.
+Modules have input and output `slots` to connect them, allowing data to flow between one module's output into another module's input. The slots are usually typed, so the `CSVLoader` output slot produces a data table, and the `Quantiles` module expects a data table in its input, as shown in line 16.
+We use the sign equal (=) as a convenient syntax to express a connexion.
+You could interpret it as a `Slot` object, created by an output slot and being shared with the input slot.
 
-At this stage, ProgressiVis is used in a streaming mode, loading data and visualizing the results as it is processed. We will introduce interaction later, after introducing the concepts first.
+On line 17, the `Quantiles` output slot `table` is connected to the input slot `table` of the `Histogram2D` module.
+On line 18 and 19, the `min` and `max` input slot of the `Histogram2D` module are connected to the `result` output slot of the `Quantile` module, but using a **parameter** between brackets. This parameter is called a **slot hint**. In that context, it specifies the desired quantiles that should be extracted, here the 3% and 97% quantiles computed by the Quantiles module.
+
+When connecting slots, ProgressiVis allows specifying arguments to provide details about the connection; these are called "slot hints". For the output slot "result" of the `Quantiles` module on lines 16-17, the argument is simply the desired quantile between 0 and 1.
+
+Finally, on line 20, the `Heatmap` module is connected to the output of the `Histogram2D` module. It will convert 2D histograms into an image ready to be displayed in the notebook, as shown in line 23.
+
+The progressive program is started on line 26, and the image will appear almost immediately, improving over time. The bounds may shift slightly when more points are loaded. In that case, the image will be redisplayed progressively with the new bounds on the same page, approximately every 2-3 seconds.
+
+At this stage, ProgressiVis is used to visualize data immediately in streaming mode, loading data and visualizing the results as it is processed. We will introduce interaction later, after introducing the concepts first.
 
 Variations of this program are discussed in [a follow-up section](#dealing-with-noisy-data), if you are interested in more details about loading a large CSV file.
 
