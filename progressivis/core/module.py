@@ -211,8 +211,7 @@ class Module(metaclass=ABCMeta):
         if scheduler.dataflow is None:
             raise ProgressiveError(
                 """No valid context in scheduler.
-You may have added the module in a running scheduler without using the syntax:
-with scheduler as dataflow:
+You may have added the module in a running scheduler without using the syntax: "with scheduler as dataflow:", or re-run a notebook cell.
                 """
             )
         dataflow: Dataflow = scheduler.dataflow
