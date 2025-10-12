@@ -189,7 +189,8 @@ You should always pass the list of dependent modues to `Dataflow.delete_modules(
 ProgressiVis is built on top of Python asynchronous functions. The communication between ProgressiVis and the notebook is done through callbacks and function calls.
 Module callbacks are handy to update the environment outside of ProgressiVis.
     For example, visualizing the heatmap shown in the first example works like this (see also the Jupyter Notebook widgets documentation at [ipywidgets.readthedocs.io](https://ipywidgets.readthedocs.io/)):
-```python
+```{code-block}
+:linenos:
 import ipywidgets as ipw
 from IPython.display import display
 
@@ -320,7 +321,8 @@ Building a progressive visualization and making it interactive is conceptually e
 
 Big data is almost always noisy. The techniques that work on small data should be adapted to overcome this noise. As an illustration, the simplest program we can think of to visualize the New York Taxi dataset is the following:
 
-```python
+```{code-block}
+:linenos:
 from progressivis import CSVLoader, Histogram2D, Min, Max, Heatmap
 
 LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
@@ -329,20 +331,17 @@ RESOLUTION=512
 
 csv = CSVLoader(LARGE_TAXI_FILE,
                 usecols=['pickup_longitude', 'pickup_latitude'])
-
 min = Min()
-min.input.table = csv.output.result
-
 max = Max()
-max.input.table = csv.output.result
-
 histogram2d = Histogram2D('pickup_longitude', 'pickup_latitude',
                           xbins=RESOLUTION, ybins=RESOLUTION)
+heatmap = Heatmap()
+
+min.input.table = csv.output.result
+max.input.table = csv.output.result
 histogram2d.input.table = csv.output.result
 histogram2d.input.min = min.output.result
 histogram2d.input.max = max.output.result
-
-heatmap = Heatmap()
 heatmap.input.array = histogram2d.output.result
 ```
 
@@ -356,9 +355,9 @@ The `Quantiles` module allows getting rid of outliers that always exist in real 
 
 Alternatively, you may know the boundaries of NYC and specify them:
 (filtering-variant)=
-```python
-from progressivis import (CSVLoader, Histogram2D, ConstDict,
-                          Heatmap, PDict)
+```{code-block}
+:linenos:
+from progressivis import CSVLoader, Histogram2D, ConstDict, Heatmap, PDict
 from dataclasses import dataclass
 
 LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
@@ -376,19 +375,16 @@ bounds = Bounds()
 col_x = "pickup_longitude"
 col_y = "pickup_latitude"
 
-csv = CSVLoader(LARGE_TAXI_FILE,
-                usecols=[col_x, col_y])
-
+csv = CSVLoader(LARGE_TAXI_FILE, usecols=[col_x, col_y])
 min = ConstDict(PDict({col_x: bounds.left, col_y: bounds.bottom}))
 max = ConstDict(PDict({col_x: bounds.right, col_y: bounds.top}))
-
 histogram2d = Histogram2D(col_x, col_y,
                           xbins=RESOLUTION, ybins=RESOLUTION)
+heatmap = Heatmap()
+
 histogram2d.input.table = csv.output.result
 histogram2d.input.min = min.output.result
 histogram2d.input.max = max.output.result
-
-heatmap = Heatmap()
 heatmap.input.array = histogram2d.output.result
 ...
 ```

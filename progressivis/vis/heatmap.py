@@ -249,8 +249,14 @@ class Heatmap(Module):
                     percent = value * 100 / max
                     progress.description = f"{int(percent)}%"
 
-        # TODO: add a on_ending(remove _after_run)
         self.on_after_run(_after_run)  # Install the callback
+
+        def _ending(m: Module, run_number: int) -> None:
+            assert isinstance(m, Heatmap)
+            self.on_after_run(_after_run, remove=True)  # Remove the callback
+            # img.close() Keep the image alive
+
+        self.on_ending(_ending)
 
         def _save(button: ipw.Button) -> None:
             from datetime import datetime
