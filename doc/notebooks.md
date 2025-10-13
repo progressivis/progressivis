@@ -8,36 +8,18 @@ This package provides **ProgressiVis** specific support for the user interface a
 
 ## Running Jupyter
 
-Firstly, to meet the display requirements of progressive notebooks, it is essential to use `Jupyter Lab` (and not _Jupyter Notebook_).
-
-
-The `ipyprogressivis` package provides a pre-save hook for:
-
-* improved rendering when a previously developed scenario is reopened
-* backup of the markdown cells being part of the scenario
-
-
-Its use is not mandatory, but it is recommended if you wish to use the notebooks developed in a documentation (for example, to produce a gallery of examples). To use it, simply launch JupyterLab in this way:
-
-```sh
-$ jupyter lab --FileContentsManager.pre_save_hook=ipyprogressivis.pre_save
-```
-
-Alternatively, you can add the following lines:
-
-```python
-import ipyprogressivis
-c.FileContentsManager.pre_save_hook = ipyprogressivis.pre_save
-```
-
-to your `jupyter_lab_config.py` file and run JupyterLab as usual.
+To meet the display requirements of progressive notebooks, it is essential to use `Jupyter Lab` (and not _Jupyter Notebook_).
 
 ```{eval-rst}
 .. note::
-   If you don't have a `jupyter_lab_config.py` yet, you can generate one with:
-
-       jupyter lab --generate-config
+   The cells in a `ProgressiBook` are created programmatically, which means that the `ProgressiBook` is not automatically trusted by `Jupyter`. Therefore, to obtain a satisfactory rendering of a previously created `ProgressiBook`, the file must be "trusted" by `Jupyter`. This can be done using the command line interface as follows:
 ```
+
+```sh
+jupyter trust /path/to/YourProgressiBook.ipynb
+```
+
+Alternatively, you can "trust" your file in the Jupyterlab interface via the menu `View/Activate command palette/Search trust`.
 
 
 (create-scenario)=
