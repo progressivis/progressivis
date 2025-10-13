@@ -394,18 +394,25 @@ class Dataflow:
                     else:
                         self.reachability[inp] = inters
 
-    def collateral_damage(self, *names: str | Module) -> Set[str]:
+    def collateral_damage(
+            self,
+            *names: str | Module,
+            check: bool = False
+    ) -> Set[str]:
         """Return the list of modules deleted when the specified one is deleted.
 
         :param names: module to delete, names or Modules
+        :param check: raise an exception of a module does not exist in the scheduler
         :returns: list of modules relying on or feeding the specified module
         :rtype: set
 
         """
         deps = set()  # modules connected with a required slot
         queue = set([m.name if not isinstance(m, str) else m for m in names])
-        if queue != (queue & self._modules.keys()):
-            raise ProgressiveError(f"Invalid module(s) in {names}")
+        if check:
+            if queue != (queue & self._modules.keys()):
+                raise ProgressiveError(f"Invalid module(s) in {names}")
+        queue &= self._modules.keys()
         # TODO check if all the modules exist
         done: Set[str] = set()
 
