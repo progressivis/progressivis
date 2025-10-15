@@ -200,13 +200,13 @@ class MCHistogram2D(Module):
         steps = 0
         # dfslot.data() is a PTable() then deleted records are not available
         # anymore => reset
-        if dfslot.base.deleted.any():
+        if dfslot.changes and dfslot.base.deleted.any():
             self.reset()
             dfslot.update(run_number)
         # else if dfslot.data() is a view and
         # if there are new deletions, build the histogram of the deleted pairs
         # then subtract it from the main histogram
-        elif dfslot.selection.deleted.any() and self._histo is not None:
+        elif dfslot.changes and dfslot.selection.deleted.any() and self._histo is not None:
             input_df = dfslot.data().base  # the original table
             # we assume that deletions are only local to the view
             raw_indices = dfslot.deleted.next(length=step_size, as_slice=False)
