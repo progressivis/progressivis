@@ -20,7 +20,6 @@ from progressivis.core.utils import indices_len
 from ..core.module import Module
 from ..core.decorators import process_slot, run_if_any
 from ..core.quality import QualitySqrtSumSquarredDiffs
-from ..table.table_base import BasePTable
 from ..table.api import PTable, PTableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
 from ..io.api import Variable
@@ -261,7 +260,6 @@ class MBKMeans(Module):
         centroids.loc[c, columns] = values
         # TODO unpack the table
         centers = centroids.loc[c, columns]
-        assert isinstance(centers, BasePTable)
         self.mbk.cluster_centers_[c] = list(centers)
         return cast(List[float], self.mbk.cluster_centers_.tolist())
 
