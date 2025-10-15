@@ -2,17 +2,13 @@
 
 ## Installation for users
 
-If you only need the `ProgressiVis` core, install the `progressivis` package, without options. If you need `ProgressiVis` with it's `Jupyter` visualizations or if you don't know all your needs in advance install  `progressivis[jupyter]`.
+To start, you probably want `ProgressiVis` with it's `Jupyter` visualizations; install  `progressivis[jupyter]`.
+
+If you only need the `ProgressiVis` core, install the `progressivis` package, without options.
 
 Currently these installations are continually tested with `Linux`. They should also work on `MacOS` and `Windows`.
 
 ### With pip
-
-#### Installing `ProgressiVis` core:
-
-```
-pip install progressivis
-```
 
 (progressivis-jupyter-install)=
 
@@ -22,11 +18,17 @@ pip install progressivis
 pip install progressivis[jupyter]
 ```
 
+#### Installing `ProgressiVis` core:
+
+```
+pip install progressivis
+```
+
 ## Installation for developers
 
 ```{eval-rst}
 .. note::
-   To fully utilize all the capabilities of `ProgressiVis`, including visualizations, you must install both the `progressivis` repository and it's `Jupyter` extension repository (named `ipyprogressivis`), as outlined below. It’s recommended to clone both repositories into a shared directory. We assume you are connected to this directory.
+   To use all the capabilities of `ProgressiVis`, including visualizations, you must install both the `progressivis` repository and it's `Jupyter` extension repository (named `ipyprogressivis`), as outlined below. It’s recommended to clone both repositories into a shared directory. We assume you are connected to this directory.
 ```
 
 ### Installing `ProgressiVis`
