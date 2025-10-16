@@ -199,12 +199,22 @@ table.liteselect.LiteSelect: même chose avec une vue en sortie. devrait s'appel
 
 ## Indexing Modules
 
-### Histogram Index Module
+### Binning Index Module
 
 ```{eval-rst}
-.. currentmodule:: progressivis.table.hist_index
+.. currentmodule:: progressivis.table.binning_index
 
-.. autoclass:: HistogramIndex
+.. autoclass:: BinningIndex
+   :members:
+   :exclude-members: run_step, parameters
+```
+
+### Binning Index N-dim Module
+
+```{eval-rst}
+.. currentmodule:: progressivis.table.binning_index_nd
+
+.. autoclass:: BinningIndexND
    :members:
    :exclude-members: run_step, parameters
 ```
