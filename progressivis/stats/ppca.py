@@ -95,7 +95,8 @@ class PPCA(Module):
         threshold: Optional[Any] = None,
         resetter: Optional[Any] = None,
         resetter_slot: str = "result",
-        resetter_func: Optional[Callable[..., Any]] = None,
+        resetter_func: Callable[..., Any] | None = None,
+        hint: str | tuple[str] | None = None
     ) -> None:
         with self.grouped():
             s = self.scheduler
@@ -108,7 +109,7 @@ class PPCA(Module):
                 resetter_func=resetter_func,
                 group=self.name,
             )
-            self.dep.reduced.input.table = self.output.result
+            self.dep.reduced.input.table = self.output.result[hint] if hint else self.output.result
             self.dep.reduced.input.transformer = self.output.transformer
             if resetter is not None:
                 assert callable(resetter_func)

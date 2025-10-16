@@ -1,8 +1,10 @@
-from progressivis import Scheduler, Every, CSVLoader
+from progressivis import Scheduler, Every, SimpleCSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.stats.ppca import PPCA
 from progressivis.core import aio
 import click
+
+
 try:
     s = scheduler
 except NameError:
@@ -22,17 +24,17 @@ def _print(x):
 def main(dataset, n_components, rtol, trace, csv_log_file):
     if not dataset.endswith('.csv'):
         dataset = get_dataset(dataset)
-    data = CSVLoader(dataset,
-                     usecols=lambda x: x != 'class', scheduler=s)
+    data = SimpleCSVLoader(dataset,
+                     as_array=lambda cols: {"array": [c for c in cols if c != "class"]}, scheduler=s)
     ppca = PPCA(scheduler=s)
-    ppca.input.table = data.output.table
+    ppca.input.table = data.output.result["array"]
     ppca.params.n_components = n_components
-    ppca.create_dependent_modules(rtol=rtol, trace=trace)
+    ppca.create_dependent_modules(rtol=rtol, trace=trace, hint="array")
     prn = Every(scheduler=s, proc=_print)
-    prn.input.df = ppca.reduced.output.table
+    prn.input.df = ppca.dep.reduced.output.result
     aio.run(s.start())
     if csv_log_file:
-        ppca.reduced._trace_df.to_csv(csv_log_file, index=False)
+        ppca.dep.reduced._trace_df.to_csv(csv_log_file, index=False)
 
 
 if __name__ == '__main__':

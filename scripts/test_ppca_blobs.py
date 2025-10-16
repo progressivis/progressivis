@@ -1,7 +1,7 @@
 from progressivis import Scheduler, Every
 from progressivis.stats.ppca import PPCA
 from progressivis.core import aio
-from progressivis.stats.blobs_table import BlobsTable
+from progressivis.stats.blobs_table import BlobsPTable
 import click
 
 try:
@@ -22,14 +22,14 @@ def _print(x):
 @click.option('--csv_log_file', default=None, help='Save trace as a csv file')
 def main(n_samples, n_components, rtol, trace, csv_log_file):
     centers = [(0.1, 0.3, 0.5), (0.7, 0.5, 0.3), (-0.4, -0.3, -0.1)]
-    data = BlobsTable(columns=['_0', '_1', '_2'], centers=centers,
+    data = BlobsPTable(columns=['_0', '_1', '_2'], centers=centers,
                       cluster_std=0.2, rows=n_samples, scheduler=s)
     ppca = PPCA(scheduler=s)
-    ppca.input.table = data.output.table
+    ppca.input.table = data.output.result
     ppca.params.n_components = n_components
     ppca.create_dependent_modules(rtol=rtol, trace=trace)
     prn = Every(scheduler=s, proc=_print)
-    prn.input.df = ppca.reduced.output.table
+    prn.input.df = ppca.dep.reduced.output.result
     aio.run(s.start())
     if csv_log_file:
         ppca.reduced._trace_df.to_csv(csv_log_file, index=False)
