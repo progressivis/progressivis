@@ -15,7 +15,7 @@ from progressivis.core.api import (
     indices_len,
     fix_loc,
 )
-from typing import Dict, Any, List, Set
+from typing import Dict, Any, List, Set, Sequence
 
 from datasketches import kll_floats_sketch
 
@@ -26,7 +26,7 @@ DEBUG = False
 
 
 @document
-@def_input("table", PTable, doc="An input table")
+@def_input("table", PTable, hint_type=Sequence[str], doc="An input table")
 @def_output(
     "result",
     PDict,
@@ -71,6 +71,10 @@ class Quantiles(Module):
         self._klls = []
         self._cache = {}
         self._valid.clear()
+
+    def accept_output_hint(self, name: str) -> bool:
+        _ = name
+        return True
 
     def starting(self) -> None:
         super().starting()
