@@ -109,7 +109,7 @@ class PPCA(Module):
                 resetter_func=resetter_func,
                 group=self.name,
             )
-            self.dep.reduced.input.table = self.output.result[hint] if hint else self.output.result
+            self.dep.reduced.input.table = self.output.result[hint]
             self.dep.reduced.input.transformer = self.output.transformer
             if resetter is not None:
                 assert callable(resetter_func)

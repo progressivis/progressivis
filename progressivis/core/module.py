@@ -684,6 +684,10 @@ You may have added the module in a running scheduler without using the syntax: "
     def has_input_slot(self, name: str) -> bool:
         return self._input_slots.get(name, None) is not None
 
+    def accept_output_hint(self, name: str) -> bool:
+        _ = name
+        return False
+
     def get_input_slot(self, name: Union[str, int]) -> Slot:
         "Return the specified input slot"
         # raises error is the slot is not declared
@@ -1404,7 +1408,8 @@ class InputSlots:
             if desc_.hint_type:
                 ck = check_type(hint, desc_.hint_type)
                 assert ck == hint
-            elif hint is not None:
+            elif not (hint is None or
+                      slot.output_module.accept_output_hint(slot.output_name)):
                 import warnings
                 warnings.warn(f"Unexpected slot hint {hint} for {slot}")
             slot._hint = hint
