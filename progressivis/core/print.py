@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import partial
 from progressivis.core.module import (
     Module,
     ReturnRunStep,
@@ -21,6 +22,7 @@ class Every(Module):
         self,
         proc: Callable[[Any], None] = _print_len,
         constant_time: bool = True,
+        disp: str | None = None,
         **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
@@ -52,4 +54,16 @@ class Print(Every):
     def __init__(self, **kwds: Any) -> None:
         if "proc" not in kwds:
             kwds["proc"] = _prt
+        super().__init__(quantum=0.1, constant_time=True, **kwds)
+
+
+def _tick(x: Any, tick: str) -> None:
+    print(tick, end="", flush=True)
+
+class Tick(Every):
+    "Module to print a tick string when data arrives in the input slot"
+
+    def __init__(self, tick: str='.', **kwds: Any) -> None:
+        if "proc" not in kwds:
+            kwds["proc"] = partial(_tick, tick=tick)
         super().__init__(quantum=0.1, constant_time=True, **kwds)
