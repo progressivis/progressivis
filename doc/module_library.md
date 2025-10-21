@@ -2,6 +2,37 @@
 
 ## I/O Modules
 
+### Basic Printing
+
+```{eval-rst}
+
+.. currentmodule:: progressivis.core.print
+
+.. autoclass:: Every
+   :members:
+   :exclude-members: run_step, is_data_input, get_progress
+```
+
+```{eval-rst}
+
+.. currentmodule:: progressivis.core.print
+
+.. autoclass:: Print
+   :members:
+   :exclude-members: run_step, is_data_input, get_progress
+```
+
+
+```{eval-rst}
+
+.. currentmodule:: progressivis.core.print
+
+.. autoclass:: Tick
+   :members:
+   :exclude-members: run_step, is_data_input, get_progress
+```
+
+
 ### Simple CSV Loader
 
 
