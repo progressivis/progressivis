@@ -45,7 +45,7 @@ class TestPairwiseDistances(ProgressiveTest):
         vec = CSVLoader(
             get_dataset("smallfile"), header=None, scheduler=s
         )
-        cnt = Tick(oscheduler=s)
+        cnt = Tick(scheduler=s)
         cnt.input[0] = vec.output.result
         global times
         times = 0

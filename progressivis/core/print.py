@@ -17,7 +17,7 @@ def _print_len(x: Sized) -> None:
 @def_input("df")
 class Every(Module):
     """This module runs a function at each run_step with the content of
-    its input slot, which can be of any type.  By default, its prints
+    its input slot, which can be of any type.  By default, it prints
     the length of its input, which could be useful for PTable, PDict, and
     PIntSet.
     """
