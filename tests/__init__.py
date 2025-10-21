@@ -49,11 +49,6 @@ class ProgressiveTest(TestCase):
             self.log(int(level))
 
     @staticmethod
-    def terse(x: Any) -> None:
-        _ = x
-        print(".", end="", file=sys.stderr, flush=True)
-
-    @staticmethod
     async def _stop(scheduler: Scheduler, run_number: int) -> None:
         await scheduler.stop()
 

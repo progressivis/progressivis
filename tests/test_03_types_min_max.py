@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print, Min, Max, SimpleCSVLoader, get_dataset
+from progressivis import Tick, Min, Max, SimpleCSVLoader, get_dataset
 from typing import Any, Dict
 import numpy as np
 
@@ -14,7 +14,7 @@ class TestMinMax(ProgressiveTest):
         )
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -35,7 +35,7 @@ class TestMinMax(ProgressiveTest):
         )
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert random.result is not None

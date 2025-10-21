@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 
-from progressivis import Print, Var, VarH, RandomPTable, notNone
+from progressivis import Tick, Var, VarH, RandomPTable, notNone
 from progressivis.core import aio
 import numpy as np
 
@@ -11,7 +11,7 @@ class Testvar(ProgressiveTest):
         random = RandomPTable(1, rows=1000, scheduler=s)
         var = VarH(scheduler=s)
         var.input.table = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input.df = var.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -27,7 +27,7 @@ class Testvar(ProgressiveTest):
         random = RandomPTable(1, rows=1000, scheduler=s)
         var = Var(scheduler=s)
         var.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = var.output.result
         aio.run(s.start())
         assert random.result is not None

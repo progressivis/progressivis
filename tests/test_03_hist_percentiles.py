@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import numpy as np
 from . import ProgressiveTest
-from progressivis import Print, ConstDict, RandomPTable, PDict, Sink, RangeQuery
+from progressivis import Tick, ConstDict, RandomPTable, PDict, Sink, RangeQuery
 from progressivis.table.binning_index import BinningIndex
 from progressivis.table.percentiles import Percentiles
 from progressivis.table.stirrer import Stirrer
@@ -204,7 +204,7 @@ class TestPercentiles(ProgressiveTest):
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input.percentiles = which_percentiles.output.result
             percentiles.input.index = hist_index.output.result
-            prt = Print(proc=self.terse, scheduler=s)
+            prt = Tick(scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
         assert percentiles.result is not None

@@ -3,7 +3,7 @@ from __future__ import annotations
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print, RandomPTable, Module, def_input, def_output, PTable, fix_loc
+from progressivis import Tick, RandomPTable, Module, def_input, def_output, PTable, fix_loc
 import numpy as np
 
 from typing import TYPE_CHECKING
@@ -58,7 +58,7 @@ class TestHadamard(ProgressiveTest):
         module = Hadamard(scheduler=s)
         module.input.x1 = random1.output.result
         module.input.x2 = random2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None

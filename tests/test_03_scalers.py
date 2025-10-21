@@ -1,6 +1,6 @@
 from . import ProgressiveTest, skip
 import pandas as pd
-from progressivis import Print, SimpleCSVLoader, ConstDict, PDict, MinMaxScaler
+from progressivis import Tick, SimpleCSVLoader, ConstDict, PDict, MinMaxScaler
 from progressivis.core import aio
 
 import numpy as np
@@ -33,7 +33,7 @@ class TestScalers(ProgressiveTest):
         sc = MinMaxScaler(reset_threshold=10_000, scheduler=s)
         # sc.input[0] = random.output.result
         sc.create_dependent_modules(csv)
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = sc.output.result
         aio.run(s.start())
         assert sc.result is not None
@@ -55,8 +55,8 @@ class TestScalers(ProgressiveTest):
         # sc.input[0] = random.output.result
         sc.create_dependent_modules(csv)
         sc.input.control = cst.output.result
-        pr = Print(proc=self.terse, scheduler=s)
-        pr2 = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
+        pr2 = Tick(scheduler=s)
         pr.input[0] = sc.output.result
         pr2.input[0] = sc.output.info
         aio.run(s.start())

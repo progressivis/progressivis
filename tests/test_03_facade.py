@@ -1,7 +1,7 @@
 "Test for SlotHub"
 from . import ProgressiveTest
 
-from progressivis import notNone, Sink, Print, Min, Max, RandomPTable, Histogram1D, Histogram2D
+from progressivis import notNone, Sink, Tick, Min, Max, RandomPTable, Histogram1D, Histogram2D
 from progressivis.core import aio
 from progressivis.core.module_facade import ModuleFacade
 from progressivis.table.table_facade import TableFacade
@@ -61,10 +61,10 @@ class TestModuleFacade(ProgressiveTest):
         s = self.scheduler
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
-        prt = Print(proc=self.terse, scheduler=s)
+        prt = Tick(scheduler=s)
         tabmod.child.sample.params.samples = 10
         prt.input[0] = tabmod.child.sample.output.result
-        prt2 = Print(proc=self.terse, scheduler=s)
+        prt2 = Tick(scheduler=s)
         prt2.input[0] = tabmod.child.sample.output.select
         aio.run(s.start())
         assert hasattr(tabmod.child.sample, "result")
@@ -78,7 +78,7 @@ class TestModuleFacade(ProgressiveTest):
         tabmod = TableFacade.get_or_create(random, "result")
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input.table = tabmod.output.main["_1", "_2", "_3"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
         assert tabmod.output.main is not None
@@ -94,7 +94,7 @@ class TestModuleFacade(ProgressiveTest):
         tabmod = TableFacade.get_or_create(random, "result")
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input.table = tabmod.output.log["_1", "_2", "_3"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
         assert tabmod.output.log is not None

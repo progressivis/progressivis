@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print, RandomPTable
+from progressivis import Tick, RandomPTable
 from progressivis.linalg.linear_map import LinearMap
 import numpy as np
 
@@ -14,7 +14,7 @@ class TestLinearMap(ProgressiveTest):
         module = LinearMap(scheduler=s)
         module.input.vectors = vectors.output.result
         module.input.transformation = transf.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -31,7 +31,7 @@ class TestLinearMap(ProgressiveTest):
         module = LinearMap(scheduler=s)
         module.input.vectors = vectors.output.result["_3", "_4", "_5"]
         module.input.transformation = transf.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -48,7 +48,7 @@ class TestLinearMap(ProgressiveTest):
         module = LinearMap(scheduler=s)
         module.input.vectors = vectors.output.result["_3", "_4", "_5"]
         module.input.transformation = transf.output.result["_4", "_5", "_6", "_7"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None

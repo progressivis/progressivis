@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from progressivis import (
     Print,
+    Tick,
     ProgressiveError,
     CSVLoader,
     Histogram1D,
@@ -68,7 +69,7 @@ class TestDataflow(ProgressiveTest):
                 ],
             )
 
-            prt = Print(proc=self.terse, name="print", scheduler=scheduler)
+            prt = Tick(name="print", scheduler=scheduler)
             self.assertIs(dataflow[prt.name], prt)
             self.assertEqual(
                 dataflow.validate_module(prt),
@@ -120,7 +121,7 @@ class TestDataflow(ProgressiveTest):
             self.assertEqual(len(dataflow), 3)
             deps = dataflow.order_modules()
             self.assertEqual(deps, ["csv", m.name, "sink"])
-            prt = Print(proc=self.terse, name="print", scheduler=scheduler)
+            prt = Tick(name="print", scheduler=scheduler)
             self.assertIs(dataflow[prt.name], prt)
             self.assertEqual(
                 dataflow.validate_module(prt),
@@ -137,7 +138,7 @@ class TestDataflow(ProgressiveTest):
             name="table", columns=["a"], throttle=1000, scheduler=scheduler
         )
         m = Min(name="min", scheduler=scheduler)
-        prt = Print(proc=self.terse, name="print_min", scheduler=scheduler)
+        prt = Tick(name="print_min", scheduler=scheduler)
         m.input.table = table.output.result
         prt.input.df = m.output.result
         started = False
@@ -169,7 +170,7 @@ class TestDataflow(ProgressiveTest):
             name="table", columns=["a"], throttle=1000, scheduler=scheduler
         )
         m = Min(name="min", scheduler=scheduler)
-        prt = Print(proc=self.terse, name="print_min", scheduler=scheduler)
+        prt = Tick(name="print_min", scheduler=scheduler)
         m.input.table = table.output.result
         prt.input.df = m.output.result
         started = False
@@ -249,9 +250,9 @@ class TestDataflow(ProgressiveTest):
         table = RandomPTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = table.output.result
-        prt = Print(name="prt", proc=self.terse, scheduler=s)
+        prt = Tick(name="prt", scheduler=s)
         prt.input.df = table.output.result
-        prt2 = Print(name="prt2", proc=self.terse, scheduler=s)
+        prt2 = Tick(name="prt2", scheduler=s)
         prt2.input.df = table.output.result
         # from nose.tools import set_trace; set_trace()
         s.commit()
@@ -405,7 +406,7 @@ class TestDataflow(ProgressiveTest):
 
             with scheduler as dataflow:
                 self.assertIs(dataflow, dataflow1)
-                prt = Print(name="print", proc=self.terse, scheduler=scheduler)
+                prt = Tick(name="print", scheduler=scheduler)
                 prt.input.df = table.output.result
 
             scheduler.on_loop(modify_2, 10)  # Schedule the next activity
@@ -467,7 +468,7 @@ class TestDataflow(ProgressiveTest):
             with self.assertRaises(ProgressiveError):
                 with scheduler as dataflow:
                     self.assertIs(dataflow, dataflow1)
-                    prt = Print(name="print", proc=self.terse, scheduler=scheduler)
+                    prt = Tick(name="print", scheduler=scheduler)
                     # prt.input.df = table.output.result
                     _ = prt
             scheduler.on_loop(modify_2, 3)  # Schedule the next activity
@@ -498,7 +499,7 @@ class TestDataflow(ProgressiveTest):
 
         async def modify_1(scheduler: Scheduler, run_number: int) -> None:
             with scheduler as dataflow:
-                prt = Print(name="print", proc=self.terse, scheduler=scheduler)
+                prt = Tick(name="print", scheduler=scheduler)
                 prt.input.df = table.output.result
                 deps = dataflow.collateral_damage("histo")
                 print(f"collateral_damage('histo') = '{sorted(deps)}'")

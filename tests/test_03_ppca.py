@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from . import ProgressiveTest, skipIf
-from progressivis import Scheduler, Every, ReturnRunStep, def_input, def_output, CSVLoader, get_dataset, Module, PTable, PDict, Slot
+from progressivis import Scheduler, Tick, ReturnRunStep, def_input, def_output, CSVLoader, get_dataset, Module, PTable, PDict, Slot
 from progressivis.core import aio
 from progressivis.stats.ppca import PPCA
 from sklearn.neighbors import KNeighborsClassifier  # type: ignore
@@ -95,7 +95,7 @@ class TestPPCA(ProgressiveTest):
             resetter_func=resetter_func,
         )
 
-        prn = Every(scheduler=s, proc=_print)
+        prn = Tick(scheduler=s)
         prn.input[0] = ppca.dep.reduced.output.result
         aio.run(s.start())
         assert ppca.transformer is not None

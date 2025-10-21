@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 from progressivis.core import aio
-from progressivis import Every
+from progressivis import Tick
 from progressivis.stats.random_table import RandomPTable
 
 from typing import Any
@@ -19,7 +19,7 @@ class TestRandomPTable(ProgressiveTest):
         self.assertEqual(module.result.columns[0], "a")
         self.assertEqual(module.result.columns[1], "b")
         self.assertEqual(len(module.result.columns), 2)  # add the UPDATE_COLUMN
-        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
+        prlen = Tick(scheduler=s)
         prlen.input[0] = module.output.result
         aio.run(s.start())
 
@@ -33,7 +33,7 @@ class TestRandomPTable(ProgressiveTest):
         self.assertEqual(len(module.result.columns), 10)  # add the UPDATE_COLUMN
         self.assertEqual(module.result.columns[0], "_1")
         self.assertEqual(module.result.columns[1], "_2")
-        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
+        prlen = Tick(scheduler=s)
         prlen.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None

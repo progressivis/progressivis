@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-from progressivis import Print
+from progressivis import Tick
 from progressivis.table.constant import Constant
 from progressivis.table.combine_first import CombineFirst
 from progressivis.table.table import PTable
@@ -42,7 +42,7 @@ class TestCombineFirst(ProgressiveTest):
         cf.input[0] = cst1.output.result
         cf.input[0] = cst2.output.result
         cf.input[0] = cst3.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = cf.output.result
         aio.run(s.start())
         assert cf.result is not None
@@ -84,7 +84,7 @@ class TestCombineFirst(ProgressiveTest):
         cf.input[0] = cst1.output.result
         cf.input[0] = cst2.output.result
         cf.input[0] = cst3.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = cf.output.result
         aio.run(s.start())
         assert cf.result is not None

@@ -2,17 +2,10 @@ from __future__ import annotations
 
 from . import ProgressiveTest
 from progressivis.core import aio
-from progressivis import Every
+from progressivis import Tick
 from progressivis.stats.blobs_table import BlobsPTable, MVBlobsPTable
 from progressivis.linalg import Add
 import numpy as np
-
-from typing import Any
-
-
-def print_len(x: Any) -> None:
-    if x is not None:
-        print(len(x))
 
 
 centers = [(0.1, 0.3), (0.7, 0.5), (-0.4, -0.3)]
@@ -26,7 +19,7 @@ class TestBlobsPTable(ProgressiveTest):
         self.assertEqual(module.result.columns[0], "a")
         self.assertEqual(module.result.columns[1], "b")
         self.assertEqual(len(module.result.columns), 2)
-        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
+        prlen = Tick(scheduler=s)
         prlen.input[0] = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 10000)
@@ -46,7 +39,7 @@ class TestBlobsPTable(ProgressiveTest):
         add = Add(scheduler=s)
         add.input.first = blob1.output.result
         add.input.second = blob2.output.result
-        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
+        prlen = Tick(scheduler=s)
         prlen.input[0] = add.output.result
         aio.run(s.start())
         assert blob1.result is not None
@@ -72,7 +65,7 @@ class TestMVBlobsPTable(ProgressiveTest):
         self.assertEqual(module.result.columns[0], "a")
         self.assertEqual(module.result.columns[1], "b")
         self.assertEqual(len(module.result.columns), 2)
-        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
+        prlen = Tick(scheduler=s)
         prlen.input[0] = module.output.result
         aio.run(s.start())
         # s.join()
@@ -88,7 +81,7 @@ class TestMVBlobsPTable(ProgressiveTest):
         add = Add(scheduler=s)
         add.input.first = blob1.output.result
         add.input.second = blob2.output.result
-        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
+        prlen = Tick(scheduler=s)
         prlen.input[0] = add.output.result
         aio.run(s.start())
         assert blob1.result is not None

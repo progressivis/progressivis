@@ -1,4 +1,4 @@
-from progressivis import Every, ProgressiveError, PTable
+from progressivis import Tick, ProgressiveError, PTable
 
 from . import ProgressiveTest
 from progressivis.core.module import Module, ReturnRunStep
@@ -35,7 +35,7 @@ class TestProgressiveModule(ProgressiveTest):
             module = Module(name="a", scheduler=s)  # type: ignore
 
         with s:
-            module = Every(proc=self.terse, name="a", scheduler=s)
+            module = Tick(name="a", scheduler=s)
             self.assertEqual(module.name, "a")
             self.assertEqual(s.exists("a"), True)
             self.assertEqual(module.get_progress(), (0, 0))

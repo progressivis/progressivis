@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 from progressivis.core import aio
-from progressivis import Every, CSVLoader, Histogram1D, Min, Max, get_dataset
+from progressivis import Tick, CSVLoader, Histogram1D, Min, Max, get_dataset
 from progressivis.table.stirrer import Stirrer
 import pandas as pd
 import numpy as np
@@ -22,7 +22,7 @@ class TestHistogram1D(ProgressiveTest):
         histogram1d.input[0] = csv.output.result
         histogram1d.input.min = min_.output.result
         histogram1d.input.max = max_.output.result
-        pr = Every(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
         _ = histogram1d.trace_stats()
@@ -40,7 +40,7 @@ class TestHistogram1D(ProgressiveTest):
         histogram1d.input[0] = csv.output.result
         histogram1d.input.min = min_.output.result
         histogram1d.input.max = max_.output.result
-        pr = Every(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
         _ = histogram1d.trace_stats()
@@ -73,8 +73,7 @@ class TestHistogram1D(ProgressiveTest):
         histogram1d.input.min = min_.output.result
         histogram1d.input.max = max_.output.result
 
-        # pr = Print(scheduler=s)
-        pr = Every(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
         assert histogram1d.result is not None

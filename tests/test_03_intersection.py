@@ -1,5 +1,5 @@
 from progressivis.table.constant import ConstDict
-from progressivis import Print, RandomPTable, PIntSet, PDict
+from progressivis import Tick, RandomPTable, PIntSet, PDict
 from progressivis.table.simple_filter import SimpleFilter
 from progressivis.table.intersection import Intersection
 from progressivis.table.stirrer import Stirrer
@@ -26,7 +26,7 @@ class TestIntersection(ProgressiveTest):
         inter = Intersection(scheduler=s)
         inter.input[0] = filter_min.output.result
         inter.input[0] = filter_max.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = inter.output.result
         aio.run(s.start())
         assert inter.result is not None
@@ -54,7 +54,7 @@ class TestIntersection(ProgressiveTest):
         inter = Intersection(scheduler=s)
         inter.input[0] = filter_min.output.result
         inter.input[0] = filter_max.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = inter.output.result
         aio.run(s.start())
         assert inter.result is not None

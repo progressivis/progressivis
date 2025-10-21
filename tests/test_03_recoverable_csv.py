@@ -5,7 +5,7 @@ import os
 import numpy as np
 import pandas as pd
 from . import ProgressiveTest, skipIf
-from progressivis import Print, Sink, SimpleCSVLoader
+from progressivis import Tick, Sink, SimpleCSVLoader
 from progressivis.core import aio
 from progressivis.stats.utils import SimpleImputer
 
@@ -105,7 +105,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.anomalies
         aio.run(s.start())
         assert module.result is not None
@@ -203,9 +203,9 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.anomalies
-        pr2 = Print(proc=self.terse, scheduler=s)
+        pr2 = Tick(scheduler=s)
         pr2.input[0] = module.output.missing
         aio.run(s.start())
         assert module.result is not None

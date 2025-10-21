@@ -1,5 +1,5 @@
 from progressivis.table.bin_join import BinJoin
-from progressivis import Print, RandomPTable, Min
+from progressivis import Tick, RandomPTable, Min
 from progressivis.table.dict2table import Dict2PTable
 from progressivis.core.api import notNone
 from progressivis.core import aio
@@ -23,7 +23,7 @@ class TestBinJoin(ProgressiveTest):
         bj = BinJoin(scheduler=s)
         bj.input.first = d2t_1.output[0]
         bj.input.second = d2t_2.output[0]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = bj.output[0]
         aio.run(s.start())
         assert random.result is not None

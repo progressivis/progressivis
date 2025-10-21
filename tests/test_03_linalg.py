@@ -3,7 +3,7 @@ from __future__ import annotations
 from . import ProgressiveTest
 from progressivis.storage import init_temp_dir_if, cleanup_temp_dir
 from progressivis.core import aio
-from progressivis import Print, PIntSet, RandomPTable, RandomDict
+from progressivis import Tick, PIntSet, RandomPTable, RandomDict
 from progressivis.table.stirrer import Stirrer
 from progressivis.linalg import (
     Unary,
@@ -55,7 +55,7 @@ class TestUnary(ProgressiveTest):
         random = RandomPTable(10, rows=100_000, scheduler=s)
         module = Unary(np.log, scheduler=s)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -70,7 +70,7 @@ class TestUnary(ProgressiveTest):
         random = RandomPTable(10, rows=100_000, scheduler=s)
         module = Unary(np.log, scheduler=s)
         module.input[0] = random.output.result["_3", "_5", "_7"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -87,7 +87,7 @@ class TestUnary(ProgressiveTest):
         stirrer.input[0] = random.output.result
         module = Unary(np.log, scheduler=s)
         module.input[0] = stirrer.output.result["_3", "_5", "_7"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -109,7 +109,7 @@ class TestUnary(ProgressiveTest):
         random = RandomPTable(10, rows=10_000, scheduler=s)
         module = cls(scheduler=s)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -149,7 +149,7 @@ class TestOtherUnaries(ProgressiveTest):
         )
         module = Arccosh(scheduler=s)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -172,7 +172,7 @@ class TestOtherUnaries(ProgressiveTest):
         )
         module = Invert(scheduler=s)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -195,7 +195,7 @@ class TestOtherUnaries(ProgressiveTest):
         )
         module = BitwiseNot(scheduler=s)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -215,7 +215,7 @@ class TestColsBinary(ProgressiveTest):
             np.add, scheduler=s
         )
         module.input[0] = random.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -237,7 +237,7 @@ class TestColsBinary(ProgressiveTest):
             scheduler=s,
         )
         module.input[0] = random.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -253,7 +253,7 @@ class TestColsBinary(ProgressiveTest):
             np.add, scheduler=s
         )
         module.input[0] = stirrer.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -280,7 +280,7 @@ class TestColsBinary(ProgressiveTest):
             scheduler=s,
         )
         module.input[0] = random.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -327,7 +327,7 @@ class TestOtherColsBinaries(ProgressiveTest):
             scheduler=s,
         )
         module.input[0] = random.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -356,7 +356,7 @@ class TestOtherColsBinaries(ProgressiveTest):
             scheduler=s,
         )
         module.input[0] = random.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -403,7 +403,7 @@ class TestBinary(TestBin):
         module = Binary(np.add, scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -424,7 +424,7 @@ class TestBinary(TestBin):
         )
         module.input.first = random1.output.result["_3", "_5", "_7"]
         module.input.second = random2.output.result["_4", "_6", "_8"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -452,7 +452,7 @@ class TestBinary(TestBin):
         )
         module.input.first = stirrer1.output.result["_3", "_5", "_7"]
         module.input.second = stirrer2.output.result["_4", "_6", "_8"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -485,7 +485,7 @@ class TestBinary(TestBin):
         module = cls(scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -523,7 +523,7 @@ class TestBinaryTD(TestBin):
         module = Binary(np.add, scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -547,7 +547,7 @@ class TestBinaryTD(TestBin):
         )
         module.input.first = random1.output.result["_3", "_5", "_7"]
         module.input.second = random2.output.result["_4", "_6", "_8"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -570,7 +570,7 @@ class TestBinaryTD(TestBin):
         module = cls(scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -607,7 +607,7 @@ class TestOtherBinaries(ProgressiveTest):
         module = cls(scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -633,7 +633,7 @@ class TestOtherBinaries(ProgressiveTest):
         module = cls(scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -670,7 +670,7 @@ class TestReduce(ProgressiveTest):
         random = RandomPTable(10, rows=100_000, scheduler=s)
         module = Reduce(np.add, scheduler=s)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -685,7 +685,7 @@ class TestReduce(ProgressiveTest):
         random = RandomPTable(10, rows=100_000, scheduler=s)
         module = Reduce(np.add, scheduler=s)
         module.input[0] = random.output.result["_3", "_5", "_7"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -708,7 +708,7 @@ class TestReduce(ProgressiveTest):
         random = RandomPTable(10, rows=10_000, scheduler=s)
         module = cls(scheduler=s, dtype=dtype)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -749,7 +749,7 @@ class TestCustomFunctions(ProgressiveTest):
         random = RandomPTable(10, rows=100_000, scheduler=s)
         module = CustomUnary(scheduler=s)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -770,7 +770,7 @@ class TestCustomFunctions(ProgressiveTest):
         module = CustomBinary(scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -793,7 +793,7 @@ class TestCustomFunctions(ProgressiveTest):
         random = RandomPTable(10, rows=100_000, scheduler=s)
         module = CustomBinaryReduce(scheduler=s)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -817,7 +817,7 @@ class TestOtherReduces(ProgressiveTest):
         )
         module = cls(scheduler=s)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -857,7 +857,7 @@ class TestDecorators(ProgressiveTest):
         random = RandomPTable(10, rows=100_000, scheduler=s)
         module = CustomUnary(scheduler=s)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -878,7 +878,7 @@ class TestDecorators(ProgressiveTest):
         module = CustomBinary(scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -901,7 +901,7 @@ class TestDecorators(ProgressiveTest):
         random = RandomPTable(10, rows=100_000, scheduler=s)
         module = CustomBinaryReduce(scheduler=s)
         module.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None

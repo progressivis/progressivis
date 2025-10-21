@@ -3,8 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from progressivis import (
-    Every,
-    Print,
+    Tick,
     Scheduler,
     CSVLoader,
     MCScatterPlot,
@@ -39,9 +38,9 @@ class TestScatterPlot(ProgressiveTest):
                 scheduler=s, classes=[("Scatterplot", "_1", "_2")], approximate=True
             )
             sp.create_dependent_modules(csv, "result")
-            cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
+            cnt = Tick(scheduler=s)
             cnt.input[0] = csv.output.result
-            prt = Print(proc=self.terse, scheduler=s)
+            prt = Tick(scheduler=s)
             prt.input[0] = sp.output.result
         s.on_idle(self._stop)
         aio.run(csv.scheduler.start())
@@ -57,9 +56,9 @@ class TestScatterPlot(ProgressiveTest):
                 scheduler=s, classes=[("Scatterplot", "_1", "_2")], approximate=True
             )
             sp.create_dependent_modules(random, "result", with_sampling=False)
-            cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
+            cnt = Tick(scheduler=s)
             cnt.input[0] = random.output.result
-            prt = Print(proc=self.terse, scheduler=s)
+            prt = Tick(scheduler=s)
             prt.input[0] = sp.output.result
 
         async def fake_input_1(scheduler: Scheduler, rn: int) -> None:

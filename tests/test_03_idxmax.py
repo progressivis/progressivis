@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 import numpy as np
-from progressivis import Print, IdxMax, IdxMin, Max, Min, RandomPTable, notNone
+from progressivis import Tick, IdxMax, IdxMin, Max, Min, RandomPTable, notNone
 from progressivis.table.stirrer import Stirrer
 from progressivis.core import aio
 
@@ -19,9 +19,9 @@ class TestIdxMax(ProgressiveTest):
         idxmax.input[0] = random.output.result
         max_ = Max(scheduler=s)
         max_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = idxmax.output.result
-        pr2 = Print(proc=self.terse, scheduler=s)
+        pr2 = Tick(scheduler=s)
         pr2.input[0] = max_.output.result
         aio.run(s.start())
         max1 = max_.result
@@ -42,9 +42,9 @@ class TestIdxMax(ProgressiveTest):
         idxmax.input[0] = stirrer.output.result
         max_ = Max(scheduler=s)
         max_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = idxmax.output.result
-        pr2 = Print(proc=self.terse, scheduler=s)
+        pr2 = Tick(scheduler=s)
         pr2.input[0] = max_.output.result
         aio.run(s.start())
         max1 = max_.result
@@ -61,9 +61,9 @@ class TestIdxMax(ProgressiveTest):
         idxmin.input[0] = random.output.result
         min_ = Min(scheduler=s)
         min_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = idxmin.output.result
-        pr2 = Print(proc=self.terse, scheduler=s)
+        pr2 = Tick(scheduler=s)
         pr2.input[0] = min_.output.result
         aio.run(s.start())
         min1 = min_.result
@@ -84,9 +84,9 @@ class TestIdxMax(ProgressiveTest):
         idxmin.input[0] = stirrer.output.result
         min_ = Min(scheduler=s)
         min_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = idxmin.output.result
-        pr2 = Print(proc=self.terse, scheduler=s)
+        pr2 = Tick(scheduler=s)
         pr2.input[0] = min_.output.result
         aio.run(s.start())
         min1 = min_.result

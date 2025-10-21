@@ -4,7 +4,7 @@ Test the SimpleMax Module from the doc example
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print, RandomPTable
+from progressivis import Tick, RandomPTable
 from progressivis.table.stirrer import Stirrer
 
 import numpy as np
@@ -36,7 +36,7 @@ class TestSimpleMax(ProgressiveTest):
         random = RandomPTable(10, rows=10000, scheduler=s)
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -57,7 +57,7 @@ class TestSimpleMax(ProgressiveTest):
         stirrer.input[0] = random.output.result
         max_ = Max(scheduler=s)
         max_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert stirrer.result is not None

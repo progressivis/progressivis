@@ -4,7 +4,7 @@ from . import ProgressiveTest
 from progressivis.core.api import notNone
 from progressivis.core import aio
 
-from progressivis import Every, CSVLoader, RandomPTable, MCHistogram2D, Min, Max, Heatmap, get_dataset
+from progressivis import Tick, CSVLoader, RandomPTable, MCHistogram2D, Min, Max, Heatmap, get_dataset
 from progressivis.table.stirrer import Stirrer, StirrerView
 import pandas as pd
 import numpy as np
@@ -31,7 +31,7 @@ class TestMCHistogram2D(ProgressiveTest):
         histogram2d.input.table = max_.output.result["max", "_1", "_2"]
         heatmap = Heatmap(filename="histo_%03d.png", scheduler=s)
         heatmap.input.array = histogram2d.output.result
-        pr = Every(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = heatmap.output.result
         aio.run(csv.scheduler.start())
         _ = histogram2d.trace_stats()
@@ -53,7 +53,7 @@ class TestMCHistogram2D(ProgressiveTest):
         histogram2d.input.table = max_.output.result["max", "_1", "_2"]
         heatmap = Heatmap(filename="histo_%03d.png", scheduler=s)
         heatmap.input.array = histogram2d.output.result
-        pr = Every(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = heatmap.output.result
         aio.run(csv.scheduler.start())
         assert histogram2d.result is not None
@@ -86,7 +86,7 @@ class TestMCHistogram2D(ProgressiveTest):
         histogram2d.input.table = max_.output.result["max", "_1", "_2"]
         heatmap = Heatmap(filename="histo_%03d.png", scheduler=s)
         heatmap.input.array = histogram2d.output.result
-        pr = Every(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = heatmap.output.result
         aio.run(s.start())
         assert histogram2d.result is not None
@@ -122,7 +122,7 @@ class TestMCHistogram2D(ProgressiveTest):
         histogram2d.input.table = max_.output.result["max", "_1", "_2"]
         heatmap = Heatmap(filename="histo_%03d.png", scheduler=s)
         heatmap.input.array = histogram2d.output.result
-        pr = Every(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = heatmap.output.result
         aio.run(s.start())
         assert histogram2d.result is not None

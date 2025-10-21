@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print, Min, Max, RandomPTable
+from progressivis import Tick, Min, Max, RandomPTable
 
 import numpy as np
 
@@ -14,7 +14,7 @@ class TestMinMax(ProgressiveTest):
         random = RandomPTable(10, rows=10000, scheduler=s)
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -28,7 +28,7 @@ class TestMinMax(ProgressiveTest):
         random = RandomPTable(10, rows=10000, scheduler=s)
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input.table = random.output.result["_1", "_2", "_3"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -47,7 +47,7 @@ class TestMinMax(ProgressiveTest):
         random = RandomPTable(10, rows=10000, scheduler=s)
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -61,7 +61,7 @@ class TestMinMax(ProgressiveTest):
         random = RandomPTable(10, rows=10000, scheduler=s)
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result["_1", "_2", "_3"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert random.result is not None

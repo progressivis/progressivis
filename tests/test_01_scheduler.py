@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from . import ProgressiveTest
 
-from progressivis import Print, Scheduler, ProgressiveError, Min, Sink, CSVLoader
+from progressivis import Tick, Scheduler, ProgressiveError, Min, Sink, CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.core import aio
 
@@ -35,7 +35,7 @@ class TestScheduler(ProgressiveTest):
             with s:
                 m = Min(scheduler=s)
                 m.input.table = csv.output.result
-                prt = Print(proc=self.terse, scheduler=s)
+                prt = Tick(scheduler=s)
                 prt.input.df = m.output.result
 
         s.on_loop(add_min, 10)

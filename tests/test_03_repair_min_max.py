@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from . import ProgressiveTest
-from progressivis import Print, Scheduler, Module, def_input, def_output, PTable, RandomPTable, ScalarMax, ScalarMin, PIntSet, indices_len, fix_loc
+from progressivis import (
+    Tick, Scheduler, Module, def_input, def_output,
+    PTable, RandomPTable, ScalarMax, ScalarMin,
+    PIntSet, indices_len, fix_loc
+)
 from progressivis.core import aio
 import numpy as np
 
@@ -107,7 +111,7 @@ class TestRepairMax(ProgressiveTest):
         random = RandomPTable(2, rows=100000, scheduler=s)
         max_ = ScalarMax(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -128,7 +132,7 @@ class TestRepairMax(ProgressiveTest):
         stirrer = MyStirrer(watched="max_repair_test2", scheduler=s)
         stirrer.input[0] = random.output.result
         max_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -152,7 +156,7 @@ class TestRepairMax(ProgressiveTest):
         )
         stirrer.input[0] = random.output.result
         max_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -176,7 +180,7 @@ class TestRepairMax(ProgressiveTest):
         )
         stirrer.input[0] = random.output.result
         max_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -200,7 +204,7 @@ class TestRepairMax(ProgressiveTest):
         )
         stirrer.input[0] = random.output.result
         max_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -224,7 +228,7 @@ class TestRepairMax(ProgressiveTest):
         )
         stirrer.input[0] = random.output.result
         max_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -252,7 +256,7 @@ class TestRepairMin(ProgressiveTest):
         random = RandomPTable(2, rows=100000, scheduler=s)
         min_ = ScalarMin(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -273,7 +277,7 @@ class TestRepairMin(ProgressiveTest):
         stirrer = MyStirrer(watched="min_repair_test2", scheduler=s)
         stirrer.input[0] = random.output.result
         min_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -297,7 +301,7 @@ class TestRepairMin(ProgressiveTest):
         )
         stirrer.input[0] = random.output.result
         min_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -321,7 +325,7 @@ class TestRepairMin(ProgressiveTest):
         )
         stirrer.input[0] = random.output.result
         min_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -345,7 +349,7 @@ class TestRepairMin(ProgressiveTest):
         )
         stirrer.input[0] = random.output.result
         min_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -369,7 +373,7 @@ class TestRepairMin(ProgressiveTest):
         )
         stirrer.input[0] = random.output.result
         min_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
         assert stirrer.result is not None

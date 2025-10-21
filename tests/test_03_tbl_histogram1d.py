@@ -1,6 +1,6 @@
 from . import ProgressiveTest, skip
 
-from progressivis import Every, StorageManager, CSVLoader, Histogram1D, Min, Max, get_dataset
+from progressivis import Tick, StorageManager, CSVLoader, Histogram1D, Min, Max, get_dataset
 from progressivis.core import aio
 
 
@@ -26,8 +26,7 @@ class TestHistogram1D(ProgressiveTest):
         histogram1d.input.min = min_.output.result
         histogram1d.input.max = max_.output.result
 
-        # pr = Print(scheduler=s)
-        pr = Every(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = csv.output.result
         aio.run(s.start())
         # s = histogram1d.trace_stats()

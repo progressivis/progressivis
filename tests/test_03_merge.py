@@ -1,6 +1,6 @@
 from . import ProgressiveTest, skip
 
-from progressivis import Every, Print, Stats, CSVLoader, Merge, Constant, PTable, get_dataset
+from progressivis import Tick, Stats, CSVLoader, Merge, Constant, PTable, get_dataset
 from progressivis.core import aio
 import pandas as pd
 
@@ -21,9 +21,9 @@ class TestMerge(ProgressiveTest):
         merge = Merge(left_index=True, right_index=True, scheduler=s)
         merge.input[0] = stat1.output.result
         merge.input[0] = stat2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = merge.output.result
-        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
+        prlen = Tick(scheduler=s)
         prlen.input[0] = csv.output.result
         aio.run(s.start())
         _ = merge.trace_stats(max_runs=1)
@@ -39,7 +39,7 @@ class TestMerge(ProgressiveTest):
         merge = Merge(left_index=True, right_index=True, scheduler=s)
         merge.input[0] = cst1.output.result
         merge.input[0] = cst2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = merge.output.result
         aio.run(s.start())
         _ = merge.trace_stats(max_runs=1)

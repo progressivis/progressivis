@@ -3,7 +3,7 @@ from . import ProgressiveTest
 import pandas as pd
 
 from progressivis.core import aio
-from progressivis import Print, Histogram1DCategorical, SimpleCSVLoader, get_dataset
+from progressivis import Tick, Histogram1DCategorical, SimpleCSVLoader, get_dataset
 
 
 class TestHistogram1DCategorical(ProgressiveTest):
@@ -14,7 +14,7 @@ class TestHistogram1DCategorical(ProgressiveTest):
         )
         h1d_cat = Histogram1DCategorical(column="S", scheduler=s)
         h1d_cat.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = h1d_cat.output.result
         aio.run(s.start())
         assert random.result is not None
