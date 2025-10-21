@@ -5,6 +5,7 @@ from progressivis.core.module import (
     Module,
     ReturnRunStep,
     def_input,
+    document,
 )
 from typing import Any, Callable, Sized
 
@@ -14,7 +15,8 @@ def _print_len(x: Sized) -> None:
         print(len(x))
 
 
-@def_input("df")
+@document
+@def_input("df", Any, doc="Any input slot to watch")
 class Every(Module):
     """This module runs a function at each run_step with the content of
     its input slot, which can be of any type.  By default, it prints

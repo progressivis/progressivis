@@ -6,7 +6,7 @@
 
 ```{eval-rst}
 
-.. currentmodule:: progressivis.core.print
+.. currentmodule:: progressivis.io.print
 
 .. autoclass:: Every
    :members:
@@ -15,7 +15,7 @@
 
 ```{eval-rst}
 
-.. currentmodule:: progressivis.core.print
+.. currentmodule:: progressivis.io.print
 
 .. autoclass:: Print
    :members:
@@ -25,7 +25,7 @@
 
 ```{eval-rst}
 
-.. currentmodule:: progressivis.core.print
+.. currentmodule:: progressivis.io.print
 
 .. autoclass:: Tick
    :members:
