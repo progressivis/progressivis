@@ -4,7 +4,7 @@ from io import BytesIO
 import numpy as np
 import pandas as pd
 from . import ProgressiveTest
-from progressivis import Print, Sink, PACSVLoader
+from progressivis import Tick, Sink, PACSVLoader
 from progressivis.core import aio
 
 from pyarrow.csv import ConvertOptions, ReadOptions
@@ -107,7 +107,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.anomalies
         aio.run(s.start())
         assert module.result is not None
@@ -161,7 +161,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.anomalies
         aio.run(s.start())
         assert module.result is not None

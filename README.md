@@ -25,28 +25,17 @@ and
 
 For now, ProgressiVis is mostly a proof of concept. You can find its documentation [here](https://progressivis.readthedocs.io/en/latest/).
 
-## Live demos
-
-Many interactive demos are available online. They will run remotely on [mybinder.org](https://mybinder.org/), so you can experiment with ProgressiVis with no need to install it locally.
-
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/progressivis/progressivis.git/stable?filepath=demos)
-
-Click the "launch binder" image above to run the live demos on [mybinder.org](https://mybinder.org/).
-
-**NB:** Interactive demos may take up to several minutes to build, depending on the server load.
-
 ## Installation
 
 See the installation instructions [provided here](https://progressivis.readthedocs.io/en/latest/install.html).
 
 ## Examples
 
-To see examples, either look at the tests in the `tests` directory, or
-try the examples in the `examples` directory.
+To see examples, either look at the tests in the `tests` directory or try the examples in the `notebooks` directory.
 
 ## Running demos (on your computer)
 
-ProgressiVis demos need visualisations which are available in the `progressivis` extension called `ipyprogressivis`. Please follow the instructions provided [here](https://github.com/progressivis/ipyprogressivis)
+ProgressiVis demos require visualisations which are available in the `progressivis` extension called `ipyprogressivis`. Please follow the instructions provided [here](https://github.com/progressivis/ipyprogressivis)
 
 
 ## Support

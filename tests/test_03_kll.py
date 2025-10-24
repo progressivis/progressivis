@@ -1,7 +1,7 @@
 from . import ProgressiveTest, skipIf
 import os
 from progressivis.core import aio
-from progressivis import Print, KLLSketch, RandomPTable
+from progressivis import Tick, KLLSketch, RandomPTable
 import numpy as np
 from datasketches import kll_floats_sketch
 from typing import Any, Sequence, Union, cast
@@ -24,7 +24,7 @@ class TestKll(ProgressiveTest):
         random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = kll.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -45,7 +45,7 @@ class TestKll(ProgressiveTest):
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.quantiles = QUANTILES
         kll.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = kll.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -63,7 +63,7 @@ class TestKll(ProgressiveTest):
         kll.params.quantiles = QUANTILES
         kll.params.named_quantiles = NAMED_QUANTILES
         kll.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = kll.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -83,7 +83,7 @@ class TestKll(ProgressiveTest):
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.binning = BINS
         kll.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = kll.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -105,7 +105,7 @@ class TestKll(ProgressiveTest):
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.binning = SPLITS_SEQ
         kll.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = kll.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -123,7 +123,7 @@ class TestKll(ProgressiveTest):
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.binning = SPLITS_DICT
         kll.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = kll.output.result
         aio.run(s.start())
         assert random.result is not None

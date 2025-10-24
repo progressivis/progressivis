@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-from progressivis import Print, Scheduler, RandomPTable, Max
+from progressivis import Tick, Scheduler, RandomPTable, Max
 from progressivis.table.stirrer import Stirrer
 from progressivis.core import aio
 import numpy as np
@@ -21,7 +21,7 @@ class TestStirrer(ProgressiveTest):
         stirrer.input[0] = random.output.result
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert stirrer.result is not None

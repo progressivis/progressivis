@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-from progressivis import Print, Scheduler, RandomPTable, Max, Min
+from progressivis import Tick, Scheduler, RandomPTable, Max, Min
 from progressivis.table.stirrer import Stirrer
 from progressivis.table.switch import Switch
 from progressivis.table.merge_dict import MergeDict
@@ -29,7 +29,7 @@ class TestHub(ProgressiveTest):
         hub = MergeDict(scheduler=s)
         hub.input.table = min_.output.result
         hub.input.table = max_.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = hub.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -58,7 +58,7 @@ class TestHub(ProgressiveTest):
         hub = MergeDict(scheduler=s)
         hub.input.table = min_.output.result
         hub.input.table = max_.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = hub.output.result
         aio.run(s.start())
         assert stirrer.result is not None

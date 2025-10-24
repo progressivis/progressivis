@@ -110,14 +110,14 @@ A module with no input slot is a **source module**, and a module with no output 
 When specifying a connection, input slots can be supplemented by `hints`, provided in square brackets. The role and type of hints depend on the semantics of the slot. In the next example, the sequence of names provided in square brackets designates the columns to be taken into account (and processed) by the module:
 
 ```python
-from progressivis import RandomTable, Max, Print
+from progressivis import RandomTable, Max, Tick
 
 random = RandomPTable(10, rows=10000)
 # produces 10 columns named _1, _2, ...
 max_ = Max()
 max_.input[0] = random.output.result["_1", "_2", "_3"]
 # slot hints to restrict the columns to ("_1", "_2", "_3")
-pr = Print(proc=self.terse)
+pr = Tick('.')
 pr.input[0] = max_.output.result
 random.scheduler.task_start()
 ```
@@ -144,15 +144,14 @@ Alternatively, progressive programs can be run in a _headless_ environment.
 A running ProgressiVis program can be modified.  Running this simple program will show one dot per chunk loaded.
 
 ```python
+from progressivis import CSVLoader, Min, Tick
+
 LARGE_TAXI_FILE = ("https://www.aviz.fr/nyc-taxi/"
                    "yellow_tripdata_2015-01.csv.bz2")
 
-def terse(x):
-    print(".", end="", flush=True)
-
 csv = CSVLoader(LARGE_TAXI_FILE, usecols=['pickup_longitude', 'pickup_latitude'])
-m = Min()
-prt = Print(proc=terse)
+m = Min(name="min")
+prt = Tick(tick='.')
 m.input.table = csv.output.result
 prt.input.df = m.output.result
 csv.scheduler.task_start()
@@ -160,12 +159,9 @@ csv.scheduler.task_start()
 
 Adding a branch to this program can be done like this:
 ```python
-def terse2(x):
-    print("/", end="", flush=True)
-
 with csv.scheduler as dataflow:
     M = Max(name="max")
-    prt2 = Print(proc=terse2)
+    prt2 = Tick(tick='/')
     M.input.table = csv.output.result
     prt2.input.df = M.output.result
 ```
@@ -181,7 +177,7 @@ with csv.scheduler as dataflow:
     dataflow.delete_modules(*deps)
 ```
 
-The method `Dataflow.collateral_damage()` computes the set of dependent modules to remove from the dataflow to remove the specified module so that the dataflow remains valid. In our case, removing the "min" module should also remove the "print" module connected, but not the "csv" module.
+The method `Dataflow.collateral_damage()` computes the set of dependent modules to remove from the dataflow to remove the specified module so that the dataflow remains valid. In our case, removing the "min" module should also remove the "Tick" module connected, but not the "csv" module.
 You should always pass the list of dependent modues to `Dataflow.delete_modules()` so you know what you are doing, you cannot pretend ProgressiVis removed some modules without you being aware!
 
 ## Communication between ProgressiVis and the Notebook
@@ -198,9 +194,8 @@ from IPython.display import display
 img = ipw.Image(value=b'\x00', width=width, height=height)
 display(img)
 
-# Define a callback (not that it is `async`)
-# that runs after the heatmap module is updated
-async def _after_run(m: Module, run_number: int) -> None:
+# Define a callback that runs after the heatmap module is updated
+def _after_run(m: Module, run_number: int) -> None:
     assert isinstance(m, Heatmap)
     image = m.get_image_bin()  # get the image from the heatmap
     if image is not None:
@@ -223,23 +218,23 @@ col_y = "pickup_latitude"
 
 csv = CSVLoader(LARGE_TAXI_FILE, usecols=[col_x, col_y])
 index = BinningIndexND()
-index.input.table = csv.output.result[col_x, col_y]
 query = RangeQuery2D(column_x=col_x, column_y=col_y)
 var_min = Variable(name="var_min")
 var_max = Variable(name="var_max")
+histogram2d = Histogram2D(col_x, col_y, xbins=RESOLUTION, ybins=RESOLUTION)
+heatmap = Heatmap()
+
+index.input.table = csv.output.result[col_x, col_y]
 query.input.lower = var_min.output.result
 query.input.upper = var_max.output.result
 query.input.index = index.output.result
 query.input.min = index.output.min_out
 query.input.max = index.output.max_out
-
-histogram2d = Histogram2D(col_x, col_y, xbins=RESOLUTION, ybins=RESOLUTION)
 histogram2d.input.table = query.output.result
 histogram2d.input.min = query.output.min
 histogram2d.input.max = query.output.max
-
-heatmap = Heatmap()
 heatmap.input.array = histogram2d.output.result
+
 heatmap.display_notebook()
 csv.scheduler.task_start();
 ```

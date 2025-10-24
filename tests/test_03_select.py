@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from . import ProgressiveTest, skip
 
-from progressivis import Print, Every, CSVLoader, PDict, Select, ConstDict, Sample, get_dataset, PIntSet
+from progressivis import Tick, CSVLoader, PDict, Select, ConstDict, Sample, get_dataset, PIntSet
 from progressivis.core import aio
 
 from typing import Any
@@ -24,7 +24,7 @@ class TestSelect(ProgressiveTest):
         q = Select(scheduler=s)
         q.input[0] = csv.output.result
         q.input.select = sample.output.select
-        prlen = Print(proc=self.terse, scheduler=s)
+        prlen = Tick(scheduler=s)
         prlen.input[0] = q.output.result
         aio.run(s.start())
         assert q.result is not None
@@ -45,7 +45,7 @@ class TestSelect(ProgressiveTest):
         q = Select(scheduler=s)
         q.input[0] = csv.output.df
         q.input.query = cst.output.df
-        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
+        prlen = Tick(scheduler=s)
         prlen.input[0] = q.output.df
         aio.run(s.start())
         assert q.result is not None

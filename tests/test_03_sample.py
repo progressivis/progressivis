@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from . import ProgressiveTest
 
-from progressivis import Print, CSVLoader, Sample, get_dataset
+from progressivis import Tick, CSVLoader, Sample, get_dataset
 from progressivis.core import aio
 
 from typing import Any
@@ -20,9 +20,9 @@ class TestSample(ProgressiveTest):
         )
         smp = Sample(samples=10, scheduler=s)
         smp.input[0] = csv.output.result
-        prt = Print(proc=self.terse, scheduler=s)
+        prt = Tick(scheduler=s)
         prt.input[0] = smp.output.result
-        prt2 = Print(proc=self.terse, scheduler=s)
+        prt2 = Tick(scheduler=s)
         prt2.input[0] = smp.output.select
         aio.run(csv.scheduler.start())
         assert smp.result is not None

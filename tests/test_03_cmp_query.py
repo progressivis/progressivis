@@ -4,7 +4,7 @@ import pandas as pd
 
 from . import ProgressiveTest
 from progressivis.core import aio
-from progressivis import Print, PTable, Constant, RandomPTable, PIntSet
+from progressivis import Tick, PTable, Constant, RandomPTable, PIntSet
 from progressivis.table.cmp_query import CmpQueryLast
 from progressivis.table.stirrer import Stirrer
 
@@ -20,7 +20,7 @@ class TestCmpQuery(ProgressiveTest):
         value = Constant(cst, scheduler=s)
         cmp_.input.cmp = value.output.result
         cmp_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = cmp_.output.select
         aio.run(s.start())
         tbl = cmp_.get_input_slot("table").data()
@@ -38,7 +38,7 @@ class TestCmpQuery(ProgressiveTest):
         value = Constant(cst, scheduler=s)
         cmp_.input.cmp = value.output.result
         cmp_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = cmp_.output.select
         aio.run(s.start())
         tbl = cmp_.get_input_slot("table").data()

@@ -1,6 +1,6 @@
 from . import ProgressiveTest, skip
 import numpy as np
-from progressivis import Print, SimpleCSVLoader, Distinct
+from progressivis import Tick, SimpleCSVLoader, Distinct
 from progressivis.datasets import get_dataset
 from progressivis.core import aio
 from typing import Any
@@ -22,7 +22,7 @@ class TestDistinct(ProgressiveTest):
         )
         dist = Distinct(scheduler=s)
         dist.input[0] = csv.output.result
-        prt = Print(proc=self.terse, scheduler=s)
+        prt = Tick(scheduler=s)
         prt.input[0] = dist.output.result
         aio.run(csv.scheduler.start())
         dist.result is not None
@@ -39,7 +39,7 @@ class TestDistinct(ProgressiveTest):
         )
         dist = Distinct(scheduler=s)
         dist.input[0] = csv.output.result
-        prt = Print(proc=self.terse, scheduler=s)
+        prt = Tick(scheduler=s)
         prt.input[0] = dist.output.result
         aio.run(csv.scheduler.start())
         assert dist.result is not None

@@ -1,5 +1,5 @@
 from progressivis.core import aio
-from progressivis import Print, RandomPTable, ConstDict, PIntSet, PDict
+from progressivis import Tick, RandomPTable, ConstDict, PIntSet, PDict
 from progressivis.table.simple_filter import SimpleFilter
 from progressivis.table.stirrer import Stirrer
 from . import ProgressiveTest
@@ -13,7 +13,7 @@ class TestSimpleFilter(ProgressiveTest):
         filter_ = SimpleFilter(column="_1", op=">", scheduler=s)
         filter_.create_dependent_modules(random, "result")
         filter_.input.value = min_value.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = filter_.output.result
         aio.run(s.start())
         assert random.result is not None
@@ -36,7 +36,7 @@ class TestSimpleFilter(ProgressiveTest):
         filter_ = SimpleFilter(column="_1", op=">", scheduler=s)
         filter_.create_dependent_modules(stirrer, "result")
         filter_.input.value = min_value.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = filter_.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -55,7 +55,7 @@ class TestSimpleFilter(ProgressiveTest):
         filter_ = SimpleFilter(column="_1", op=">", scheduler=s)
         filter_.create_dependent_modules(stirrer, "result")
         filter_.input.value = min_value.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = filter_.output.result
         aio.run(s.start())
         assert stirrer.result is not None

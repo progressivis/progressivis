@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 from progressivis.core import aio
-from progressivis import Print, Quantiles, RandomPTable
+from progressivis import Tick, Quantiles, RandomPTable
 
 import numpy as np
 # from datasketches import kll_floats_sketch
@@ -34,7 +34,7 @@ class TestQuantiles(ProgressiveTest):
         )
         quantiles = Quantiles(k=K, scheduler=s)
         quantiles.input.table = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = quantiles.output.result[0.5]  # print the median
         aio.run(s.start())
         assert random.result is not None

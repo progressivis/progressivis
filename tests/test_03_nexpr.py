@@ -3,7 +3,7 @@ from __future__ import annotations
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print,RandomPTable, PTable, def_input, def_output
+from progressivis import Tick, RandomPTable, PTable, def_input, def_output
 from progressivis.linalg.nexpr import NumExprABC
 import numpy as np
 import numexpr as ne
@@ -43,7 +43,7 @@ class TestNumExpr(ProgressiveTest):
 
         module.input.first = random1.output.result["_1", "_2", "_3"]
         module.input.second = random2.output.result["_1", "_2", "_3"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None

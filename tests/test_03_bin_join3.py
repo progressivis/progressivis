@@ -1,19 +1,12 @@
 from . import ProgressiveTest, skip
 
-from progressivis import Print, Every, CSVLoader, Constant, PTable
+from progressivis import Tick, CSVLoader, Constant, PTable
 from progressivis.stats.api import Stats
 from progressivis.datasets import get_dataset
 from progressivis.table.bin_join import BinJoin
 from progressivis.table.reduce import Reduce
 from progressivis.core import aio
 import pandas as pd
-
-from typing import Any
-
-
-def print_len(x: Any) -> None:
-    if x is not None:
-        print(len(x))
 
 
 class TestJoin3(ProgressiveTest):
@@ -37,9 +30,9 @@ class TestJoin3(ProgressiveTest):
             [stat1.output.stats, stat2.output.stats, stat3.output.stats],
             scheduler=s,
         )
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = join.output.result
-        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
+        prlen = Tick(scheduler=s)
         prlen.input[0] = csv.output.result
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
@@ -79,7 +72,7 @@ class TestJoin3(ProgressiveTest):
             [cst1.output.result, cst2.output.result, cst3.output.result],
             scheduler=s,
         )
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = join.output.result
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)

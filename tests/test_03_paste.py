@@ -1,4 +1,4 @@
-from progressivis import Print, RandomPTable, Min, notNone
+from progressivis import Tick, RandomPTable, Min, notNone
 from progressivis.table.dict2table import Dict2PTable
 from progressivis.table.paste import Paste
 from progressivis.core import aio
@@ -22,7 +22,7 @@ class TestPaste(ProgressiveTest):
         bj = Paste(scheduler=s)
         bj.input.first = d2t_1.output.result
         bj.input.second = d2t_2.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = bj.output.result
         aio.run(s.start())
         assert bj.result is not None

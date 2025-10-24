@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 from progressivis.core import aio
-from progressivis import Print, Scheduler, RandomPTable, PIntSet
+from progressivis import Tick, Scheduler, RandomPTable, PIntSet
 from progressivis.table.filtermod import FilterMod
 from progressivis.table.stirrer import Stirrer
 import pandas as pd
@@ -12,7 +12,7 @@ class TestFilter(ProgressiveTest):
         random = RandomPTable(2, rows=100000, scheduler=s)
         filter_ = FilterMod(expr="_1 > 0.5", scheduler=s)
         filter_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = filter_.output.result
         aio.run(s.start())
         idx = (
@@ -27,7 +27,7 @@ class TestFilter(ProgressiveTest):
         filter_ = FilterMod(scheduler=s)
         filter_.params.expr = "_1 > 0.5"
         filter_.input[0] = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = filter_.output.result
         aio.run(s.start())
         idx = (
@@ -49,7 +49,7 @@ class TestFilter(ProgressiveTest):
         stirrer.input[0] = random.output.result
         filter_ = FilterMod(expr="_1 > 0.5", scheduler=s)
         filter_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = filter_.output.result
         aio.run(s.start())
         assert filter_.result is not None
@@ -69,7 +69,7 @@ class TestFilter(ProgressiveTest):
         stirrer.input[0] = random.output.result
         filter_ = FilterMod(expr="_1 > 0.5", scheduler=s)
         filter_.input[0] = stirrer.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = filter_.output.result
         aio.run(s.start())
         assert filter_.result is not None

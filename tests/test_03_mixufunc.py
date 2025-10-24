@@ -5,7 +5,7 @@ import numpy as np
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print, RandomPTable, RandomDict, PTable, def_input, def_output
+from progressivis import Tick, RandomPTable, RandomDict, PTable, def_input, def_output
 from progressivis.linalg.mixufunc import MixUfuncABC
 from typing import Any, Type, Sequence
 
@@ -95,7 +95,7 @@ class TestMixUfunc(ProgressiveTest):
 
         module.input.first = random1.output.result["_1", "_2", "_3"]
         module.input.second = random2.output.result["_1", "_2", "_3"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None
@@ -123,7 +123,7 @@ class TestMixUfunc(ProgressiveTest):
 
         module.input.first = random1.output.result["_1", "_2", "_3"]
         module.input.second = random2.output.result["_1", "_2", "_3"]
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
         assert module.result is not None

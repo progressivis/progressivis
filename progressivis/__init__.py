@@ -14,8 +14,6 @@ from progressivis.core.api import (
     StorageManager,
     ReturnRunStep,
     Module,
-    Every,
-    Print,
     process_slot,
     PIntSet,
     Wait,
@@ -68,6 +66,9 @@ from progressivis.io.api import (
     SimpleCSVLoader,
     ArrowBatchLoader,
     ThreadedCSVLoader,
+    Every,
+    Print,
+    Tick,
     Variable,
 )
 
@@ -300,6 +301,7 @@ __all__ = [
     "ReturnRunStep",
     "Every",
     "Print",
+    "Tick",
     "process_slot",
     "PIntSet",
     "Wait",

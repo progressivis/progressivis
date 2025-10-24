@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from progressivis import (
-    Print,
+    Tick,
     Scheduler,
     RandomPTable,
     ConstDict,
@@ -35,7 +35,7 @@ class TestRangeQuery(ProgressiveTest):
             range_qry.create_dependent_modules(
                 random, "result", min_value=min_value, max_value=max_value
             )
-            prt = Print(proc=self.terse, scheduler=s)
+            prt = Tick(scheduler=s)
             prt.input[0] = range_qry.output.result
         aio.run(s.start())
         assert range_qry.input_module is not None
@@ -60,7 +60,7 @@ class TestRangeQuery(ProgressiveTest):
             range_qry.create_dependent_modules(
                 random, "result", min_value=min_max_value, max_value=min_max_value
             )
-            prt = Print(proc=self.terse, scheduler=s)
+            prt = Tick(scheduler=s)
             prt.input[0] = range_qry.output.result
         aio.run(s.start())
         assert range_qry.input_module is not None
@@ -99,7 +99,7 @@ class TestRangeQuery(ProgressiveTest):
             random = RandomPTable(2, rows=200_000, throttle=1000, scheduler=s)
             range_qry = RangeQuery(column="_1", scheduler=s)
             range_qry.create_dependent_modules(random, "result")
-            prt = Print(proc=self.terse, scheduler=s)
+            prt = Tick(scheduler=s)
             prt.input[0] = range_qry.output.result
 
         async def fake_input_1(scheduler: Scheduler, rn: int) -> None:
@@ -141,13 +141,13 @@ class TestRangeQuery(ProgressiveTest):
             range_qry.create_dependent_modules(
                 random, "result", min_value=min_value, max_value=max_value
             )
-            prt = Print(proc=self.terse, scheduler=s)
+            prt = Tick(scheduler=s)
             prt.input[0] = range_qry.output.result
             hist_index = range_qry.dep.hist_index
             assert hist_index is not None
-            prt2 = Print(proc=self.terse, scheduler=s)
+            prt2 = Tick(scheduler=s)
             prt2.input[0] = hist_index.output.min_out
-            pr3 = Print(proc=self.terse, scheduler=s)
+            pr3 = Tick(scheduler=s)
             pr3.input[0] = hist_index.output.min_out
         aio.run(s.start())
         assert random.result is not None
@@ -169,11 +169,11 @@ class TestRangeQuery(ProgressiveTest):
         range_qry.create_dependent_modules(
             random, "result", min_value=min_value, max_value=max_value
         )
-        prt = Print(proc=self.terse, scheduler=s)
+        prt = Tick(scheduler=s)
         prt.input[0] = range_qry.output.result
-        prt2 = Print(proc=self.terse, scheduler=s)
+        prt2 = Tick(scheduler=s)
         prt2.input[0] = range_qry.output.min
-        pr3 = Print(proc=self.terse, scheduler=s)
+        pr3 = Tick(scheduler=s)
         pr3.input[0] = range_qry.output.max
         return range_qry
 

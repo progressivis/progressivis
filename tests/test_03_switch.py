@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-from progressivis import Print, Scheduler, RandomPTable, Max
+from progressivis import Tick, Scheduler, RandomPTable, Max
 from progressivis.table.stirrer import Stirrer
 from progressivis.table.switch import Switch
 from progressivis.core import aio
@@ -23,9 +23,9 @@ class TestSwitch(ProgressiveTest):
         switch.input[0] = stirrer.output.result
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = switch.output.result
-        pr_else = Print(proc=self.terse, scheduler=s)
+        pr_else = Tick(scheduler=s)
         pr_else.input[0] = switch.output.result_else
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert stirrer.result is not None
@@ -49,9 +49,9 @@ class TestSwitch(ProgressiveTest):
         switch.input[0] = stirrer.output.result
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = switch.output.result_else
-        pr_then = Print(proc=self.terse, scheduler=s)
+        pr_then = Tick(scheduler=s)
         pr_then.input[0] = switch.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
         assert stirrer.result is not None

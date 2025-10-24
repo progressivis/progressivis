@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from . import ProgressiveTest
 
-from progressivis import Every, VECLoader, CSVLoader
+from progressivis import Tick, VECLoader, CSVLoader
 
 # from progressivis.metrics import PairwiseDistances
 from progressivis.datasets import get_dataset
@@ -33,7 +33,7 @@ class TestPairwiseDistances(ProgressiveTest):
     def NOtest_vec_distances(self) -> None:
         s = self.scheduler
         vec = VECLoader(get_dataset("warlogs"), scheduler=s)
-        cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
+        cnt = Tick(scheduler=s)
         cnt.input[0] = vec.output.result
         global times
         times = 0
@@ -45,7 +45,7 @@ class TestPairwiseDistances(ProgressiveTest):
         vec = CSVLoader(
             get_dataset("smallfile"), header=None, scheduler=s
         )
-        cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
+        cnt = Tick(scheduler=s)
         cnt.input[0] = vec.output.result
         global times
         times = 0

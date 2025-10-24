@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print, Scheduler, RandomPTable, Sink
+from progressivis import Tick, Scheduler, RandomPTable, Sink
 from progressivis.vis import StatsFactory, DataShape
 from progressivis.stats.blobs_table import BlobsPTable
 import numpy as np
@@ -35,7 +35,7 @@ class TestStatsFactory(ProgressiveTest):
         random = RandomPTable(3, rows=10_000, scheduler=s)
         ds = DataShape(scheduler=s)
         ds.input.table = random.output.result
-        pr = Print(proc=self.terse, scheduler=s)
+        pr = Tick(scheduler=s)
         pr.input[0] = ds.output.result
         aio.run(s.start())
         print(s.modules())

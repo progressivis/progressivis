@@ -1,6 +1,6 @@
 from . import ProgressiveTest, skip
 
-from progressivis import Print, Every, CSVLoader, get_dataset
+from progressivis import Tick, CSVLoader, get_dataset
 from progressivis.cluster import MBKMeans
 from progressivis.core import aio
 
@@ -49,9 +49,9 @@ class TestMBKmeans(ProgressiveTest):
             )
             # km.input.table = csv.output.result
             km.create_dependent_modules(csv)
-            pr = Print(proc=self.terse, scheduler=s)
+            pr = Tick(scheduler=s)
             pr.input[0] = km.output.result
-            e = Every(proc=self.terse, scheduler=s)
+            e = Tick(scheduler=s)
             e.input[0] = km.output.labels
         aio.run(s.start())
         labels = km._labels
