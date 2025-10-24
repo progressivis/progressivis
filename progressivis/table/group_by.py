@@ -146,17 +146,11 @@ class GroupBy(Module):
             self._index[key].add(i)
 
     @process_created.register
-    def _(self, by: list, indices: PIntSet) -> None:  # type: ignore
+    def _(self, by: tuple | list, indices: PIntSet) -> None:  # type: ignore
         assert self._input_table is not None
+        columns = [self._input_table[col] for col in by]
         for i in indices:
-            gen = self._input_table.loc[i, by]
-            self._index[tuple(gen)].add(i)
-
-    @process_created.register
-    def _(self, by: tuple, indices: PIntSet) -> None:  # type: ignore
-        assert self._input_table is not None
-        for i in indices:
-            gen = self._input_table.loc[i, by]
+            gen = [col.loc[i] for col in columns]
             self._index[tuple(gen)].add(i)
 
     @process_created.register
