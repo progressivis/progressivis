@@ -1,20 +1,14 @@
 import numpy as np
 from typing import Any, Sequence
 from progressivis import (
-    Module, ReturnRunStep, def_input, def_output,
-    PTable, PDict, document, process_slot, run_if_any
+    Module, ReturnRunStep, PTable, PDict,
+    def_input, def_output, process_slot, run_if_any
 )
 from progressivis.core.utils import indices_len, fix_loc
-from progressivis.core.docstrings import INPUT_SEL
 
 
-@document
-@def_input("table", PTable, hint_type=Sequence[str], doc=INPUT_SEL)
-@def_output(
-    "result",
-    PDict,
-    doc=("PDict where each key represents a column"),
-)
+@def_input("table", PTable, hint_type=Sequence[str], doc="...")
+@def_output("result", PDict, doc=("Max value of each column"))
 class Max(Module):
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
