@@ -73,16 +73,16 @@ Let's explain all the code parts step by step.
 ### Input/Output/Parameters Definition
 
 ProgressiVis defines several Python decorators to limit the amount of boilerplate code to type.
-Every Module class uses some input slots, output slots, and parameters. They can be declared using the `@def_input`, `@def_output`, and `@def_paramameter` decorators. These decorators can appear after the `@document` decorator (line 10).
+Every Module class uses some input slots, output slots, and parameters. They can be declared using the `@def_input`, `@def_output`, and `@def_paramameter` decorators. These decorators appear at line 10-11.
 
-Line 11 declares an input slot called "table" of type `PTable` and provides a short documentation.
+Line 10 declares an input slot called "table" of type `PTable` and provides a short documentation.
 
-Line 12 declares the output slot called "result", of type `PDict`, i.e., a "progressive dictionary".
+Line 11 declares the output slot called "result", of type `PDict`, i.e., a "progressive dictionary".
 The output slot descriptor also defines a documentation string.
 
 Input and output slots can also be required or not; by default, they are required. When a slot is required, it should be connected for the dataflow to be **valid**. We discuss the notion of dataflow validity [in the next section](#validity).
 
-Line 14 defines the class `SimpleMax`, inheriting from the `Module` class.
+Line 13 defines the class `SimpleMax`, inheriting from the `Module` class.
 Its `__init__` method is minimal for modules; it catches all the keyword parameters to pass them to the `Module` constructor.
 It is redefined only to initialize the value of the `default_step_size` instance variable with a reasonable value for the `SimpleMax` module, as explained in the next [Time Predictor section](#time-predictor).
 Without the `@def_` decorators, the `__init__` method would require many more lines of code to  declare the slots and parameters.
@@ -177,16 +177,16 @@ The `run_step()` method can decide whether to let the module continue running or
 
 The `SimpleMax` module is very similar to the `Max` module; the latter additionally uses decorators for the `run_step` method, and manages **slot hints**.
 
-The `Max` module uses the standard `@process_slot` and `@run_if_any` decorators of `run_step` to shorten its code.  These decorators save lines 19-24 of `SimpleMax` by introducing a `Context` in the management of the input slots.
+The `Max` module uses the standard `@process_slot` and `@run_if_any` decorators of `run_step` to shorten its code.  These decorators save lines 25-28 of `SimpleMax` by introducing a `Context` in the management of the input slots.
 
 ```{eval-rst}
 .. literalinclude:: ./max.py
    :linenos:
 ```
 
-The `@process_slot` decorator in `Max` performs the equivalent of lines 20-24 of `SimpleMax`. It also creates an attribute in the `Context` to access the slot names "table", as shown in line 34.
+The `@process_slot` decorator in `Max` performs the equivalent of lines 25-28 of `SimpleMax`. It also creates an attribute in the `Context` to access the slot names "table", as shown in line 28.
 
-`@process_slot` specifies that when the input slot "table" contains updated or deleted items (not created ones), the method `reset(self) -> None` should be called.  This method is defined on line 23.
+`@process_slot` specifies that when the input slot "table" contains updated or deleted items (not created ones), the method `reset(self) -> None` should be called.  This method is defined on line 17.
 The simplest strategy to use when an input table is modified is to restart the work from the beginning, forgetting the current "max" value.
 
 The `@run_if_any` decorator specifies that the `run_step` method can be run when any of the input slots have new data. The `@run_if_all` method means that the `run_step` method can only run when all the input slots have new data. For most modules, the first is used.  A few modules that perform operations in parallel between their input slots, such as binary operators, need the latter.
@@ -199,9 +199,9 @@ The `hint_type` parameter specifies that this input slot can be parameterized us
 
 Slot hints provide a convenient syntax to adapt the behavior of slots according to parameters.
 In `PTable` slots, the hints consist of a list of column names that restrict the columns received through the slot. Internally, this uses a PTable view. Creating a view can be done through a module, but the syntax is much heavier, and the performance is much worse.
-The `PTable` slot hint is so standard that its documentation string is imported in line 8 of `Max` and used in line 12.
 
-This slot hint is implemented in line 36 by calling `Module.filter_slot_columns`. The chunk returned will contain the columns specified in the slot hint, or all the columns if no slot hint is specified.
+
+This slot hint is implemented in line 30 by calling `Module.filter_slot_columns`. The chunk returned will contain the columns specified in the slot hint, or all the columns if no slot hint is specified.
 
 In the [initial example](#quantiles-variant) of ProgressiVis, we use a `Quantiles` module where output slots can be parameterized by a quantile, such as 0.03 or 0.97.
 
