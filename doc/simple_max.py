@@ -1,5 +1,5 @@
-import numpy as np
 from typing import Any
+import numpy as np
 from progressivis import (
     Module, ReturnRunStep, PTable, PDict,
     def_input, def_output
