@@ -136,6 +136,12 @@ class BlobsPTableABC(Module):
     def fill_reservoir(self) -> None:
         pass
 
+    def get_progress(self) -> tuple[int, int]:
+        if self.result is None:
+            return 0, 0
+        return len(self.result), self.rows
+
+
     def run_step(
         self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
