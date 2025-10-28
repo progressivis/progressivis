@@ -325,7 +325,7 @@ The resultant join table is:
 ![](viz_images/join_result.png)
 
 
-#### View: a computed columns creator
+#### Computed View: a computed columns creator
 
 Possible topology:
 
@@ -334,23 +334,31 @@ Possible topology:
 
 ##### Function:
 
-In addition to stored columns, `ProgressiVis` tables support virtual columns computed from the contents of other columns. Computed columns can be created [programmatically](#computed-columns) or, in some cases, via the **GUI** shown here.
+In addition to stored columns, `ProgressiVis` tables support virtual columns computed from the contents of other columns. Computed columns can be created [programmatically](#computed-columns) or, in many cases, via the **GUI** shown here.
 
-At present, only [](SingleColFunc) columns can be defined through this interface.
+Currently these categories of functions are available:
 
-This includes:
-
-* numpy universal unary [functions](numpy.ufunc)
+* numpy universal [functions](numpy.ufunc)
 * `ProgressiVis` vectorized functions
-* ad-hoc defined `if-else` expressions
+* user defined `python` functions
 
-![](viz_images/view_numpy_activate.png)
+![](viz_images/computed_views_look.png)
 
-As numpy functions are numerous, you can deactivate them if you don't need them to lighten the presentation. In this way, only vectorized functions will be displayed:
+As numpy functions are numerous, they are not active by default in order to lighten the presentation. In this way, only   `ProgressiVis` and user defined functions will be displayed. In the image below the `ProgressiVis` function `year_day` is applied to the datetime typed column  `tpep_pickup_datetime` to create the computed column `pickup_year_day`:
 
-![](viz_images/view_numpy_unactivate.png)
 
-For example, if you want a new column representing the logarithm of another stored column, you can proceed as follows (note that other stored columns can be selected to appear as they are in the result view):
+![](viz_images/pickup_year_day.png)
+
+Also, user can define a function in a regular cell (see [Free code section](free-code) for more details):
+
+![](viz_images/rain_level_func_cell.png)
+
+then apply it to a stored column to create a new, computed column `rain_level`:
+
+![](viz_images/rain_level_func_applied.png)
+
+
+If you check "Show numpy universal functions" they are proposed in the function list. For example, if you want a new column representing the logarithm of another stored column, you can proceed as follows (note that other stored columns can be selected to appear as they are in the result view):
 
 ![](viz_images/view_numpy_log.png)
 
@@ -358,7 +366,7 @@ giving the following result:
 
 ![](viz_images/view_numpy_log_result.png)
 
-An example involving a `ProgressiVis` vectorizable function is the creation of a column providing the (human-friendly) weekday from a stored `datetime` column:
+Another example involving a `ProgressiVis` vectorizable function is the creation of a column providing the (human-friendly) weekday from a stored `datetime` column:
 
 ![](viz_images/view_week_day.png)
 
@@ -366,21 +374,8 @@ which produces the following result:
 
 ![](viz_images/view_week_day_result.png)
 
-An example using `if-else` expressions is taken from the weather domain. Some datasets providing rainfall information mix floating values with the symbol `T`, which means _trace amount of precipitation_, i.e. [a very small amount of rain that might wet the ground, but is too small to be detected in a rain gauge](https://geo.libretexts.org/Bookshelves/Meteorology_and_Climate_Science/Practical_Meteorology_(Stull)/07%3A_Precipitation_Processes/7.07%3A_Precipitation_Characteristics).
 
-Assuming we want to replace “T” with a float value (say -1.0) to have only float values, we'll create an 'if-else' expression as follows:
-
-![](viz_images/if_else_expr.png)
-
-Then use it to create a computed column based on the `PrecipitationIn` stored column:
-
-![](viz_images/if_else_expr_apply.png)
-
-to produce the following result:
-
-![](viz_images/if_else_expr_result.png)
-
-
+<!--
 #### Façade creator
 
 The [facade concept](#facade-concept) is particularly useful in the context of `chaining widgets`, as it enables the chaining of widgets managing complex networks of modules. Currently, chaining widgets supports many input modules, but only one output module. In complex cases requiring many output modules, these will be grouped together behind a facade representing the single, module-like output.
@@ -409,7 +404,9 @@ Obviously, the widest range of operations is proposed for numerical types:
 
 
 ![](viz_images/facade_num_cols.png)
+-->
 
+(free-code)=
 ### Free coding category
 
 (snippet-widget)=
@@ -515,7 +512,7 @@ This is the simplest chaining widget that requires no configuration. It is used 
 
 ![](viz_images/dump_table_view.png)
 
-
+<!--
 #### Descriptive statistics
 
 Possible topology:
@@ -555,6 +552,7 @@ Each heatmap will be displayed in a dedicated panel:
 
 ![](viz_images/desc_stats_heatmap_view.png)
 
+
 #### Heatmap
 
 Possible topology:
@@ -592,6 +590,7 @@ Possible topology:
 This widget allows you to view several time series together:
 
 ![](viz_images/multiseries_view.png)
+-->
 
 #### Any Vega
 
@@ -605,11 +604,11 @@ Possible topology:
 
 Allows a user to integrate Vega-based visualizations from customized schemas into a scenario. Schemas can be edited, saved, and reused in a similar way to `CSV loader` settings.
 
-NB: The entry for an _Any Vega_ widget is always a `Facade`.
+<!--NB: The entry for an _Any Vega_ widget is always a `Facade`.-->
 
-![](viz_images/any_vega_heatmap.png)
+![](viz_images/any_vega_bar_chart.png)
 
-The "fetch info" button extracts the list of fields present in the schema before pairing them with members of the input facade and associating them (potentially) with element-wise processing operations.
+The "fetch info" button extracts the list of fields present in the schema before pairing them with members of the input module and associating them (potentially) with element-wise processing operations.
 
 ![](viz_images/any_vega_fetch_info.png)
 
