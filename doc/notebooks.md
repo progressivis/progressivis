@@ -338,16 +338,26 @@ In addition to stored columns, `ProgressiVis` tables support virtual columns com
 
 Currently these categories of functions are available:
 
-* numpy universal [functions](numpy.ufunc)
-* `ProgressiVis` vectorized functions
+* `ProgressiVis` pre-defined functions
 * user defined `python` functions
+* numpy universal [functions](numpy.ufunc)
 
 ![](viz_images/computed_views_look.png)
 
-As numpy functions are numerous, they are not active by default in order to lighten the presentation. In this way, only   `ProgressiVis` and user defined functions will be displayed. In the image below the `ProgressiVis` function `year_day` is applied to the datetime typed column  `tpep_pickup_datetime` to create the computed column `pickup_year_day`:
+An example involving a `ProgressiVis` pre-defined function is the creation of a column providing the (human-friendly) weekday from a stored `datetime` column:
+
+![](viz_images/view_week_day.png)
+
+which produces the following result:
+
+![](viz_images/view_week_day_result.png)
+
+<!--
+ In the image below the `ProgressiVis` function `year_day` is applied to the datetime typed column  `tpep_pickup_datetime` to create the computed column `pickup_year_day`:
 
 
 ![](viz_images/pickup_year_day.png)
+-->
 
 Also, user can define a function in a regular cell (see [Free code section](free-code) for more details):
 
@@ -357,8 +367,8 @@ then apply it to a stored column to create a new, computed column `rain_level`:
 
 ![](viz_images/rain_level_func_applied.png)
 
-
-If you check "Show numpy universal functions" they are proposed in the function list. For example, if you want a new column representing the logarithm of another stored column, you can proceed as follows (note that other stored columns can be selected to appear as they are in the result view):
+As numpy functions are numerous, they are not active by default in order to lighten the presentation. In this way, only `ProgressiVis` and user defined functions will be displayed.
+But if you check "Show numpy universal functions" they are proposed in the function list. For example, if you want a new column representing the logarithm of another stored column, you can proceed as follows (note that other stored columns can be selected to appear as they are in the result view):
 
 ![](viz_images/view_numpy_log.png)
 
@@ -366,13 +376,6 @@ giving the following result:
 
 ![](viz_images/view_numpy_log_result.png)
 
-Another example involving a `ProgressiVis` vectorizable function is the creation of a column providing the (human-friendly) weekday from a stored `datetime` column:
-
-![](viz_images/view_week_day.png)
-
-which produces the following result:
-
-![](viz_images/view_week_day_result.png)
 
 
 <!--
