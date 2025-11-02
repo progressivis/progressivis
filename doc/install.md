@@ -2,8 +2,7 @@
 
 ## Installation for users
 
-To start, you probably want `ProgressiVis` with it's `Jupyter` visualizations; install  `progressivis[jupyter]`.
-
+To start, you probably want `ProgressiVis` with it's `Jupyter` visualizations.
 If you only need the `ProgressiVis` core, install the `progressivis` package, without options.
 
 Currently these installations are continually tested with `Linux`. They should also work on `MacOS` and `Windows`.
@@ -14,8 +13,9 @@ Currently these installations are continually tested with `Linux`. They should a
 
 #### Installing `ProgressiVis` with it's `Jupyter` extension:
 
+Be careful, if you use a shell such as `zsh`, to put quotes around the package name because of the brackets.
 ```
-pip install progressivis[jupyter]
+pip install 'progressivis[jupyter]'
 ```
 
 #### Installing `ProgressiVis` core:
