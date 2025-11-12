@@ -27,15 +27,11 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python }}
-    - name: Download a file
-      run: |
-        # wget --no-verbose https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv -O mnist_784.csv
-        mkdir data
-        # mv mnist_784.csv data/ # disabled cause mnist_784.csv is not longer available
-
-    - name: Run tests
+    - name: Install ProgressiVis
       run: |
         python -m pip install .[test]
+    - name: Run tests
+      run: |
         coverage run -m pytest --durations=50 tests -vv
 
     - name: Coverage
