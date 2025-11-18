@@ -6,22 +6,15 @@ import logging
 import numpy as np
 from progressivis.storage import Group, Dataset
 from progressivis.core.utils import integer_types, get_random_name
-
-# try:
-#     from progressivis.utils.fast import indices_to_slice
-# except ImportError:
-
-# from progressivis.core.utils import indices_to_slice
-
+from progressivis.core.pintset import PIntSet
+from progressivis.core.pv_types import Chunks, Index, Shape
+from . import metadata
 from .column_base import BasePColumn
 from .dshape import dshape_to_h5py, np_dshape, dshape_create, DataShape, EMPTY_DSHAPE
-from . import metadata
 from .table_base import IndexPTable
-from ..core.pintset import PIntSet
 
 from typing import Any, Optional, Union, Tuple
 
-from ..core.pv_types import Chunks, Index, Shape
 
 
 logger = logging.getLogger(__name__)

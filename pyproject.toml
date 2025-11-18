@@ -46,7 +46,6 @@ dependencies = [
     "boto",
     "s3fs",
     "requests",
-    "fast-histogram",
     "datasketches",
     "typeguard",
     "multipledispatch >= 0.4.7",  # datashape

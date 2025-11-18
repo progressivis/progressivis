@@ -8,7 +8,6 @@ from ..core.utils import indices_len, fix_loc
 from ..core.api import notNone, JSon
 from ..table.table import PTable
 from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
-from fast_histogram import histogram2d  # type: ignore
 
 from typing import Optional, Tuple, Any, Dict
 
@@ -218,7 +217,7 @@ class MCHistogram2D(Module):
             assert len(x) == len(y)
             bins = [p.ybins, p.xbins]
             if len(x) > 0:
-                histo = histogram2d(y, x, bins=bins, range=[[ymin, ymax], [xmin, xmax]])
+                histo = np.histogram2d(y, x, bins=bins, range=[[ymin, ymax], [xmin, xmax]])[0]
                 assert self._histo is not None
                 self._histo -= histo
                 steps += indices_len(indices)
@@ -240,7 +239,7 @@ class MCHistogram2D(Module):
             bins = [p.ybins, p.xbins]
             if len(x) > 0:
                 # using fast_histogram
-                histo = histogram2d(y, x, bins=bins, range=[[ymin, ymax], [xmin, xmax]])
+                histo = np.histogram2d(y, x, bins=bins, range=[[ymin, ymax], [xmin, xmax]])[0]
             elif not steps:
                 # histo = None
                 # cmax = 0

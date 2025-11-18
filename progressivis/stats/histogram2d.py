@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+import numpy as np
+
+import logging
+
+from typing import Optional, Tuple, cast, Any, NamedTuple, Dict
+
 from ..core.module import (
     Module,
     JSon,
@@ -14,14 +20,8 @@ from ..core.slot import Slot
 from ..core.quality import QualitySqrtSumSquarredDiffs
 from ..table.api import PTable
 from ..utils.psdict import PDict
-from fast_histogram import histogram2d  # type: ignore
 from ..core.decorators import process_slot, run_if_any
 
-import numpy as np
-
-import logging
-
-from typing import Optional, Tuple, cast, Any, NamedTuple, Dict
 
 
 # Bounds2D = Tuple[float, float, float, float]
@@ -289,9 +289,9 @@ class Histogram2D(Module):
                 y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
                 bins = [p.ybins, p.xbins]
                 if len(x) > 0:
-                    histo = histogram2d(
+                    histo = np.histogram2d(
                         y, x, bins=bins, range=[[b.ymin, b.ymax], [b.xmin, b.xmax]]
-                    )
+                    )[0]
                     self._histo -= histo
             # if there are new creations, build a partial histogram with them
             # add it to the main histogram
@@ -310,7 +310,7 @@ class Histogram2D(Module):
             else:
                 bins = [p.ybins, p.xbins]
             if len(x) > 0:
-                histo = histogram2d(y, x, bins=bins, range=[[b.ymin, b.ymax], [b.xmin, b.xmax]])
+                histo = np.histogram2d(y, x, bins=bins, range=[[b.ymin, b.ymax], [b.xmin, b.xmax]])[0]
             else:
                 return self._return_run_step(self.state_blocked, steps_run=0)
 

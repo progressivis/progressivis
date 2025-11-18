@@ -8,7 +8,6 @@ from progressivis import Tick, CSVLoader, RandomPTable, Histogram2D, Min, Max, H
 from progressivis.table.stirrer import Stirrer, StirrerView
 import pandas as pd
 import numpy as np
-import fast_histogram as fh  # type: ignore
 
 from typing import Any
 
@@ -69,7 +68,7 @@ class TestHistogram2D(ProgressiveTest):
         )
         v = df.to_numpy()  # .reshape(-1, 2)
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
-        h2 = fh.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)
+        h2 = np.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)[0]
         h2 = np.flip(h2, axis=0)
         self.assertTrue(np.allclose(h1, h2))
 
@@ -102,7 +101,7 @@ class TestHistogram2D(ProgressiveTest):
         assert t is not None
         v = t.to_array()
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
-        h2 = fh.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)
+        h2 = np.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)[0]
         h2 = np.flip(h2, axis=0)
         self.assertEqual(np.sum(h1), np.sum(h2))
         self.assertListEqual(h1.reshape(-1).tolist(), h2.reshape(-1).tolist())
@@ -138,7 +137,7 @@ class TestHistogram2D(ProgressiveTest):
         assert tmp is not None
         v = tmp.to_array()
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
-        h2 = fh.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)
+        h2 = np.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)[0]
         h2 = np.flip(h2, axis=0)
         self.assertEqual(np.sum(h1), np.sum(h2))
         self.assertListEqual(h1.reshape(-1).tolist(), h2.reshape(-1).tolist())

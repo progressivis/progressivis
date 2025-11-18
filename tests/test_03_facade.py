@@ -5,7 +5,6 @@ from progressivis import notNone, Sink, Tick, Min, Max, RandomPTable, Histogram1
 from progressivis.core import aio
 from progressivis.core.module_facade import ModuleFacade
 from progressivis.table.table_facade import TableFacade
-import fast_histogram as fh  # type: ignore
 import numpy as np
 
 from typing import Any, Dict, cast
@@ -162,7 +161,7 @@ class TestModuleFacade(ProgressiveTest):
         assert tab is not None
         v = tab.to_array()
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
-        h2 = fh.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)
+        h2 = np.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)[0]
         h2 = np.flip(h2, axis=0)
         self.assertTrue(np.allclose(h1, h2))
 

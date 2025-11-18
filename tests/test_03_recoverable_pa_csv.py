@@ -37,6 +37,9 @@ def make_num_csv(
         bio.write(",".join(mx[i, :]).encode())
         bio.write(b"\n")
     bio.seek(0)
+    # with open("/tmp/num_csv_"+str(np.random.randint(0, 1000)), "wb") as out:
+    #     out.write(bio.getbuffer())
+    # bio.seek(0)
     return bio
 
 
@@ -95,6 +98,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         bio.seek(0)
         df = df.drop(list(rows))
         cvopts = ConvertOptions(column_types={c: dtype for c in df.columns})
+        print(cvopts)
         ropts = ReadOptions(block_size=100_000)
         module = PACSVLoader(
             bio,
