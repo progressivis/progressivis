@@ -352,7 +352,7 @@ class Scheduler:
         "Remove an idle callback."
         self._loop_procs.pop(idle_proc, None)
 
-    def on_change(self, proc: ChangeProc) -> TickProc:
+    def on_change(self, proc: ChangeProc) -> ChangeProc:
         assert callable(proc)
         self._change_procs.add(proc)
         return proc
