@@ -311,46 +311,51 @@ class Scheduler:
         "Start the scheduler for on step."
         await self.start(tick_proc=self._step_proc)
 
-    def on_tick(self, proc: TickProc, delay: int = -1) -> None:
+    def on_tick(self, proc: TickProc, delay: int = -1) -> TickProc:
         "Set a procedure to call at each tick."
         assert callable(proc)
         self._tick_procs[proc] = delay
+        return proc
 
     def remove_tick(self, proc: TickProc) -> None:
         "Remove a tick callback"
         self._tick_procs.pop(proc, None)
 
-    def on_tick_once(self, proc: TickProc) -> None:
+    def on_tick_once(self, proc: TickProc) -> TickProc:
         """
         Add a oneshot function that will be run at the next scheduler tick.
         This is especially useful for setting up module connections.
         """
         self.on_tick(proc, 1)
+        return proc
 
     def remove_tick_once(self, proc: TickProc) -> None:
         "Remove a tick once callback"
         self.remove_tick(proc)
 
-    def on_idle(self, proc: TickProc, delay: int = -1) -> None:
+    def on_idle(self, proc: TickProc, delay: int = -1) -> TickProc:
         "Set a procedure that will be called when there is nothing else to do."
         assert callable(proc)
         self._idle_procs[proc] = delay
+        return proc
 
     def remove_idle(self, idle_proc: TickProc) -> None:
         "Remove an idle callback."
         self._idle_procs.pop(idle_proc, None)
 
-    def on_loop(self, proc: TickProc, delay: int = -1) -> None:
+    def on_loop(self, proc: TickProc, delay: int = -1) -> TickProc:
         assert callable(proc)
         self._loop_procs[proc] = delay
+        return proc
 
     def remove_loop(self, idle_proc: TickProc) -> None:
         "Remove an idle callback."
         self._loop_procs.pop(idle_proc, None)
 
-    def on_change(self, proc: ChangeProc) -> None:
+    def on_change(self, proc: ChangeProc) -> TickProc:
         assert callable(proc)
         self._change_procs.add(proc)
+        return proc
 
     def remove_change(self, proc: ChangeProc) -> None:
         self._change_procs.remove(proc)

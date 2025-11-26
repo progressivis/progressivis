@@ -1062,8 +1062,7 @@ You may have added the module in a running scheduler without using the syntax: "
         self._start_time = 0
         assert self.state != self.state_running
 
-    # TODO: rename to on_before_run
-    def on_start_run(self, proc: ModuleProc, remove: bool = False) -> None:
+    def on_before_run(self, proc: ModuleProc, remove: bool = False) -> ModuleProc:
         """Register a callback to execute when the module starts to run.
 
         The callback will bee called with two arguments, the module and
@@ -1079,11 +1078,12 @@ You may have added the module in a running scheduler without using the syntax: "
             self._start_run.remove(proc)
         else:
             self._start_run.append(proc)
+        return proc
 
     async def start_run(self, run_number: int) -> bool:
         return await self._start_run.fire(self, run_number)
 
-    def on_after_run(self, proc: ModuleProc, remove: bool = False) -> None:
+    def on_after_run(self, proc: ModuleProc, remove: bool = False) -> ModuleProc:
         """Register a callback to execute after the module runs.
 
         The callback will bee called with two arguments, the module and
@@ -1099,11 +1099,12 @@ You may have added the module in a running scheduler without using the syntax: "
             self._after_run.remove(proc)
         else:
             self._after_run.append(proc)
+        return proc
 
     async def after_run(self, run_number: int) -> bool:
         return await self._after_run.fire(self, run_number)
 
-    def on_ending(self, proc: ModuleCb, remove: bool = False) -> None:
+    def on_ending(self, proc: ModuleCb, remove: bool = False) -> ModuleProc:
         """Register a callback to execute when the module ends.
 
         The callback will bee called with two arguments, the module and
@@ -1120,6 +1121,7 @@ You may have added the module in a running scheduler without using the syntax: "
             self._ending.remove(proc)
         else:
             self._ending.append(proc)
+        return proc
 
     def do_ending(self, run_number: int) -> None:
         for proc in self._ending:
