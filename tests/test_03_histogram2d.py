@@ -60,7 +60,7 @@ class TestHistogram2D(ProgressiveTest):
         pr.input[0] = heatmap.output.result
         aio.run(csv.scheduler.start())
         assert histogram2d.result is not None
-        last = notNone(histogram2d.result.last()).to_dict()
+        last = notNone(histogram2d.result)
         h1 = last["array"]
         bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]
         df = pd.read_csv(
@@ -94,7 +94,7 @@ class TestHistogram2D(ProgressiveTest):
         aio.run(s.start())
         assert histogram2d.result is not None
         assert stirrer.result is not None
-        last = notNone(histogram2d.result.last()).to_dict()
+        last = notNone(histogram2d.result)
         h1 = last["array"]
         bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]
         t = stirrer.result.loc[:, ["_1", "_2"]]
@@ -130,7 +130,7 @@ class TestHistogram2D(ProgressiveTest):
         aio.run(s.start())
         assert histogram2d.result is not None
         assert stirrer.result is not None
-        last = notNone(histogram2d.result.last()).to_dict()
+        last = notNone(histogram2d.result)
         h1 = last["array"]
         bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]
         tmp = stirrer.result.loc[:, ["_1", "_2"]]

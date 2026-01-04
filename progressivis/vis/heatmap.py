@@ -15,6 +15,7 @@ import scipy as sp
 from scipy.ndimage import gaussian_filter
 from PIL import Image
 
+from progressivis import PDict
 from progressivis.core.module import (
     ReturnRunStep,
     JSon,
@@ -22,8 +23,7 @@ from progressivis.core.module import (
     def_output,
     def_parameter,
 )
-from progressivis.core.api import notNone, indices_len
-from progressivis.table.api import PTable
+from progressivis.core.api import indices_len
 from progressivis.core.module import Module
 from progressivis.stats.histogram2d import Histogram2D
 
@@ -47,48 +47,26 @@ class HeatmapTransform(IntEnum):
 @def_parameter("history", np.dtype(int), 3)
 @def_parameter("transform", np.dtype(int), HeatmapTransform.LOG)
 @def_parameter("gaussian_blur", np.dtype(int), 0)
-@def_input("array", PTable)
-@def_output("result", PTable)
+@def_input("array", PDict)
+@def_output("result", PDict)
 class Heatmap(Module):
     """
     Heatmap module
     """
-
-    # schema = [('image', np.dtype(object), None),
-    #           ('filename', np.dtype(object), None),
-    #           UPDATE_COLUMN_DESC]
-    schema = "{filename: string, time: int64}"
 
     def __init__(self, colormap: None = None, **kwds: Any) -> None:
         super().__init__(output_required=False, **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.colormap = colormap
         self.default_step_size = 1
-        name = self.generate_table_name("Heatmap")
-        self.result = PTable(name, dshape=Heatmap.schema, create=True)
+        self.result = PDict({"filename": None, "time": np.int64(0)})
 
     def predict_step_size(self, duration: float) -> int:
         _ = duration
         # Module sample is constant time (supposedly)
         return 1
 
-    def run_step(
-        self, run_number: int, step_size: int, quantum: float
-    ) -> ReturnRunStep:
-        assert self.result is not None
-        dfslot = self.get_input_slot("array")
-        input_df = dfslot.data()
-        dfslot.deleted.next()
-        indices = dfslot.created.next()
-        steps = indices_len(indices)
-        if steps == 0:
-            indices = dfslot.updated.next()
-            steps = indices_len(indices)
-            if steps == 0:
-                return self._return_run_step(self.state_blocked, steps_run=1)
-        histo = input_df.last()["array"]
-        if histo is None:
-            return self._return_run_step(self.state_blocked, steps_run=1)
+    def compute_heatmap(self, histo: np.ndarray) -> str:
         params = self.params
         high: int = cast(int, params.high)
         low: int = cast(int, params.low)
@@ -128,7 +106,7 @@ class Heatmap(Module):
         if filename is not None and image is not None:
             try:
                 if re.search(r"%(0[\d])?d", filename):
-                    filename = filename % (run_number)
+                    filename = filename % (self.scheduler._run_number)
                 filename = self.storage.fullname(self, filename)
                 # TODO should do it atomically since it will be
                 # called 4 times with the same fn
@@ -144,12 +122,32 @@ class Heatmap(Module):
                 image.save(buffered, format="PNG", bits=8)
             res = str(base64.b64encode(buffered.getvalue()), "ascii")
             filename = "data:image/png;base64," + res
+        return filename
 
-        table = self.result
-        last = table.last()
-        if last is None or last["time"] != run_number:
-            values = {"filename": filename, "time": run_number}
-            table.add(values)
+    def run_step(
+        self, run_number: int, step_size: int, quantum: float
+    ) -> ReturnRunStep:
+        outslot = self.get_output_slot("result")
+        if outslot is None:
+            # Become lazy if no output slot is connected
+            return self._return_run_step(self.state_blocked, steps_run=1)
+        dfslot = self.get_input_slot("array")
+        data = dfslot.data()
+        histo = data["array"]
+        dfslot.deleted.next()
+        indices = dfslot.created.next()
+        steps = indices_len(indices)
+        if steps == 0:
+            indices = dfslot.updated.next()
+            steps = indices_len(indices)
+            if steps == 0:
+                return self._return_run_step(self.state_blocked, steps_run=1)
+        if histo is None:
+            return self._return_run_step(self.state_blocked, steps_run=1)
+        filename = self.compute_heatmap(histo)
+
+        assert self.result is not None
+        self.result.update({"filename": filename, "time": run_number})
         return self._return_run_step(self.state_blocked, steps_run=1)
 
     def get_visualization(self) -> str:
@@ -166,9 +164,8 @@ class Heatmap(Module):
         assert isinstance(dfslot.output_module, Histogram2D)
         histo: Histogram2D = dfslot.output_module
         json["columns"] = [histo.x_column, histo.y_column]
-        histo_df = dfslot.data()
-        if histo_df is not None and len(histo_df) != 0:
-            row = histo_df.last()
+        row = dfslot.data()
+        if row is not None:
             if not (
                 np.isnan(row["xmin"])
                 or np.isnan(row["xmax"])
@@ -181,33 +178,22 @@ class Heatmap(Module):
                     "xmax": row["xmax"],
                     "ymax": row["ymax"],
                 }
-        df = self.result
-        if df is not None and self._last_update != 0:
-            json["image"] = notNone(df.last())["filename"]
+        json["image"] = self.get_image()
         return json
 
-    def get_image(self, run_number: Optional[int] = None) -> Optional[str]:
-        filename: Optional[str]
-        table = self.result
-        if table is None or len(table) == 0:
-            return None
-        last = notNone(table.last())
-        # assert last is not None  # len(table) > 0 so last is not None
-        if run_number is None or run_number >= last["time"]:
-            run_number = last["time"]
-            filename = last["filename"]
-        else:
-            time = table["time"]
-            idx = np.where(time == run_number)[0]
-            assert last is not None
-            if len(idx) == 0:
-                filename = last["filename"]
-            else:
-                filename = table["filename"][idx[0]]
-        return filename
+    def get_image(self) -> Optional[str]:
+        assert self.result is not None
+        # Lazy computation of the heatmap if needed
+        if self.result["time"] != self._last_update:
+            dfslot = self.get_input_slot("array")
+            row = dfslot.data()
+            if row is not None:
+                self.result["filename"] = self.compute_heatmap(row["array"])
+            self.result["time"] = self._last_update
+        return cast(str, self.result["filename"])
 
     def get_image_bin(self, run_number: Optional[int] = None) -> Optional[bytes]:
-        file_url = self.get_image(run_number)
+        file_url = self.get_image()
         if file_url:
             payload = file_url.split(",", 1)[1]
             return base64.b64decode(payload)

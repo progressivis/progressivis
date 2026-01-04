@@ -154,7 +154,8 @@ class TestModuleFacade(ProgressiveTest):
         sink.input[0] = tabmod.output.hist2d_1_2
         aio.run(s.start())
         histogram2d = cast(Histogram2D, notNone(tabmod.get('hist2d_1_2')).output_module)
-        last = notNone(notNone(histogram2d.result).last()).to_dict()
+        last = histogram2d.result
+        assert last is not None
         h1 = last["array"]
         bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]
         tab = notNone(random.result).loc[:, ["_1", "_2"]]

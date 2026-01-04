@@ -611,10 +611,6 @@ You may have added the module in a running scheduler without using the syntax: "
         "Return True if this module brings new data"
         return False
 
-    def get_image(self, run_number: Optional[int] = None) -> Any:  # pragma no cover
-        "Return an image created by this module or None"
-        return None
-
     def describe(self) -> None:
         "Print the description of this module"
         print("id: %s" % self.name)

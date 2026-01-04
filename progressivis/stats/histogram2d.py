@@ -74,34 +74,13 @@ logger = logging.getLogger(__name__)
 )
 @def_output(
     "result",
-    PTable,
-    datashape={"array": np.ndarray,
-               "cmin": float,
-               "cmax": float,
-               "xmin": float,
-               "xmax": float,
-               "ymin": float,
-               "ymax": float,
-               "time": int},
-    doc="the output table")
+    PDict,
+    doc="the output data")
 class Histogram2D(Module):
     """
     Compute the 2D histogram of two scalar, numerical columns in the input table.
     These two columns are referred to as ``x_column`` and ``y_column`` here.
     """
-
-    schema = (
-        "{"
-        "array: var * var * float64,"
-        "cmin: float64,"
-        "cmax: float64,"
-        "xmin: float64,"
-        "xmax: float64,"
-        "ymin: float64,"
-        "ymax: float64,"
-        "time: int64"
-        "}"
-    )
 
     def __init__(
         self,
@@ -129,12 +108,6 @@ class Histogram2D(Module):
         self._with_output = with_output
         self._heatmap_cache: Optional[Tuple[JSon, Bounds2D]] = None
         self._quality: QualitySqrtSumSquarredDiffs | None = None
-        self.result = PTable(
-            self.generate_table_name("Histogram2D"),
-            dshape=Histogram2D.schema,
-            chunks={"array": (1, 64, 64)},
-            create=True,
-        )
 
     def reset(self) -> None:
         self._histo = None
@@ -142,8 +115,8 @@ class Histogram2D(Module):
         self._yedges = None
         self.total_read = 0
         self.get_input_slot("table").reset()
-        if self.result:
-            self.result.resize(0)
+        if self.result is not None:
+            self.result.fill(None)
 
     def is_ready(self) -> bool:
         # If we have created data but no valid min/max, we can only wait
@@ -202,7 +175,6 @@ class Histogram2D(Module):
         self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         assert self.context
-        assert self.result is not None
         with self.context as ctx:
             dfslot = ctx.table
             min_slot = ctx.min
@@ -331,13 +303,10 @@ class Histogram2D(Module):
                 "time": run_number,
             }
             if self._with_output:
-                table = self.result
-                table["array"].set_shape([p.ybins, p.xbins])
-                last = table.last()
-                if last is None or last["time"] != run_number:
-                    table.add(values)
+                if self.result is None:
+                    self.result = PDict(values)
                 else:
-                    table.loc[last.row] = values
+                    self.result.update(values)
             self.build_heatmap(values)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
