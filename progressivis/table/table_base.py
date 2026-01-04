@@ -28,6 +28,7 @@ from progressivis.core.utils import (
 )
 from progressivis.core.config import get_option
 from progressivis.core.pintset import PIntSet
+from progressivis.utils.rwlock import rwlock
 from .dshape import dshape_print, dshape_create, DataShape, EMPTY_DSHAPE
 from .tablechanges import PTableChanges as PTableChanges
 
@@ -51,6 +52,7 @@ from typing import (
     Sequence,
     overload,
     Iterator,
+    ContextManager,
 )
 
 if TYPE_CHECKING:
@@ -1590,7 +1592,15 @@ class IndexPTable(BasePTable):
         self._index: PIntSet = PIntSet() if index is None else index
         self._cached_index: Optional[PIntSet] = None  # hack
         self._last_id: int = -1
-        self._changes = None
+        self._changes: PTableChanges | None = None
+        self._lock = rwlock()
+
+    # begin(Lock)
+    def r_locked(self) -> ContextManager[None]:
+        return self._lock.r_locked()
+
+    def w_locked(self) -> ContextManager[None]:
+        return self._lock.w_locked()
 
     # begin(Change management)
     def _flush_cache(self) -> None:

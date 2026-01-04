@@ -41,7 +41,7 @@ class PColumn(BasePColumn):
         if index is None and self.index return None, a new index and
         dataset are created.
         """
-        indexwasnone: bool = index is None
+        indexwasnone = index is None
         if index is None:
             if data is not None:  # check before creating everything
                 length = len(data)
@@ -84,8 +84,9 @@ class PColumn(BasePColumn):
         else:
             newsize = start + count
             ret = PIntSet(range(start, newsize))
-        self._resize(newsize)
-        self.index._resize_rows(newsize, ret)
+        with self.index.w_locked():
+            self._resize(newsize)
+            self.index._resize_rows(newsize, ret)
         return ret
 
     def append(self, data: Any, indices: Optional[Any] = None) -> None:
@@ -245,7 +246,8 @@ class PColumn(BasePColumn):
         if myshape == shape:
             return
         logger.debug("Changing size from (%s) to (%s)", myshape, shape)
-        self.dataset.resize(tuple([len(self)] + shape))
+        with self.index._lock.w_locked():
+            self.dataset.resize(tuple([len(self)] + shape))
 
     @property
     def maxshape(self) -> Tuple[int, ...]:
@@ -286,10 +288,12 @@ class PColumn(BasePColumn):
         if isinstance(index, np.ndarray):
             index = list(index)
         try:  # EAFP
-            return self.dataset[index]
+            with self.index.r_locked():
+                return self.dataset[index]
         except TypeError:
             if isinstance(index, Iterable):
-                return np.array([self.dataset[e] for e in index])
+                with self.index.r_locked():
+                    return np.array([self.dataset[e] for e in index])
             raise
 
     def read_direct(
@@ -299,19 +303,21 @@ class PColumn(BasePColumn):
         dest_sel: Optional[Any] = None,
     ) -> None:
         assert self.dataset is not None
-        if hasattr(self.dataset, "read_direct"):
-            if isinstance(source_sel, np.ndarray) and source_sel.dtype == np.int_:
-                source_sel = list(source_sel)
-            #            if is_fancy(source_sel):
-            #                source_sel = fancy_to_mask(source_sel, self.shape)
-            self.dataset.read_direct(array, source_sel, dest_sel)
-        else:
-            super().read_direct(array, source_sel, dest_sel)
+        with self.index.r_locked():
+            if hasattr(self.dataset, "read_direct"):
+                if isinstance(source_sel, np.ndarray) and source_sel.dtype == np.int_:
+                    source_sel = list(source_sel)
+                #            if is_fancy(source_sel):
+                #                source_sel = fancy_to_mask(source_sel, self.shape)
+                self.dataset.read_direct(array, source_sel, dest_sel)
+            else:
+                super().read_direct(array, source_sel, dest_sel)
 
     def __setitem__(self, index: Index, val: Any) -> None:
         assert self.dataset is not None
         if isinstance(index, integer_types):
-            self.dataset[index] = val
+            with self.index.w_locked():
+                self.dataset[index] = val
         else:
             if hasattr(val, "values") and isinstance(val.values, np.ndarray):
                 val = val.values
@@ -321,16 +327,19 @@ class PColumn(BasePColumn):
             if isinstance(index, np.ndarray) and index.dtype == np.int_:
                 index = list(index)
             try:
-                self.dataset[index] = val
+                with self.index.w_locked():
+                    self.dataset[index] = val
             except TypeError:
                 # TODO distinguish between unsupported fancy indexing and real error
                 if isinstance(index, Iterable):
                     if isinstance(val, (np.ndarray, list)):
-                        for e in index:
-                            self.dataset[e] = val[e]
+                        with self.index.w_locked():
+                            for e in index:
+                                self.dataset[e] = val[e]
                     else:
-                        for e in index:
-                            self.dataset[e] = val
+                        with self.index.w_locked():
+                            for e in index:
+                                self.dataset[e] = val
                 else:
                     raise
         self.index.touch(index)
@@ -348,12 +357,14 @@ class PColumn(BasePColumn):
             self.dataset.resize(shape)
 
     def resize(self, newsize: int) -> None:
-        self._resize(newsize)
-        if self.index is not None:
-            self.index._resize_rows(newsize)
+        with self.index._lock.w_locked():
+            self._resize(newsize)
+            if self.index is not None:
+                self.index._resize_rows(newsize)
 
     def __delitem__(self, index: Index) -> None:
         assert self.dataset is not None
-        del self.index[index]
-        self.dataset[index] = self.fillvalue  # cannot propagate that to other columns
-        self.dataset.resize(self.index.size)
+        with self.index._lock.w_locked():
+            del self.index[index]
+            self.dataset[index] = self.fillvalue  # cannot propagate that to other columns
+            self.dataset.resize(self.index.size)
