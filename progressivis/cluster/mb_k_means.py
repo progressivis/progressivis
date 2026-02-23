@@ -230,7 +230,8 @@ class MBKMeans(Module):
             self.result.resize(self.mbk.cluster_centers_.shape[0])
         self.result[cols] = self.mbk.cluster_centers_
         if is_conv:
-            return self._return_run_step(self.state_blocked, iter_)
+            # step_size is a better estimation than iter_
+            return self._return_run_step(self.state_blocked, step_size) 
         return self._return_run_step(self.state_ready, iter_)
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
