@@ -58,7 +58,7 @@ class MBKMeans(Module):
         self.mbk = MiniBatchKMeans(
             n_clusters=n_clusters,
             batch_size=batch_size,
-            verbose=True,
+            verbose=0,
             tol=tol,
             random_state=random_state,
         )
@@ -141,7 +141,7 @@ class MBKMeans(Module):
         dfslot = self.get_input_slot("table")
         # TODO varslot is only required if we have tol > 0
         varslot = self.get_input_slot("var")
-        moved_center = self.get_input_slot("moved_center")
+        moved_center = self.get_input_slot("moved_center") if self.has_input_slot("moved_center") else None
         init_centers = "k-means++"
         if moved_center is not None:
             if moved_center.has_buffered():
@@ -155,11 +155,12 @@ class MBKMeans(Module):
                 self.reset(init=init_centers)
                 dfslot.clear_buffers()  # No need to re-reset next
                 varslot.clear_buffers()
-        if dfslot.has_buffered() or varslot.has_buffered():
+        if dfslot.deleted.any() or dfslot.updated.any():
             logger.debug("has deleted or updated, reseting")
+            varslot.reset()
             self.reset(init=init_centers)
-            dfslot.clear_buffers()
-            varslot.clear_buffers()
+        dfslot.clear_buffers()
+        varslot.clear_buffers()
         # print('dfslot has buffered %d elements'% dfslot.created_length())
         input_df = dfslot.data()
         var_data = varslot.data()
