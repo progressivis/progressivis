@@ -134,7 +134,7 @@ def dshape_from_columns(table: BasePTable, columns: List[str], dshape: Any) -> D
 
 
 def dataframe_dshape(dtype: Union[np.dtype[Any], ExtensionDtype]) -> str:
-    if dtype == OBJECT:
+    if dtype == OBJECT or dtype == "str":
         return "string"
     if dtype.name.startswith("datetime"):
         return "6*uint16"
