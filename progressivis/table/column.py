@@ -12,7 +12,7 @@ from . import metadata
 from .column_base import BasePColumn
 from .dshape import dshape_to_h5py, np_dshape, dshape_create, DataShape, EMPTY_DSHAPE
 from .table_base import IndexPTable
-
+import pandas as pd
 from typing import Any, Optional, Union, Tuple
 
 
@@ -313,7 +313,7 @@ class PColumn(BasePColumn):
         if isinstance(index, integer_types):
             self.dataset[index] = val
         else:
-            if hasattr(val, "values") and isinstance(val.values, np.ndarray):
+            if hasattr(val, "values") and isinstance(val.values, (np.ndarray, pd.arrays.ArrowStringArray)):
                 val = val.values
             if not hasattr(val, "shape"):
                 val = np.asarray(val, dtype=self.dtype)
