@@ -12,7 +12,7 @@ from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 from ..utils.errors import ProgressiveError
 
-from typing import Any, Union, Dict
+from typing import Any, Union, Dict, cast
 
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,8 @@ class Histogram1DCategorical(Module):
             valcounts = pd.Series(column).value_counts().to_dict()
             assert self.result is not None
             for k, v in valcounts.items():
-                self.result[k] = v + self.result.get(k, 0)
+                key = cast(str, k)
+                self.result[key] = v + self.result.get(key, 0)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
     def is_visualization(self) -> bool:
