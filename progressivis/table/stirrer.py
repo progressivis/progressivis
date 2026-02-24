@@ -16,13 +16,34 @@ if TYPE_CHECKING:
     from progressivis.core.module import ReturnRunStep
 
 
-@def_parameter("update_column", np.dtype(np.object_), "")
-@def_parameter("update_rows", np.dtype(np.object_), None)
-@def_parameter("delete_rows", np.dtype(np.object_), None)
-@def_parameter("delete_threshold", np.dtype(np.object_), None)
-@def_parameter("update_threshold", np.dtype(np.object_), None)
-@def_parameter("del_twice", np.dtype(np.bool_), False)
-@def_parameter("fixed_step_size", np.dtype(np.int_), 0)
+@def_parameter("update_column", np.dtype(np.object_), "",
+               doc="column to be updated"
+               )
+@def_parameter("update_rows", np.dtype(np.object_), None,
+               doc="number of rows to be update randomly when update_rows is an int"
+               "in this case new values are random generated floats"
+               "update_rows can also take the form (ids_list, values_list)"
+               )
+@def_parameter("delete_rows", np.dtype(np.object_), None,
+               doc="* number of rows to be deleted randomly when delete_rows is an int"
+               "* delete half of the rows when delete_rows=='half'"
+               "* delete all the rows when delete_rows=='all'"
+               "* delete the list of specific ids rows when delete_rows is a list"
+               )
+@def_parameter("delete_threshold", np.dtype(np.object_), None,
+               doc="number of rows to reach before triggering deletions"
+               )
+@def_parameter("update_threshold", np.dtype(np.object_), None,
+               doc="number of rows to reach before triggering updates"
+               )
+@def_parameter("del_twice", np.dtype(np.bool_), False,
+               doc="Perform the deletion in two separate operations:"
+               " first the first half of the indices, then the second half."
+               )
+@def_parameter("fixed_step_size", np.dtype(np.int_), 0,
+               doc="imposes a fixed step size on the time predictor."
+               "Useful for debugging (making bugs reproductibles)"
+               )
 @def_parameter("mode", np.dtype(np.object_), "random")
 @def_input("table", type=PTable, required=True)
 @def_output("result", PTable)
@@ -111,11 +132,20 @@ class Stirrer(Module):
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)
 
 
-@def_parameter("update_column", np.dtype(object), "")
-@def_parameter("delete_rows", np.dtype(object), None)
-@def_parameter("delete_threshold", np.dtype(object), None)
+@def_parameter("update_column", np.dtype(object), "",
+               doc="column to be updated"
+               )
+@def_parameter("delete_rows", np.dtype(object), None,
+               doc="* number of rows to be deleted randomly when delete_rows is an int"
+               "* delete half of the rows when delete_rows=='half'"
+               "* delete all the rows when delete_rows=='all'"
+               "* delete the list of specific ids when delete_rows is a list"
+               )
+@def_parameter("delete_threshold", np.dtype(object), None,
+               doc="number of rows to reach before triggering deletions")
 @def_parameter("fixed_step_size", np.dtype(np.int_), 0)
-@def_parameter("mode", np.dtype(object), "random")
+@def_parameter("mode", np.dtype(object), "random",
+               doc="not used currently")
 @def_input("table", type=PTable, required=True)
 @def_output("result", PTableSelectedView)
 class StirrerView(Module):
