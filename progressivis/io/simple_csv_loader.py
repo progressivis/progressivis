@@ -143,16 +143,17 @@ class SimpleCSVLoader(Module):
         self._input_encoding: str | None = None
         self._input_compression: str | None = None
         self._input_size = 0  # length of the file or input stream when available
-        self._total_input_size = 0
-        self._total_size = 0
+        self._total_input_size = 0  # size of all files already read
+        self._total_size = 0  # size of all files
         self._last_progress = (0, 0)
+        self._last_crt_progress = (0, 0)
         self._n_files = 0
         self._file_mode = False
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
         self._as_array = as_array
         self._imputer = imputer
         self._last_opened: Any = None
-
+        self._rows_before_last: int = 0
     def _data_as_array(self, df: pd.DataFrame) -> tuple[Any, DataShape]:
         if not self._as_array:
             return (df, dshape_from_dataframe(df))
@@ -254,6 +255,8 @@ class SimpleCSVLoader(Module):
         self.csv_kwds["encoding"] = encoding
         self.csv_kwds["compression"] = self._input_compression
         self._last_opened = filepath
+        if self.result is not None:
+            self._rows_before_last = len(self.result)
         return self._input_stream
 
     def close(self) -> None:
@@ -290,6 +293,18 @@ class SimpleCSVLoader(Module):
             estimated_size = int(self._total_size / estimated_row_size)
         self._last_progress = length, estimated_size
         return self._last_progress
+
+    def get_progress_crt(self) -> tuple[int, int]:
+        if self.result is None:
+            return self._last_crt_progress
+        length = len(self.result)  - self._rows_before_last
+        if length <= 0 or self._input_stream is None:
+            return self._last_crt_progress
+        pos = self._input_stream.tell()
+        estimated_row_size = pos / length
+        estimated_size = int(self._input_size / estimated_row_size)
+        self._last_crt_progress = length, estimated_size
+        return self._last_crt_progress
 
     def validate_parser(self, run_number: int) -> ModuleState:
         if self.parser is None:
