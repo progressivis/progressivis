@@ -89,11 +89,9 @@ class MBKMeans(Module):
         dfslot = self.get_input_slot("table")
         dfslot.reset()
         self.set_state(self.state_ready)
-        # self.convergence_context = {}
         # do not resize result to zero
-        # it contains 1 row per centroid
-        if self._labels is not None:
-            self._labels.truncate()
+        #if self._labels is not None:
+        #    self._labels.truncate()
 
     def starting(self) -> None:
         super().starting()
@@ -198,9 +196,9 @@ class MBKMeans(Module):
         self.mbk._no_improvement = 0
         for iter_ in range(step_size):
             mb_ilocs = random_state.randint(0, n_samples, batch_size)
-            mb_locs = input_df.index[mb_ilocs]
+            mb_locs = input_df.index[mb_ilocs]  # sorts and removes duplicates
             self._key = len(mb_locs)
-            arr = self._arrays[self._key]
+            arr = self._arrays[self._key]  # reuse previously created arrays rather than create new ones at each step
             X = input_df.to_array(columns=cols, locs=mb_locs, ret=arr)
             if hasattr(self.mbk, "cluster_centers_"):
                 prev_centers[:, :] = self.mbk.cluster_centers_
@@ -231,7 +229,7 @@ class MBKMeans(Module):
         self.result[cols] = self.mbk.cluster_centers_
         if is_conv:
             # step_size is a better estimation than iter_
-            return self._return_run_step(self.state_blocked, step_size) 
+            return self._return_run_step(self.state_blocked, step_size)
         return self._return_run_step(self.state_ready, iter_)
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
