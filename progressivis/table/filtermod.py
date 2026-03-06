@@ -44,9 +44,11 @@ class FilterMod(Module):
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self.result is None:
-            self.result = PTableSelectedView(input_table, PIntSet([]))        
+            self.result = PTableSelectedView(input_table, PIntSet([]))
         steps = 0
-        selection_slot = self.get_input_slot("selection")
+        selection_slot = None
+        if self.has_input_slot("selection"):
+            selection_slot = self.get_input_slot("selection")
         if selection_slot is not None:
             selection_slot.clear_buffers()  # TODO: manage all cases
         if input_slot.updated.any():
