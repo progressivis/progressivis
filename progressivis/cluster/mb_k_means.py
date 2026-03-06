@@ -4,7 +4,6 @@ import logging
 
 from collections import defaultdict
 import numpy as np
-import pandas as pd
 from sklearn.cluster import MiniBatchKMeans  # type: ignore
 from sklearn.utils.validation import check_random_state  # type: ignore
 from progressivis import ProgressiveError
@@ -38,6 +37,8 @@ logger = logging.getLogger(__name__)
 @def_input("moved_center", type=PDict, required=False)
 @def_output("result", PTable)
 @def_output("labels", type=PTable, attr_name="_labels", required=False)
+@def_output("nz_labels", type=PIntSet, required=False)
+@def_output("label_dict", type=PDict, required=False)
 @def_output("conv", type=PDict, attr_name="_conv_out", required=False)
 class MBKMeans(Module):
     """
@@ -95,19 +96,22 @@ class MBKMeans(Module):
 
     def starting(self) -> None:
         super().starting()
-        opt_slot = self.get_output_slot("labels")
-        if opt_slot:
+        if self.get_output_slot("labels"):
             logger.debug("Maintaining labels")
             self.maintain_labels(True)
         else:
             logger.debug("Not maintaining labels")
             self.maintain_labels(False)
+        if self.get_output_slot("label_dict"):
+            self.label_dict = PDict({i: PIntSet() for i in range(1, self.n_clusters+1)})  # type: ignore
+        if self.get_output_slot("nz_labels"):
+            self.nz_labels = PIntSet()
 
     def maintain_labels(self, yes: bool = True) -> None:
         if yes and self._labels is None:
             self._labels = PTable(
                 self.generate_table_name("labels"),
-                dshape="{labels: int64}",
+                dshape="{label: int32, run_number: int32}",
                 create=True,
             )
         elif not yes:
@@ -116,22 +120,20 @@ class MBKMeans(Module):
     def is_greedy(self) -> bool:
         return self._is_greedy
 
-    def _process_labels(self, locs: PIntSet) -> None:
-        labels = self.mbk.labels_
+    def _process_labels(self, locs: PIntSet, run_number: int) -> None:
+        labels = self.mbk.labels_ +1
         assert self._labels is not None
-        u_locs = locs & self._labels.index  # ids to update
-        if not u_locs:  # shortcut
-            self._labels.append({"labels": labels}, indices=locs)
-            return
-        a_locs = locs - u_locs  # ids to append
-        if not a_locs:  # 2nd shortcut
-            assert self._labels is not None
-            return
-        df = pd.DataFrame({"labels": labels}, index=locs)  # type: ignore
-        u_labels = df.loc[u_locs, "labels"]
-        a_labels = df.loc[a_locs, "labels"]
-        self._labels.loc[u_locs, "labels"] = u_labels
-        self._labels.append({"labels": a_labels}, indices=a_locs)
+        self._labels["label"].loc[locs] = labels
+        self._labels["run_number"].loc[locs] = run_number
+        if self.nz_labels is not None:
+            self.nz_labels.update(locs)
+
+    def _process_label_dict(self, locs: PIntSet, run_number: int) -> None:
+        labels = self.mbk.labels_ + 1
+        assert self.label_dict is not None
+        for i, ix in enumerate(locs):
+            self.label_dict[labels[i]].add(ix)
+        self.label_dict[0] = run_number  # type: ignore
 
     def run_step(
         self, run_number: int, step_size: int, quantum: float
@@ -204,7 +206,10 @@ class MBKMeans(Module):
                 prev_centers[:, :] = self.mbk.cluster_centers_
             self.mbk.partial_fit(X)
             if self._labels is not None:
-                self._process_labels(mb_locs)
+                self._labels.resize(len(input_df))
+                self._process_labels(mb_locs, run_number)
+            if self.label_dict is not None:
+                self._process_label_dict(mb_locs, run_number)
             centers = self.mbk.cluster_centers_
             nearest_center, batch_inertia = self.mbk.labels_, self.mbk.inertia_
             k = centers.shape[0]
@@ -228,8 +233,7 @@ class MBKMeans(Module):
             self.result.resize(self.mbk.cluster_centers_.shape[0])
         self.result[cols] = self.mbk.cluster_centers_
         if is_conv:
-            # step_size is a better estimation than iter_
-            return self._return_run_step(self.state_blocked, step_size)
+            return self._return_run_step(self.state_blocked, iter_)
         return self._return_run_step(self.state_ready, iter_)
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
@@ -296,7 +300,7 @@ class MBKMeansFilter(Module):
     """
 
     def __init__(self, sel: Any, **kwds: Any) -> None:
-        self._sel = sel
+        self._sel = sel+1
         super().__init__(**kwds)
 
     @process_slot("table", "labels")
@@ -328,8 +332,42 @@ class MBKMeansFilter(Module):
     ) -> None:
         with self.grouped():
             scheduler = self.scheduler
-            filter_ = FilterMod(expr=f"labels=={self._sel}", scheduler=scheduler)
+            filter_ = FilterMod(expr=f"label=={self._sel}", scheduler=scheduler)
             filter_.input.table = mbkmeans.output.labels
+            filter_.input.selection = mbkmeans.output.nz_labels
             self.dep.filter = filter_
             self.input.labels = filter_.output.result
             self.input.table = data_module.output[data_slot]
+
+@def_input("table", PTable)
+@def_input("label_dict", PDict)
+@def_output("result", PTableSelectedView)
+class MBKMeansSelector(Module):
+    """
+    Filters data corresponding to a specific label
+    """
+
+    def __init__(self, sel: Any, **kwds: Any) -> None:
+        self._sel = sel+1
+        super().__init__(**kwds)
+
+    @process_slot("table", "label_dict")
+    @run_if_any
+    def run_step(
+        self, run_number: int, step_size: int, quantum: float
+    ) -> ReturnRunStep:
+        assert self.context
+        with self.context as ctx:
+            indices_t = ctx.table.created.next(length=step_size)  # returns a slice
+            steps = indices_len(indices_t)
+            ctx.table.clear_buffers()
+            ctx.label_dict.clear_buffers()
+            if steps == 0:
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            if self.result is None:
+                self.result = PTableSelectedView(
+                    ctx.table.data(), ctx.label_dict.data()[self._sel]
+                )
+            else:
+                self.result.selection = ctx.label_dict.data()[self._sel]
+            return self._return_run_step(self.next_state(ctx.table), steps_run=steps)

@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 @def_parameter("expr", np.dtype(object), "unknown", doc="a `numexpr <https://numexpr.readthedocs.io/en/latest/user_guide.html#supported-operators>`_ alike filtering expression")
 # @def_parameter("user_dict", np.dtype(object), None)
 @def_input("table", PTable, doc="Data input")
+@def_input("selection", PIntSet, required=False)
 @def_output("result", PTableSelectedView, doc="Returns a filterd view")
 class FilterMod(Module):
     """
@@ -43,8 +44,11 @@ class FilterMod(Module):
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self.result is None:
-            self.result = PTableSelectedView(input_table, PIntSet([]))
+            self.result = PTableSelectedView(input_table, PIntSet([]))        
         steps = 0
+        selection_slot = self.get_input_slot("selection")
+        if selection_slot is not None:
+            selection_slot.clear_buffers()  # TODO: manage all cases
         if input_slot.updated.any():
             input_slot.reset()
             input_slot.update(run_number)
@@ -57,6 +61,8 @@ class FilterMod(Module):
             created = input_slot.created.next(length=step_size, as_slice=False)
             indices = fix_loc(created)
             steps += indices_len(created)
+            if selection_slot is not None:
+                indices &= selection_slot.data()
             eval_idx = input_table.eval(
                 expr=self.params.expr,
                 locs=np.array(indices),
