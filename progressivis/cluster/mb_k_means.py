@@ -21,7 +21,7 @@ from ..core.decorators import process_slot, run_if_any
 from ..core.quality import QualitySqrtSumSquarredDiffs
 from ..table.api import PTable, PTableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
-from ..io.api import Variable
+from progressivis.io.api import Variable
 from ..utils.psdict import PDict
 from ..table.filtermod import FilterMod
 from ..stats.api import Var
@@ -72,6 +72,7 @@ class MBKMeans(Module):
         self._conv_out = PDict({"convergence": "unknown"})
         self.params.samples = n_clusters
         self._is_greedy: bool = is_greedy
+        self._has_converged: bool = False
         self._arrays: Optional[Dict[int, np.ndarray[Any, Any]]] = None
         self._quality: QualitySqrtSumSquarredDiffs | None = None
         # self.convergence_context = {}
@@ -120,16 +121,22 @@ class MBKMeans(Module):
     def is_greedy(self) -> bool:
         return self._is_greedy
 
-    def _process_labels(self, locs: PIntSet, run_number: int) -> None:
-        labels = self.mbk.labels_ +1
+    def _process_labels(self, locs: PIntSet, run_number: int, labels: np.ndarray[Any, Any] | None = None) -> None:
+        if labels is not None:
+            labels += 1
+        else:
+            labels = self.mbk.labels_ + 1
         assert self._labels is not None
         self._labels["label"].loc[locs] = labels
         self._labels["run_number"].loc[locs] = run_number
         if self.nz_labels is not None:
             self.nz_labels.update(locs)
 
-    def _process_label_dict(self, locs: PIntSet, run_number: int) -> None:
-        labels = self.mbk.labels_ + 1
+    def _process_label_dict(self, locs: PIntSet, run_number: int, labels: np.ndarray[Any, Any] | None = None) -> None:
+        if labels is not None:
+            labels += 1
+        else:
+            labels = self.mbk.labels_ + 1
         assert self.label_dict is not None
         for i, ix in enumerate(locs):
             self.label_dict[labels[i]].add(ix)
@@ -138,6 +145,8 @@ class MBKMeans(Module):
     def run_step(
         self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
+        if self._has_converged:
+            return self.run_step_labels(run_number, step_size, quantum)
         dfslot = self.get_input_slot("table")
         # TODO varslot is only required if we have tol > 0
         varslot = self.get_input_slot("var")
@@ -233,8 +242,41 @@ class MBKMeans(Module):
             self.result.resize(self.mbk.cluster_centers_.shape[0])
         self.result[cols] = self.mbk.cluster_centers_
         if is_conv:
-            return self._return_run_step(self.state_blocked, iter_)
+            self._has_converged = True
+            if self._labels is None and self.label_dict is None:
+                return self._return_run_step(self.state_blocked, iter_)
+            dfslot.reset()
+            self._is_greedy = False
         return self._return_run_step(self.state_ready, iter_)
+
+    def run_step_labels(
+        self, run_number: int, step_size: int, quantum: float
+    ) -> ReturnRunStep:
+        varslot = self.get_input_slot("var")
+        varslot.clear_buffers()
+        dfslot = self.get_input_slot("table")
+        assert dfslot is not None
+        if dfslot.deleted.any() or dfslot.updated.any():
+            dfslot.reset()
+        indices = dfslot.created.next(length=step_size, as_slice=False)
+        steps = len(indices)
+        if not steps:
+            return self._return_run_step(self.next_state(dfslot), steps_run=steps)
+        input_df = dfslot.data()
+        cols = dfslot.hint or input_df.columns
+        assert input_df is not None
+        X = input_df.to_array(columns=cols, locs=indices)  # TODO: improve to_atrray() for slices
+        labels = self.mbk.predict(X)
+        if self._labels is not None:
+            self._labels.resize(len(input_df))
+            self._process_labels(indices, run_number, labels)
+        if self.label_dict is not None:
+            for k, v in self.label_dict.items():
+                if k == 0:  # type: ignore
+                    continue
+                v.difference_update(indices)
+            self._process_label_dict(indices, run_number, labels)
+        return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
         json = super().to_json(short, with_speed)
