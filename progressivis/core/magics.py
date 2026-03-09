@@ -20,8 +20,8 @@ from typing import Optional, Any
 # https://gist.github.com/nkrumm/2246c7aa54e175964724
 @magics_class
 class ProgressivisMagic(Magics):
-    @line_cell_magic  # type: ignore
-    @needs_local_scope  # type: ignore
+    @line_cell_magic
+    @needs_local_scope
     def progressivis(
         self, line: str, cell: Optional[str] = None, local_ns: Any = None
     ) -> Any:
@@ -37,8 +37,8 @@ class ProgressivisMagic(Magics):
             ps_dict.update(yaml.safe_load(cell))
             return ps_dict
 
-    @cell_magic  # type: ignore
-    @needs_local_scope  # type: ignore
+    @cell_magic
+    @needs_local_scope
     def from_input(
         self, line: str, cell: str, local_ns: Optional[Any] = None
     ) -> aio.Task[Any]:
