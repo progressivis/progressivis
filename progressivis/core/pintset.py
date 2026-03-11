@@ -149,8 +149,9 @@ class PIntSet(Iterable[int]):
         Add new values from either a PIntSet, an array, a slice, or an Iterable
         """
         try:
-            self.bm.update(self, values)  # type: ignore
-        except TypeError:
+            #self.bm.update(self, values)  # type: ignore
+            self.bm |= values.bm   # type: ignore
+        except (TypeError, AttributeError):
             if values is None:
                 return
             # NP check the copy here for slice
