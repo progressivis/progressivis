@@ -150,8 +150,8 @@ class MCScatterPlot(Module):
         self.min_value: Optional[Variable] = None
         self.max_value: Optional[Variable] = None
         self._ipydata: bool = is_notebook()
-        self.hist_tensor: Optional[np.ndarray[Any, Any]] = None
-        self.sample_tensor: Optional[np.ndarray[Any, Any]] = None
+        self.hist_tensor: list[np.ndarray[Any, Any]] = []
+        self.sample_tensor: list[np.ndarray[Any, Any]] = []
 
     def forget_changes(self, input_slot: Slot) -> bool:
         changes = False
@@ -204,7 +204,7 @@ class MCScatterPlot(Module):
             )
         return changes, ret
 
-    def build_heatmap(self, inp: Slot, domain: Any, plan: int) -> Optional[JSon]:
+    def build_heatmap(self, inp: Slot, domain: Any) -> Optional[JSon]:
         inp_table = inp.data()
         if inp_table is None:
             return None
@@ -222,9 +222,8 @@ class MCScatterPlot(Module):
             data = row["array"]
             json_["bounds"] = (row["xmin"], row["ymin"], row["xmax"], row["ymax"])
             if self._ipydata:
-                assert isinstance(plan, int)
-                json_["binnedPixels"] = plan
-                self.hist_tensor[:, :, plan] = row["array"]  # type: ignore
+                self.hist_tensor.append(row["array"])
+                json_["binnedPixels"] = []
             else:
                 data = np.copy(row["array"])
                 json_["binnedPixels"] = data
@@ -237,22 +236,22 @@ class MCScatterPlot(Module):
     def make_json(self, json: JSon) -> JSon:
         buffers = []
         domain = []
-        samples: List[Tuple[List[Any], List[Any]]] = []
+        self.hist_tensor = []
+        self.sample_tensor = []
+        samples: list[tuple[list[Any], list[Any]]] = []
         count = 0
         xmin = ymin = -np.inf
         xmax = ymax = np.inf
         changes, grouped_inputs = self.group_inputs()
-        z = len(grouped_inputs)
-        if self._ipydata and self.hist_tensor is None:
+        if self._ipydata and not self.hist_tensor:
             for sl in grouped_inputs.values():
                 hi = sl["hist"][0]
                 xbins = hi.output_module.params.xbins
                 ybins = hi.output_module.params.ybins
-                self.hist_tensor = np.zeros((xbins, ybins, z), dtype="int32")
                 break
-        for i, (cname, inputs) in enumerate(grouped_inputs.items()):
+        for cname, inputs in grouped_inputs.items():
             hist_input = inputs["hist"][0]
-            buff = self.build_heatmap(hist_input, cname, i)
+            buff = self.build_heatmap(hist_input, cname)
             if buff is None:
                 return json
             xmin_, ymin_, xmax_, ymax_ = buff.pop("bounds")
@@ -294,19 +293,16 @@ class MCScatterPlot(Module):
                 len_s = len(vx)
                 assert len_s == len(vy)
                 samples_counter.append(len_s)
-            nsam = max(samples_counter)
-            self.sample_tensor = np.zeros((nsam, 2, z), dtype="float32")
-            for i, (vx, vy) in enumerate(samples):
+            for vx, vy in samples:
                 if not len(vx):
                     continue
-                self.sample_tensor[:, 0, i] = vx
-                self.sample_tensor[:, 1, i] = vy
+                self.sample_tensor.extend([cast(np.ndarray[Any, Any], vx), cast(np.ndarray[Any, Any], vy)])
             json["samples_counter"] = samples_counter
             samples = []
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
         if self._ipydata:
-            assert self.hist_tensor is not None
-            xbins, ybins = self.hist_tensor.shape[:-1]
+            assert self.hist_tensor
+            xbins, ybins = self.hist_tensor[0].shape
         else:
             xbins, ybins = buffers[0]["binnedPixels"].shape
         encoding = {
