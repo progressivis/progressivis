@@ -6,7 +6,7 @@ from collections import defaultdict
 import numpy as np
 
 from progressivis.core.module import Module, ReturnRunStep, JSon, def_input
-from progressivis.stats.api import MCHistogram2D, Sample
+from progressivis.stats.api import MCHistogram2D, Sample, Min, Max
 from progressivis.table.range_query_2d import RangeQuery2D
 from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
@@ -44,6 +44,7 @@ class _DataClass:
         y_column: str,
         scheduler: Scheduler,
         approximate: bool = False,
+        queryable: bool = True,
         **kwds: Any,
     ):
         self.name = name
@@ -51,6 +52,7 @@ class _DataClass:
         self.x_column = x_column
         self.y_column = y_column
         self._approximate = approximate
+        self._queryable = queryable
         self._scheduler = scheduler
         self.input_module: Optional[Module] = None
         self.input_slot: Optional[str] = None
@@ -81,19 +83,21 @@ class _DataClass:
         with scheduler:
             self.input_module = input_module
             self.input_slot = input_slot
-            range_query_2d = RangeQuery2D(
-                column_x=self.x_column,
-                column_y=self.y_column,
-                group=self._group,
-                approximate=self._approximate,
-                scheduler=scheduler,
-            )
-            range_query_2d.create_dependent_modules(
-                input_module, input_slot, min_value=False, max_value=False
-            )
-            assert self.min_value is not None and self.max_value is not None
-            range_query_2d.input.lower = self.min_value.output.result
-            range_query_2d.input.upper = self.max_value.output.result
+            range_query_2d = None
+            if self._queryable:
+                range_query_2d = RangeQuery2D(
+                    column_x=self.x_column,
+                    column_y=self.y_column,
+                    group=self._group,
+                    approximate=self._approximate,
+                    scheduler=scheduler,
+                )
+                range_query_2d.create_dependent_modules(
+                    input_module, input_slot, min_value=False, max_value=False
+                )
+                assert self.min_value is not None and self.max_value is not None
+                range_query_2d.input.lower = self.min_value.output.result
+                range_query_2d.input.upper = self.max_value.output.result
             if histogram2d is None:
                 histogram2d = MCHistogram2D(
                     self.x_column,
@@ -101,16 +105,26 @@ class _DataClass:
                     group=self._group,
                     scheduler=scheduler,
                 )
-            histogram2d.input.data = range_query_2d.output.result
+            if self._queryable:
+                assert range_query_2d is not None
+                histogram2d.input.data = range_query_2d.output.result
+            else:
+                histogram2d.input.data = input_module.output[input_slot]
             if self.sample == "default":
                 self.sample = Sample(
                     samples=100, group=self._group, scheduler=scheduler
                 )
             if isinstance(self.sample, Sample):
-                self.sample.input.table = range_query_2d.output.result
+                if self._queryable:
+                    assert range_query_2d is not None
+                    self.sample.input.table = range_query_2d.output.result
+                else:
+                    self.sample.input.table = input_module.output[input_slot][self.x_column, self.y_column]
             self.histogram2d = histogram2d
-            self.min = range_query_2d.dep.min.output.result if range_query_2d.dep.min else range_query_2d.dep.index.min_out
-            self.max = range_query_2d.dep.max.output.result if range_query_2d.dep.max else range_query_2d.dep.index.max_out
+            if self._queryable:
+                assert range_query_2d is not None
+                self.min = range_query_2d.dep.min.output.result if range_query_2d.dep.min else range_query_2d.dep.index.min_out
+                self.max = range_query_2d.dep.max.output.result if range_query_2d.dep.max else range_query_2d.dep.index.max_out
             self.range_query_2d = range_query_2d
             scatterplot = self
             return scatterplot
@@ -126,6 +140,7 @@ class MCScatterPlot(Module):
         x_label: str = "x",
         y_label: str = "y",
         approximate: bool = False,
+        queryable: bool = True,
         **kwds: Any,
     ) -> None:
         """Multiclass ..."""
@@ -143,6 +158,7 @@ class MCScatterPlot(Module):
         self._translation = {x_label: syn_x, y_label: syn_y}
         self._translated_keys = set(syn_x) | set(syn_y)
         self._approximate = approximate
+        self._queryable = queryable
         self._json_cache: Optional[JSon] = None
         self.input_module: Optional[Module] = None
         self.input_slot: Optional[str] = None
@@ -384,16 +400,20 @@ class MCScatterPlot(Module):
         self.input_slot = input_slot
         with self.grouped():
             scheduler = self.scheduler
-            self.dep.min_value = Variable(
-                {k: None for k in self._translated_keys},
-                translation=self._translation,
-                scheduler=scheduler,
-            )
-            self.dep.max_value = Variable(
-                {k: None for k in self._translated_keys},
-                translation=self._translation,
-                scheduler=scheduler,
-            )
+            if self._queryable:
+                self.dep.min_value = Variable(
+                    {k: None for k in self._translated_keys},
+                    translation=self._translation,
+                    scheduler=scheduler,
+                )
+                self.dep.max_value = Variable(
+                    {k: None for k in self._translated_keys},
+                    translation=self._translation,
+                    scheduler=scheduler,
+                )
+            else:
+                self.dep.min_value = None
+                self.dep.max_value = None
             for cl in self._classes:
                 if isinstance(cl, tuple):
                     self._add_class(*cl)  # type: ignore
@@ -407,6 +427,8 @@ class MCScatterPlot(Module):
         return self._data_class_dict[_class]
 
     def _finalize(self) -> None:
+        if not self._queryable:
+            return self._finalize_no_queryable()
         for dc in self._data_class_dict.values():
             assert dc.histogram2d is not None
             for dc2 in self._data_class_dict.values():
@@ -416,6 +438,26 @@ class MCScatterPlot(Module):
                 assert rq2d is not None and rq2d.output is not None
                 dc.histogram2d.input.table = rq2d.output.min["min", x, y]
                 dc.histogram2d.input.table = rq2d.output.max["max", x, y]
+
+    def _finalize_no_queryable(self) -> None:
+        min_max_modules = dict()
+
+        for cname, dc in self._data_class_dict.items():
+            assert dc.histogram2d is not None
+            s = dc.histogram2d.scheduler
+            max_ = Max(scheduler=s)
+            assert dc.input_module is not None
+            assert dc.input_slot is not None
+            max_.input.table = dc.input_module.output[dc.input_slot]
+            min_ = Min(scheduler=s)
+            min_.input.table = dc.input_module.output[dc.input_slot]
+            min_max_modules[cname] = min_, max_, dc
+        for dc in self._data_class_dict.values():
+            for min_, max_, dc2 in min_max_modules.values():
+                x, y = dc2.x_column, dc2.y_column
+                assert dc.histogram2d is not None
+                dc.histogram2d.input.table = min_.output.result["min", x, y]
+                dc.histogram2d.input.table = max_.output.result["max", x, y]
 
     def _add_class(
         self,
@@ -445,6 +487,7 @@ class MCScatterPlot(Module):
             x_column,
             y_column,
             approximate=self._approximate,
+            queryable=self._queryable,
             scheduler=self._scheduler,
         )
         data_class.sample = sample
