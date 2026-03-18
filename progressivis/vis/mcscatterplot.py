@@ -258,6 +258,7 @@ class MCScatterPlot(Module):
         count = 0
         xmin = ymin = -np.inf
         xmax = ymax = np.inf
+        json["queryable"] = self._queryable
         changes, grouped_inputs = self.group_inputs()
         if self._ipydata and not self.hist_tensor:
             for sl in grouped_inputs.values():

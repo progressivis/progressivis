@@ -77,10 +77,6 @@ class MBKMeans(Module):
         self._quality: QualitySqrtSumSquarredDiffs | None = None
         # self.convergence_context = {}
 
-    def predict_step_size(self, duration: float) -> int:
-        p = super().predict_step_size(duration)
-        return max(p, self.n_clusters)
-
     def reset(self, init: str = "k-means++") -> None:
         self.mbk = MiniBatchKMeans(
             n_clusters=self.mbk.n_clusters,
@@ -130,7 +126,8 @@ class MBKMeans(Module):
         self._labels["label"].loc[locs] = labels
         self._labels["run_number"].loc[locs] = run_number
         if self.nz_labels is not None:
-            self.nz_labels.update(locs)
+            assert isinstance(locs, PIntSet)
+            self.nz_labels.bm |= locs.bm
 
     def _process_label_dict(self, locs: PIntSet, run_number: int, labels: np.ndarray[Any, Any] | None = None) -> None:
         if labels is not None:
@@ -145,8 +142,6 @@ class MBKMeans(Module):
     def run_step(
         self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
-        if self._has_converged:
-            return self.run_step_labels(run_number, step_size, quantum)
         dfslot = self.get_input_slot("table")
         # TODO varslot is only required if we have tol > 0
         varslot = self.get_input_slot("var")
@@ -155,6 +150,7 @@ class MBKMeans(Module):
         if moved_center is not None:
             if moved_center.has_buffered():
                 print("Moved center!!")
+                self._has_converged = False
                 moved_center.clear_buffers()
                 msg = moved_center.data()
                 for c in msg:
@@ -164,6 +160,8 @@ class MBKMeans(Module):
                 self.reset(init=init_centers)
                 dfslot.clear_buffers()  # No need to re-reset next
                 varslot.clear_buffers()
+        if self._has_converged:
+            return self.run_step_labels(run_number, step_size, quantum)
         if dfslot.deleted.any() or dfslot.updated.any():
             logger.debug("has deleted or updated, reseting")
             varslot.reset()
