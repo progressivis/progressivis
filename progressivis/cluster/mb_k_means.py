@@ -127,7 +127,7 @@ class MBKMeans(Module):
         self._labels["run_number"].loc[locs] = run_number
         if self.nz_labels is not None:
             assert isinstance(locs, PIntSet)
-            self.nz_labels.bm |= locs.bm
+            self.nz_labels.update(locs)
 
     def _process_label_dict(self, locs: PIntSet, run_number: int, labels: np.ndarray[Any, Any] | None = None) -> None:
         if labels is not None:
