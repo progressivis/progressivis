@@ -53,10 +53,11 @@ class MCHistogram2D(Module):
         self._bounds: Optional[Bounds] = None
         self._with_output = with_output
         self._heatmap_cache: Optional[Tuple[JSon, Bounds]] = None
+        self.last_values: dict[str, Any] = dict()
         self.result = PTable(
             self.generate_table_name("MCHistogram2D"),
             dshape=MCHistogram2D.schema,
-            chunks={"array": (1, 64, 64)},
+            chunks={"array": (1, 256, 256)},
             create=True,
         )
 
@@ -262,6 +263,7 @@ class MCHistogram2D(Module):
             "ymax": ymax,
             "time": run_number,
         }
+        self.last_values = values
         if self._with_output:
             table = self.result
             table["array"].set_shape([p.ybins, p.xbins])

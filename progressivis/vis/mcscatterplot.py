@@ -11,9 +11,7 @@ from progressivis.table.range_query_2d import RangeQuery2D
 from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
 from progressivis.io.api import Variable
-from ..table.table_base import BasePTable
 from ..table.api import PTable
-from progressivis.core.api import notNone
 from typing import (
     Optional,
     Tuple,
@@ -104,6 +102,7 @@ class _DataClass:
                     self.y_column,
                     group=self._group,
                     scheduler=scheduler,
+                    with_output=False
                 )
             if self._queryable:
                 assert range_query_2d is not None
@@ -221,13 +220,9 @@ class MCScatterPlot(Module):
         return changes, ret
 
     def build_heatmap(self, inp: Slot, domain: Any) -> Optional[JSon]:
-        inp_table = inp.data()
-        if inp_table is None:
+        row = inp.output_module.last_values # type: ignore
+        if not row:
             return None
-        assert isinstance(inp_table, BasePTable)
-        if len(inp_table) == 0:
-            return None
-        row = notNone(inp_table.last()).to_dict()
         json_: JSon = {}
         if not (
             np.isnan(row["xmin"])
@@ -467,8 +462,8 @@ class MCScatterPlot(Module):
         y_column: str,
         sample: Union[Literal["default"], Module] = "default",
         sample_slot: str = "result",
-        input_module: Optional[Module] = None,
-        input_slot: Optional[str] = None,
+        input_module: Module | None = None,
+        input_slot: str | None = None,
     ) -> None:
         if self.input_module is None and input_module is None:
             raise ProgressiveError("Input module is not defined!")
@@ -494,12 +489,15 @@ class MCScatterPlot(Module):
         data_class.sample = sample
         input_module = input_module or self.input_module
         input_slot = input_slot or self.input_slot
+        assert input_slot is not None
         if input_module is not None and input_slot is not None:
             data_class.create_dependent_modules(input_module, input_slot)
         col_translation = {self._x_label: x_column, self._y_label: y_column}
         hist_meta = dict(inp="hist", class_=name, **col_translation)
         if data_class.histogram2d is not None:
             self.input.table = data_class.histogram2d.output.result[hist_meta]
+            assert input_module is not None
+            self.input.table = input_module.output[input_slot]  # hack
         if isinstance(data_class.sample, Module):
             meta = dict(inp="sample", class_=name, **col_translation)
             self.input.table = data_class.sample.output[sample_slot][meta]

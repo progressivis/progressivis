@@ -65,12 +65,14 @@ class FilterMod(Module):
             steps += indices_len(created)
             if selection_slot is not None:
                 indices &= selection_slot.data()
-            eval_idx = input_table.eval(
-                expr=self.params.expr,
-                locs=np.array(indices),
-                as_slice=False,
-                result_object="index",
-            )
+            eval_idx = []
+            if indices:
+                eval_idx = input_table.eval(
+                    expr=self.params.expr,
+                    locs=np.array(indices),
+                    as_slice=False,
+                    result_object="index",
+                )
             self.result.selection |= PIntSet(eval_idx)
         if not steps:
             return self._return_run_step(self.state_blocked, steps_run=0)
