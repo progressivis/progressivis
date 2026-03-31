@@ -77,19 +77,24 @@ class MBKMeans(Module):
         self._quality: QualitySqrtSumSquarredDiffs | None = None
         # self.convergence_context = {}
 
-    def reset(self, init: str = "k-means++") -> None:
-        self.mbk = MiniBatchKMeans(
-            n_clusters=self.mbk.n_clusters,
-            batch_size=self.mbk.batch_size,
-            init=init,
-            random_state=self.mbk.random_state,
-        )
+    def reset(self, init: str | None = None) -> None:
+        self.reset_mbk()
         dfslot = self.get_input_slot("table")
         dfslot.reset()
         self.set_state(self.state_ready)
         # do not resize result to zero
         #if self._labels is not None:
         #    self._labels.truncate()
+
+    def reset_mbk(self, init: str | None = None) -> None:
+        if init is None:
+            init = self.mbk.cluster_centers_ if hasattr(self.mbk, "cluster_centers_") else "k-means++"
+        self.mbk = MiniBatchKMeans(
+            n_clusters=self.mbk.n_clusters,
+            batch_size=self.mbk.batch_size,
+            init=init,
+            random_state=self.mbk.random_state,
+        )
 
     def starting(self) -> None:
         super().starting()
@@ -116,7 +121,6 @@ class MBKMeans(Module):
 
     def is_greedy(self) -> bool:
         return self._is_greedy
-
     def _process_labels(self, locs: PIntSet, run_number: int, labels: np.ndarray[Any, Any] | None = None) -> None:
         if labels is not None:
             labels += 1
@@ -145,29 +149,32 @@ class MBKMeans(Module):
         dfslot = self.get_input_slot("table")
         # TODO varslot is only required if we have tol > 0
         varslot = self.get_input_slot("var")
+        if dfslot.deleted.any() or dfslot.updated.any():
+            logger.debug("has deleted or updated, reseting")
+            varslot.reset()
+            self.reset()
+        if dfslot.created.any():
+            self._has_converged = False
+            self.reset_mbk()
+            # print("-", end="")
+        dfslot.clear_buffers()
+        varslot.clear_buffers()
         moved_center = self.get_input_slot("moved_center") if self.has_input_slot("moved_center") else None
-        init_centers = "k-means++"
         if moved_center is not None:
             if moved_center.has_buffered():
                 print("Moved center!!")
                 self._has_converged = False
+                print("No convergence move center")
                 moved_center.clear_buffers()
                 msg = moved_center.data()
                 for c in msg:
                     self.set_centroid(c, msg[c][:2])
-                if hasattr(self.mbk, "cluster_centers_"):  # attr does not exist before a fit
-                    init_centers = self.mbk.cluster_centers_
-                self.reset(init=init_centers)
+                self.mbk._counts.fill(0)
+                self.reset()
                 dfslot.clear_buffers()  # No need to re-reset next
                 varslot.clear_buffers()
         if self._has_converged:
             return self.run_step_labels(run_number, step_size, quantum)
-        if dfslot.deleted.any() or dfslot.updated.any():
-            logger.debug("has deleted or updated, reseting")
-            varslot.reset()
-            self.reset(init=init_centers)
-        dfslot.clear_buffers()
-        varslot.clear_buffers()
         # print('dfslot has buffered %d elements'% dfslot.created_length())
         input_df = dfslot.data()
         var_data = varslot.data()
@@ -226,6 +233,10 @@ class MBKMeans(Module):
                 if np.count_nonzero(center_mask) > 0:
                     diff = centers[ci].ravel() - prev_centers[ci].ravel()
                     squared_diff += np.dot(diff, diff)
+            # 3 necessary settings before calling _mini_batch_convergence
+            self.mbk._ewa_inertia = None
+            self._no_improvement = 0
+            self.mbk._counts.fill(0)
             if self.mbk._mini_batch_convergence(
                 iter_, step_size, n_samples, squared_diff, batch_inertia
             ):
@@ -241,6 +252,7 @@ class MBKMeans(Module):
         self.result[cols] = self.mbk.cluster_centers_
         if is_conv:
             self._has_converged = True
+            # print("+", end="")
             if self._labels is None and self.label_dict is None:
                 return self._return_run_step(self.state_blocked, iter_)
             dfslot.reset()
@@ -250,6 +262,7 @@ class MBKMeans(Module):
     def run_step_labels(
         self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
+        print("fix labels")
         varslot = self.get_input_slot("var")
         varslot.clear_buffers()
         dfslot = self.get_input_slot("table")
