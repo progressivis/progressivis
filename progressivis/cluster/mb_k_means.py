@@ -81,10 +81,10 @@ class MBKMeans(Module):
         # self.convergence_context = {}
 
     def reset(self, init: str | None = None) -> None:
+        print("main reset")
         self._has_converged = False
         self._fix_mode = False
         self._first_fix = True
-        self.reset_mbk()
         dfslot = self.get_input_slot("table")
         dfslot.reset()
         varslot = self.get_input_slot("var")
@@ -94,9 +94,10 @@ class MBKMeans(Module):
         #if self._labels is not None:
         #    self._labels.truncate()
 
-    def reset_mbk(self, init: str | None = None) -> None:
+    def reset_mbk(self, init: str | None = None) -> None:  # TODO remove ASAP
         if init is None:
             init = self.mbk.cluster_centers_ if hasattr(self.mbk, "cluster_centers_") else "k-means++"
+        prev_counts = getattr(self.mbk, "_counts", None)
         self.mbk = MiniBatchKMeans(
             n_clusters=self.mbk.n_clusters,
             batch_size=self.mbk.batch_size,
@@ -104,7 +105,10 @@ class MBKMeans(Module):
             init=init,
             random_state=self.mbk.random_state,
         )
-
+        if not isinstance(init, str):
+            self.mbk.cluster_centers_ = init
+        if prev_counts is not None:
+            self.mbk._counts = prev_counts
     def starting(self) -> None:
         super().starting()
         if self.get_output_slot("labels"):
