@@ -178,6 +178,71 @@ class MBKMeans(Module):
             self.reset()
         if dfslot.created.any() and not self._fix_mode:
             self._has_converged = False
+        varslot.clear_buffers()
+        self.check_moved_center()
+        if self._has_converged:
+            self._fix_mode = True
+            if self._first_fix:
+                print("switch to fix labelling")
+            return self.run_step_labels(run_number, step_size, quantum)
+        # print('dfslot has buffered %d elements'% dfslot.created_length())
+        input_df = dfslot.data()
+        var_data = varslot.data()
+        batch_size = self.mbk.batch_size or DEFAULT_BATCH_SIZE
+        if (
+            input_df is None
+            or var_data is None
+            or len(input_df) < max(self.mbk.n_clusters, batch_size)
+        ):
+            # Not enough data yet ...
+            return self._return_run_step(self.state_blocked, 0)
+        cols = dfslot.hint or input_df.columns
+        is_conv = False
+        X: Optional[np.ndarray[Any, Any]] = None
+        len_created = len(dfslot.created.changes)
+        rem = len_created % batch_size
+
+        mb_locs = dfslot.created.next(len_created, as_slice=False)
+        for i in range(0, len_created, batch_size):
+            _locs = mb_locs[i:batch_size]
+            if len(_locs) < batch_size:
+                break
+            X = input_df.to_array(columns=cols, locs=_locs)
+            self.mbk.partial_fit(X)
+            if self._labels is not None:
+                self._labels.resize(len(input_df))
+                self._process_labels(_locs, run_number)
+                if self.label_dict is not None:
+                    self._process_label_dict(mb_locs, run_number)
+        is_conv = True
+        if rem:
+            mb_locs = mb_locs[:len_created-rem]
+        iter_ = len(mb_locs)
+        if self.result is None:
+            assert X is not None
+            dshape = dshape_from_columns(input_df, cols, dshape_from_dtype(X.dtype))
+            self.result = PTable(
+                self.generate_table_name("centers"), dshape=dshape, create=True
+            )
+            self.result.resize(self.mbk.cluster_centers_.shape[0])
+        self.result[cols] = self.mbk.cluster_centers_
+        if is_conv:
+            self._has_converged = True
+            if self._labels is None and self.label_dict is None:
+                return self._return_run_step(self.state_blocked, iter_)
+        return self._return_run_step(self.state_ready, iter_)
+
+    def previous_run_step(
+        self, run_number: int, step_size: int, quantum: float
+    ) -> ReturnRunStep:
+        dfslot = self.get_input_slot("table")
+        # TODO varslot is only required if we have tol > 0
+        varslot = self.get_input_slot("var")
+        if dfslot.deleted.any() or dfslot.updated.any():
+            logger.debug("has deleted or updated, reseting")
+            self.reset()
+        if dfslot.created.any() and not self._fix_mode:
+            self._has_converged = False
             self.reset_mbk()
             dfslot.clear_buffers()
         varslot.clear_buffers()
