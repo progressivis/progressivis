@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import logging
 
-from collections import defaultdict
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans  # type: ignore
-from sklearn.utils.validation import check_random_state  # type: ignore
 from progressivis import ProgressiveError
 from progressivis.core.module import (
     ReturnRunStep,
@@ -24,7 +22,6 @@ from ..table.dshape import dshape_from_dtype, dshape_from_columns
 from progressivis.io.api import Variable
 from ..utils.psdict import PDict
 from ..table.filtermod import FilterMod
-from ..stats.api import Var
 
 from typing import Optional, Union, List, Dict, Any, cast
 
@@ -34,7 +31,6 @@ DEFAULT_BATCH_SIZE = 1024
 
 @def_parameter("samples", np.dtype(int), 50)
 @def_input("table", PTable)
-@def_input("var", PTable)
 @def_input("moved_center", type=PDict, required=False)
 @def_output("result", PTable)
 @def_output("labels", type=PTable, attr_name="_labels", required=False)
@@ -87,28 +83,11 @@ class MBKMeans(Module):
         self._first_fix = True
         dfslot = self.get_input_slot("table")
         dfslot.reset()
-        varslot = self.get_input_slot("var")
-        varslot.reset()
         self.set_state(self.state_ready)
         # do not resize result to zero
         #if self._labels is not None:
         #    self._labels.truncate()
 
-    def reset_mbk(self, init: str | None = None) -> None:  # TODO remove ASAP
-        if init is None:
-            init = self.mbk.cluster_centers_ if hasattr(self.mbk, "cluster_centers_") else "k-means++"
-        prev_counts = getattr(self.mbk, "_counts", None)
-        self.mbk = MiniBatchKMeans(
-            n_clusters=self.mbk.n_clusters,
-            batch_size=self.mbk.batch_size,
-            tol=self.mbk.tol,
-            init=init,
-            random_state=self.mbk.random_state,
-        )
-        if not isinstance(init, str):
-            self.mbk.cluster_centers_ = init
-        if prev_counts is not None:
-            self.mbk._counts = prev_counts
     def starting(self) -> None:
         super().starting()
         if self.get_output_slot("labels"):
@@ -175,14 +154,11 @@ class MBKMeans(Module):
         self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         dfslot = self.get_input_slot("table")
-        # TODO varslot is only required if we have tol > 0
-        varslot = self.get_input_slot("var")
         if dfslot.deleted.any() or dfslot.updated.any():
             logger.debug("has deleted or updated, reseting")
             self.reset()
         if dfslot.created.any() and not self._fix_mode:
             self._has_converged = False
-        varslot.clear_buffers()
         self.check_moved_center()
         if self._has_converged:
             self._fix_mode = True
@@ -191,11 +167,9 @@ class MBKMeans(Module):
             return self.run_step_labels(run_number, step_size, quantum)
         # print('dfslot has buffered %d elements'% dfslot.created_length())
         input_df = dfslot.data()
-        var_data = varslot.data()
         batch_size = self.mbk.batch_size or DEFAULT_BATCH_SIZE
         if (
             input_df is None
-            or var_data is None
             or len(input_df) < max(self.mbk.n_clusters, batch_size)
         ):
             # Not enough data yet ...
@@ -236,115 +210,12 @@ class MBKMeans(Module):
                 return self._return_run_step(self.state_blocked, iter_)
         return self._return_run_step(self.state_ready, iter_)
 
-    def previous_run_step(
-        self, run_number: int, step_size: int, quantum: float
-    ) -> ReturnRunStep:
-        dfslot = self.get_input_slot("table")
-        # TODO varslot is only required if we have tol > 0
-        varslot = self.get_input_slot("var")
-        if dfslot.deleted.any() or dfslot.updated.any():
-            logger.debug("has deleted or updated, reseting")
-            self.reset()
-        if dfslot.created.any() and not self._fix_mode:
-            self._has_converged = False
-            self.reset_mbk()
-            dfslot.clear_buffers()
-        varslot.clear_buffers()
-        self.check_moved_center()
-        if self._has_converged:
-            self._fix_mode = True
-            if self._first_fix:
-                print("switch to fix labelling")
-            return self.run_step_labels(run_number, step_size, quantum)
-        # print('dfslot has buffered %d elements'% dfslot.created_length())
-        input_df = dfslot.data()
-        var_data = varslot.data()
-        batch_size = self.mbk.batch_size or DEFAULT_BATCH_SIZE
-        if (
-            input_df is None
-            or var_data is None
-            or len(input_df) < max(self.mbk.n_clusters, batch_size)
-        ):
-            # Not enough data yet ...
-            return self._return_run_step(self.state_blocked, 0)
-        cols = dfslot.hint or input_df.columns
-        dtype = input_df.columns_common_dtype(cols)
-        n_features = len(cols)
-        n_samples = len(input_df)
-        if self._arrays is None:
-
-            def _array_factory() -> np.ndarray[Any, Any]:
-                return np.empty((self._key, n_features), dtype=dtype)
-
-            self._arrays = defaultdict(_array_factory)
-        is_conv = False
-        if self._tol > 0:
-            # v = np.array(list(var_data.values()), dtype=np.float64)
-            # tol = np.mean(v) * self._tol
-            prev_centers = np.zeros((self.n_clusters, n_features), dtype=dtype)  # TODO: fix
-        else:
-            # tol = 0
-            prev_centers = np.zeros((self.n_clusters, n_features), dtype=dtype)
-        random_state = check_random_state(self.mbk.random_state)
-        X: Optional[np.ndarray[Any, Any]] = None
-        # Attributes to monitor the convergence
-        self.mbk._ewa_inertia = None
-        self.mbk._ewa_inertia_min = None
-        self.mbk._no_improvement = 0
-        for iter_ in range(step_size):
-            mb_ilocs = random_state.randint(0, n_samples, batch_size)
-            mb_locs = input_df.index[mb_ilocs]  # sorts and removes duplicates
-            self._key = len(mb_locs)
-            arr = self._arrays[self._key]  # reuse previously created arrays rather than create new ones at each step
-            X = input_df.to_array(columns=cols, locs=mb_locs, ret=arr)
-            if hasattr(self.mbk, "cluster_centers_"):
-                prev_centers[:, :] = self.mbk.cluster_centers_
-            self.mbk.partial_fit(X)
-            if self._labels is not None:
-                self._labels.resize(len(input_df))
-                self._process_labels(mb_locs, run_number)
-            if self.label_dict is not None:
-                self._process_label_dict(mb_locs, run_number)
-            centers = self.mbk.cluster_centers_
-            nearest_center, batch_inertia = self.mbk.labels_, self.mbk.inertia_
-            k = centers.shape[0]
-            squared_diff = 0.0
-            for ci in range(k):
-                center_mask = nearest_center == ci
-                if np.count_nonzero(center_mask) > 0:
-                    diff = centers[ci].ravel() - prev_centers[ci].ravel()
-                    squared_diff += np.dot(diff, diff)
-            # 3 necessary settings before calling _mini_batch_convergence
-            self.mbk._ewa_inertia = None
-            self._no_improvement = 0
-            self.mbk._counts.fill(0)
-            if self.mbk._mini_batch_convergence(
-                iter_, step_size, n_samples, squared_diff, batch_inertia
-            ):
-                is_conv = True
-                break
-        if self.result is None:
-            assert X is not None
-            dshape = dshape_from_columns(input_df, cols, dshape_from_dtype(X.dtype))
-            self.result = PTable(
-                self.generate_table_name("centers"), dshape=dshape, create=True
-            )
-            self.result.resize(self.mbk.cluster_centers_.shape[0])
-        self.result[cols] = self.mbk.cluster_centers_
-        if is_conv:
-            self._has_converged = True
-            if self._labels is None and self.label_dict is None:
-                return self._return_run_step(self.state_blocked, iter_)
-        return self._return_run_step(self.state_ready, iter_)
-
     def run_step_labels(
         self, run_number: int, step_size: int, quantum: float
     ) -> ReturnRunStep:
         if self.check_moved_center():
             print("back to clustering", flush=True)
             return self._return_run_step(self.state_blocked, 0)
-        varslot = self.get_input_slot("var")
-        varslot.clear_buffers()
         dfslot = self.get_input_slot("table")
         assert dfslot is not None
         if self._first_fix:
@@ -415,10 +286,6 @@ class MBKMeans(Module):
             c = Variable(group=self.name, scheduler=s)
             self.dep.moved_center = c
             self.input.moved_center = c.output.result
-            v = Var(group=self.name, scheduler=s)
-            self.dep.variance = v
-            v.input.table = input_module.output[input_slot]
-            self.input.var = v.output.result
 
     def get_quality(self) -> Dict[str, float]:
         if self._quality is None:

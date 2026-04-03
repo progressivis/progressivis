@@ -1640,6 +1640,8 @@ class IndexPTable(BasePTable):
     def last_xid(self) -> int:
         "Return the last eXisting id of this table"
         self.last_id  # only for refreshing self._last_id
+        if not self.index:
+            return 0
         return self.index.max()
 
     def add_created(self, locs: Any) -> None:
@@ -1750,7 +1752,7 @@ class PTableSelectedView(BasePTable):
             computed: computed columns (as :py:class:`dict` keys) and their associated expressions (as  :py:class:`dict` values)
         """
         super().__init__(base, columns=None, selection=selection)
-        assert self._base
+        assert isinstance(self._base, BasePTable)
         if computed is not None:
             self._base.computed.update(computed)
         if base.columns:
