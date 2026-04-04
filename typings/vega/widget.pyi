@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple, Type, Sequence, Union, List, Callable
+from typing import Any, Callable
 
 
 class VegaWidget:
