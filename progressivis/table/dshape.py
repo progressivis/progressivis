@@ -66,7 +66,7 @@ def dshape_to_h5py(dshape: DataShape) -> str:
     return dtype.str
 
 
-def dshape_from_dtype(dtype: Union[np.dtype[Any], Type[Any]]) -> str:
+def dshape_from_dtype(dtype: np.dtype[Any] | type) -> str:
     if dtype is str:
         return "string"
     if dtype is object:
