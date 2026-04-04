@@ -294,7 +294,7 @@ class MCScatterPlot(Module):
                     smpl = ([], [])
             else:
                 smpl = (
-                    select.to_json(orient="split", columns=[x_column, y_column])  # type: ignore
+                    select.to_json(orient="split", columns=[x_column, y_column])
                     if select is not None
                     else []
                 )
