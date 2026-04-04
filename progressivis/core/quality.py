@@ -29,9 +29,10 @@ class QualitySqrtSumSquarredDiffs:
         self.previous: np.ndarray[Any, Any] | None = None
 
     def quality(self, val: np.ndarray[Any, Any]) -> float:
-        try:
-            ret = -np.sqrt(np.sum((self.previous - val) ** 2))
-        except Exception:
+        if self.previous is None:
+            self.previous = val.copy()
             ret = 0
-        self.previous = val
+        else:
+            ret = -np.sqrt(np.sum((self.previous - val) ** 2))
+            self.previous[:] = val
         return float(ret)
