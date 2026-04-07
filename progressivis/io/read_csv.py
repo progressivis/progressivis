@@ -152,7 +152,7 @@ class Parser:
             table_name=table_name,
             names=json.dumps(
                 self._names.tolist()
-                if isinstance(self._names, np.ndarray)
+                if isinstance(self._names, (np.ndarray, pd.arrays.ArrowStringArray))
                 else self._names
             ),
             usecols=json.dumps(self._usecols),
