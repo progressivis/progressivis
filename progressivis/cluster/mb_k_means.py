@@ -330,7 +330,7 @@ class MBKMeans(Module):
 
     def get_quality(self) -> Dict[str, float] | None:
         if hasattr(self.mbk, "_ewa_inertia") and self.mbk._ewa_inertia is not None:
-            return {"mb_k_means": -self.mbk._ewa_inertia}
+            return {"mb_k_means": self.mbk._ewa_inertia}
         return {"mb_k_means": 0}
 
 
