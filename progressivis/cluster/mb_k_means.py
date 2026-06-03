@@ -29,6 +29,8 @@ from typing import Optional, Union, List, Dict, Any, cast
 logger = logging.getLogger(__name__)
 
 DEFAULT_BATCH_SIZE = 1024
+TOL_INERTIA   = 1e-4
+TOL_CENTROIDS = 1e-5
 
 
 @def_parameter("samples", np.dtype(int), 50)
@@ -198,10 +200,10 @@ class MBKMeans(Module):
         random_state = check_random_state(self.mbk.random_state)
         n_samples = len(input_df)
         n_features = len(cols)
-        n_steps = (self.mbk.max_iter * n_samples) // batch_size
+        # n_steps = (self.mbk.max_iter * n_samples) // batch_size
         is_conv = False
         prev_centers = np.zeros((self.n_clusters, n_features), dtype=dtype)  # TODO: fix
-
+        prev_inertia = 0
         X: Optional[np.ndarray[Any, Any]] = None
 
         for iter_ in range(step_size):
@@ -211,6 +213,7 @@ class MBKMeans(Module):
             X = input_df.to_array(columns=cols, locs=mb_locs, ret=arr)
             if hasattr(self.mbk, "cluster_centers_"):
                 prev_centers[:, :] = self.mbk.cluster_centers_
+                prev_inertia = self.mbk._ewa_inertia
             self._cur_iter += 1
             self.mbk.partial_fit(X)
             if self._labels is not None:
@@ -219,16 +222,22 @@ class MBKMeans(Module):
                 if self.label_dict is not None:
                     self._process_label_dict(mb_locs, run_number)
             centers = self.mbk.cluster_centers_
-            batch_inertia = self.mbk.inertia_
+            # batch_inertia = self.mbk.inertia_
 
-            if self.mbk._tol > 0.0:
-                centers_squared_diff = np.sum((centers - prev_centers) ** 2)
-            else:
-                centers_squared_diff = 0
-            if self.mbk._mini_batch_convergence(
-                self._cur_iter, n_steps, n_samples, centers_squared_diff, batch_inertia
-            ):
+            #if self.mbk._tol > 0.0:
+            #    centers_squared_diff = np.sum((centers - prev_centers) ** 2)
+            #else:
+            #    centers_squared_diff = 0
+            distance = np.linalg.norm(centers - prev_centers, axis=1)
+            if self.mbk._ewa_inertia is None:
+                continue
+            delta = abs(prev_inertia - self.mbk._ewa_inertia)
+            #if self.mbk._mini_batch_convergence(
+            #    self._cur_iter, n_steps, n_samples, centers_squared_diff, batch_inertia
+            #):
+            if delta < TOL_INERTIA and distance.max() < TOL_CENTROIDS:
                 is_conv = True
+                #print("converged", iter_, self.mbk.cluster_centers_)
                 break
 
         if self.result is None:
@@ -313,7 +322,7 @@ class MBKMeans(Module):
         print(f"Center {c} moved from {self.mbk.cluster_centers_[c]} to", end="")
         self.mbk.cluster_centers_[c] = centers
         print(f"{self.mbk.cluster_centers_[c]}")
-        self.mbk._counts[c] = self.mbk.batch_size
+        self.mbk._counts[c] = 1 #self.mbk.batch_size
         return cast(List[float], self.mbk.cluster_centers_.tolist())
 
     def create_dependent_modules(
