@@ -1458,7 +1458,7 @@ class OutputSlots:
         return module.output_slot_names()
 
 
-params_doc = {}
+params_doc: dict[str, str] = {}
 
 
 def def_parameter(

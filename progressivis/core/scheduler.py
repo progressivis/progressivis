@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import functools
+import os
 import inspect as ins  # https://github.com/python/cpython/issues/122858
 from timeit import default_timer
 import traceback
@@ -13,7 +14,6 @@ from io import StringIO, SEEK_END
 from .dataflow import Dataflow
 from . import aio
 from ..utils.errors import ProgressiveError
-
 
 from typing import (
     Optional,
@@ -28,6 +28,19 @@ from typing import (
     AsyncGenerator,
     TYPE_CHECKING,
 )
+
+class FakeProfile:
+    def enable(self) -> None:
+        pass
+    def disable(self) -> None:
+        pass
+
+
+PROFILER = FakeProfile
+
+if os.getenv("PROGRESSIVIS_PROFILE"):
+    import cProfile
+    PROFILER = cProfile.Profile  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +96,6 @@ class Scheduler:
     ProgressiVis methods"""
 
     _last_id: int = 0
-
     @classmethod
     def or_default(cls, scheduler: Optional["Scheduler"]) -> "Scheduler":
         "Return the specified scheduler of, in None, the default one."
@@ -131,6 +143,7 @@ class Scheduler:
         self.shortcut_evt: aio.Event
         self.coros: List[Coroutine[Any, Any, Any]] = []
         self._multiple_slots_name_generator = 1
+        self.profiler = PROFILER()
 
     def new_run_number(self) -> int:
         self._run_number += 1
@@ -398,6 +411,7 @@ class Scheduler:
         """Main scheduler loop."""
         # pylint: disable=broad-except
         blocked = 0  # all_blocked() cannot detect that all modules are blocked
+        profiler = self.profiler
         try:
             async for module in self._next_module():
                 await aio.sleep(0)
@@ -428,10 +442,12 @@ class Scheduler:
                     blocked += 1
                     continue
                 blocked = 0
+                profiler.enable()
                 await module.start_run(self._run_number)
                 module.run(self._run_number)
                 await module.after_run(self._run_number)
                 await self._run_tick_procs()
+                profiler.disable()
             if self.shortcut_evt is not None:
                 self.shortcut_evt.set()
         except Exception as exc:
