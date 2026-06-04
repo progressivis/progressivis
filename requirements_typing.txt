@@ -16,4 +16,5 @@ typing-extensions
 typing_extensions
 types-setuptools
 typeguard
+pyarrow-stubs
 duckdb
