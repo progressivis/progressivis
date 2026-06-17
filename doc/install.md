@@ -93,6 +93,15 @@ Otherwise use the means specific to your environment to install `yarn v1`
 cd ipyprogressivis
 pip install -e .[dev]
 ```
+Installing a package in edit mode (the `-e` option) allows you to execute the latest changes in your source code without reinstalling the package.
+
+However, this option only affects the Python part of the package. To obtain a similar effect for the JavaScript part (i.e. be able to execute the modified code without having to reinstall the package), you must run:
+
+```shell
+jupyter labextension develop . --overwrite
+```
+
+This way, whenever you modify `.js` files, you can run the modified code after running `yarn run build` in the `ipyprogressivis/js/` directory. The modified code will be available in your notebook after you restart the Jupyter server.
 
 #### Getting updates
 
