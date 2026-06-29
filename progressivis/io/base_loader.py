@@ -8,7 +8,7 @@ from ..core.utils import nn
 from typing import Optional, Any, TYPE_CHECKING
 import pyarrow as pa
 # pyarrow.compute defined a a class in our stub so:
-import pyarrow.compute
+import pyarrow.compute  # type:ignore
 from ..core.utils import (
     filepath_to_buffer,
     _infer_compression,

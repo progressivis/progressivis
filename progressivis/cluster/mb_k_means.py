@@ -17,7 +17,7 @@ from progressivis.core.pintset import PIntSet
 from progressivis.core.utils import indices_len
 from ..core.module import Module
 from ..core.decorators import process_slot, run_if_any
-# from ..core.quality import QualitySqrtSumSquarredDiffs
+from ..core.quality import QualitySqrtSumSquarredDiffs
 from ..table.api import PTable, PTableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
 from progressivis.io.api import Variable
@@ -29,7 +29,7 @@ from typing import Optional, Union, List, Dict, Any, cast
 logger = logging.getLogger(__name__)
 
 DEFAULT_BATCH_SIZE = 1024
-TOL_INERTIA   = 1e-4
+TOL_INERTIA   = 1e-3
 TOL_CENTROIDS = 1e-5
 
 
@@ -83,6 +83,7 @@ class MBKMeans(Module):
         self._first_fix: bool = True
         self._cur_iter = 0
         self._arrays: Optional[Dict[int, np.ndarray[Any, Any]]] = None
+        self._quality: QualitySqrtSumSquarredDiffs | None = None
 
     def reset(self, init: str | None = None) -> None:
         print("main reset")
@@ -203,7 +204,7 @@ class MBKMeans(Module):
         # n_steps = (self.mbk.max_iter * n_samples) // batch_size
         is_conv = False
         prev_centers = np.zeros((self.n_clusters, n_features), dtype=dtype)  # TODO: fix
-        prev_inertia = 0
+        # prev_inertia = 0
         X: Optional[np.ndarray[Any, Any]] = None
 
         for iter_ in range(step_size):
@@ -213,7 +214,7 @@ class MBKMeans(Module):
             X = input_df.to_array(columns=cols, locs=mb_locs, ret=arr)
             if hasattr(self.mbk, "cluster_centers_"):
                 prev_centers[:, :] = self.mbk.cluster_centers_
-                prev_inertia = self.mbk._ewa_inertia
+                # prev_inertia = self.mbk.inertia_
             self._cur_iter += 1
             self.mbk.partial_fit(X)
             if self._labels is not None:
@@ -229,15 +230,16 @@ class MBKMeans(Module):
             #else:
             #    centers_squared_diff = 0
             distance = np.linalg.norm(centers - prev_centers, axis=1)
-            if self.mbk._ewa_inertia is None:
+            if self.mbk.inertia_ is None:
                 continue
-            delta = abs(prev_inertia - self.mbk._ewa_inertia)
+            # delta = abs(prev_inertia - self.mbk.inertia_)
             #if self.mbk._mini_batch_convergence(
             #    self._cur_iter, n_steps, n_samples, centers_squared_diff, batch_inertia
             #):
-            if delta < TOL_INERTIA and distance.max() < TOL_CENTROIDS:
+            #if delta < TOL_INERTIA and distance.max() < TOL_CENTROIDS:
+            if distance.max() < TOL_CENTROIDS:
                 is_conv = True
-                #print("converged", iter_, self.mbk.cluster_centers_)
+                # print("converged", iter_, self.mbk.cluster_centers_)
                 break
 
         if self.result is None:
@@ -337,11 +339,12 @@ class MBKMeans(Module):
             self.dep.moved_center = c
             self.input.moved_center = c.output.result
 
-    def get_quality(self) -> Dict[str, float] | None:
-        if hasattr(self.mbk, "_ewa_inertia") and self.mbk._ewa_inertia is not None:
-            return {"mb_k_means": self.mbk._ewa_inertia}
+    def get_quality(self) -> dict[str, float]:
+        if self._quality is None:
+            self._quality = QualitySqrtSumSquarredDiffs()
+        if hasattr(self.mbk, "cluster_centers_"):  # attr does not exist before a fit
+            return {"mb_k_means": self._quality.quality(self.mbk.cluster_centers_)}
         return {"mb_k_means": 0}
-
 
 @def_input("table", PTable)
 @def_input("labels", PTable)
