@@ -106,17 +106,6 @@ class MBKMeans(Module):
         self.mbk._ewa_inertia_min = None
         self.mbk._no_improvement = 0
         self.mbk._n_since_last_reassign = 0
-        # if init is None:
-        #     init = self.mbk.cluster_centers_ if hasattr(self.mbk, "cluster_centers_") else "k-means++"
-        # self.mbk = MiniBatchKMeans(
-        #     n_clusters=self.mbk.n_clusters,
-        #     batch_size=self.mbk.batch_size,
-        #     verbose=0,
-        #     tol=self.mbk.tol,
-        #     init=init,
-        #     random_state=self.mbk.random_state,
-        #     reassignment_ratio=0,
-        # )
 
     def starting(self) -> None:
         super().starting()
@@ -201,7 +190,6 @@ class MBKMeans(Module):
         random_state = check_random_state(self.mbk.random_state)
         n_samples = len(input_df)
         n_features = len(cols)
-        # n_steps = (self.mbk.max_iter * n_samples) // batch_size
         is_conv = False
         prev_centers = np.zeros((self.n_clusters, n_features), dtype=dtype)  # TODO: fix
         # prev_inertia = 0
@@ -214,7 +202,6 @@ class MBKMeans(Module):
             X = input_df.to_array(columns=cols, locs=mb_locs, ret=arr)
             if hasattr(self.mbk, "cluster_centers_"):
                 prev_centers[:, :] = self.mbk.cluster_centers_
-                # prev_inertia = self.mbk.inertia_
             self._cur_iter += 1
             self.mbk.partial_fit(X)
             if self._labels is not None:
@@ -223,20 +210,9 @@ class MBKMeans(Module):
                 if self.label_dict is not None:
                     self._process_label_dict(mb_locs, run_number)
             centers = self.mbk.cluster_centers_
-            # batch_inertia = self.mbk.inertia_
-
-            #if self.mbk._tol > 0.0:
-            #    centers_squared_diff = np.sum((centers - prev_centers) ** 2)
-            #else:
-            #    centers_squared_diff = 0
             distance = np.linalg.norm(centers - prev_centers, axis=1)
             if self.mbk.inertia_ is None:
                 continue
-            # delta = abs(prev_inertia - self.mbk.inertia_)
-            #if self.mbk._mini_batch_convergence(
-            #    self._cur_iter, n_steps, n_samples, centers_squared_diff, batch_inertia
-            #):
-            #if delta < TOL_INERTIA and distance.max() < TOL_CENTROIDS:
             if distance.max() < TOL_CENTROIDS:
                 is_conv = True
                 # print("converged", iter_, self.mbk.cluster_centers_)
