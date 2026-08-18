@@ -95,6 +95,7 @@ typing = [
     "typing-extensions",
     "typing_extensions",
     "types-setuptools",
+    "pyarrow-stubs",
     "typeguard",
     "duckdb",
 ]
