@@ -211,7 +211,7 @@ class PPCATransformer(Module):
         _ = explained_variance  # flakes8 does not see variables in numexpr expressions
         mean = np.mean(dist)
         max_ = np.max(dist)
-        ret = mean > self._rtol
+        ret = cast(bool, mean > self._rtol)
         return self.trace_if(ret, mean, max_, len(input_table))
 
     def reset(self) -> None:

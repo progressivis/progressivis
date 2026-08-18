@@ -418,10 +418,10 @@ class BasePColumn(metaclass=ABCMeta):
         "Return the min value"
         axis = cast(int, kwargs.pop("axis", 0))
         keepdims = cast(bool, kwargs.pop("keepdims", False))
-        return self.value.min(axis=axis, keepdims=keepdims)
+        return self.value.min(axis=axis, keepdims=keepdims)  # type: ignore[call-overload]
 
     def max(self, **kwargs: Dict[str, Any]) -> Any:
         "Return the max value"
         axis = cast(int, kwargs.pop("axis", 0))
         keepdims = cast(bool, kwargs.pop("keepdims", False))
-        return self.value.max(axis=axis, keepdims=keepdims)
+        return self.value.max(axis=axis, keepdims=keepdims)  # type: ignore[call-overload]

@@ -39,7 +39,7 @@ class Loc:
         raise ValueError("Unhandled type for %s", locs)
 
     @staticmethod
-    def to_iterable(locs: Any, size: int) -> Iterable[Any]:
+    def to_iterable(locs: Any, size: int) -> Any:
         loc = Loc.dispatch(locs)
 
         if Loc.isiterable(loc):
