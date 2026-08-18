@@ -1023,7 +1023,7 @@ def is_notebook() -> bool:
         from IPython import get_ipython  # type: ignore
 
         return bool(
-            get_ipython().__class__.__name__ == "ZMQInteractiveShell"  # type: ignore
+            get_ipython().__class__.__name__ == "ZMQInteractiveShell"
         )
     except ImportError:
         pass

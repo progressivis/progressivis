@@ -49,5 +49,6 @@ class ProgressivisMagic(Magics):
 def load_ipython_extension(ipython: Any) -> None:
     from IPython import get_ipython  # type: ignore
 
-    ip = get_ipython()  # type: ignore
+    ip = get_ipython()
+    assert ip is not None
     ip.register_magics(ProgressivisMagic)
