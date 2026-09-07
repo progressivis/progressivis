@@ -1020,7 +1020,7 @@ def gather_and_run(*args: Awaitable[Any]) -> None:
 
 def is_notebook() -> bool:
     try:
-        from IPython import get_ipython  # type: ignore
+        from IPython import get_ipython
 
         return bool(
             get_ipython().__class__.__name__ == "ZMQInteractiveShell"
