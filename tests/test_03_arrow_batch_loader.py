@@ -14,8 +14,9 @@ class TestArrowBatchLoader(ProgressiveTest):
         file_name = get_dataset("bigfile_parquet")
         n_rows = pq.ParquetFile(file_name).metadata.num_rows
         con.execute(f"SELECT * FROM read_parquet('{file_name}')")
-        reader = con.fetch_record_batch(1000)
+        reader = con.to_arrow_reader(1000)
         s = self.scheduler
+        assert reader is not None
         module = ArrowBatchLoader(
             reader=reader,
             n_rows=n_rows,
@@ -33,8 +34,9 @@ class TestArrowBatchLoader(ProgressiveTest):
         file_name = get_dataset("bigfile")
         n_rows = 1_000_000
         con.execute(f"SELECT * FROM read_csv('{file_name}')")
-        reader = con.fetch_record_batch(1000)
+        reader = con.to_arrow_reader(1000)
         s = self.scheduler
+        assert reader is not None
         module = ArrowBatchLoader(
             reader=reader,
             n_rows=n_rows,
@@ -53,8 +55,9 @@ class TestArrowBatchLoader(ProgressiveTest):
         file_name = get_dataset("bigfile")
         n_rows = 1_000_000
         con.execute(f"SELECT column01, column02 FROM read_csv('{file_name}')")
-        reader = con.fetch_record_batch(1000)
+        reader = con.to_arrow_reader(1000)
         s = self.scheduler
+        assert reader is not None
         module = ArrowBatchLoader(
             reader=reader,
             n_rows=n_rows,
