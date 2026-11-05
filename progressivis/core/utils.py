@@ -705,9 +705,16 @@ def filepath_to_buffer(
         return cast(io.IOBase, filepath), encoding, compression, size
     if is_url(filepath):
         headers = None
+        verify = not os.getenv("CI")
         if start_byte:
             headers = {"Range": "bytes={}-".format(start_byte)}
-        req = requests.get(filepath, stream=True, headers=headers, timeout=timeout)
+        req = requests.get(
+            filepath,
+            stream=True,
+            headers=headers,
+            timeout=timeout,
+            verify=verify
+        )
         content_encoding = req.headers.get("Content-Encoding", None)
         if content_encoding == "gzip":
             compression = "gzip"
