@@ -63,11 +63,14 @@ class LinearTimePredictor(TimePredictor):
         # operations = trace_df["steps_run"][step_traces]
         durations, operations = tracer.last_steps_durations(7)
 
-        num = np.sum(operations)
-        time = np.sum(durations)
-        if num == 0:
+        rates = [
+            ops / duration
+            for ops, duration in zip(operations, durations)
+            if np.isfinite(duration) and duration != 0
+        ]
+        if not rates:
             return
-        a = num / time
+        a = float(np.median(rates))
         if a > 0:
             self.a = a
         else:
