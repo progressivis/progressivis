@@ -132,7 +132,7 @@ class Heatmap(Module):
                 filename = self.storage.fullname(self, filename)
                 # TODO should do it atomically since it will be
                 # called 4 times with the same fn
-                image.save(filename, format="PNG")  # bits=16)
+                image.convert("I;16").save(filename, format="PNG")  # bits=16)
                 logger.debug("Saved image %s", filename)
                 image = None
             except Exception:
